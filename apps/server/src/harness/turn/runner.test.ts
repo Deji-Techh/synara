@@ -8,7 +8,11 @@ import * as path from "node:path";
 import { execFileSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 import type { HarnessEvent } from "@caide/contracts";
-import { captureTurnEnd, captureTurnStart, clearTurnProvenance } from "../../dyad/vcs/gitProvenance.ts";
+import {
+  captureTurnEnd,
+  captureTurnStart,
+  clearTurnProvenance,
+} from "../../dyad/vcs/gitProvenance.ts";
 import type { LLMAdapter } from "../loop/loop.ts";
 import { assembleCompactedMessages, CaideRunner, nextFailoverTarget } from "./runner.ts";
 import { ProviderApiError } from "../provider/apiAdapter.ts";
@@ -62,7 +66,8 @@ describe("caide runner turns (m3)", () => {
     expect(typeof entry.timestamp).toBe("number");
   });
 
-    it("fails structured without throwing when no provider key exists", async () => {    const events: HarnessEvent[] = [];
+  it("fails structured without throwing when no provider key exists", async () => {
+    const events: HarnessEvent[] = [];
     const runner = new CaideRunner();
     await runner.startTurn({
       sessionId: "s-nokey",
@@ -72,9 +77,7 @@ describe("caide runner turns (m3)", () => {
       onEvent: (e) => events.push(e),
     });
     expect(runner.getStatus()).toBe("failed");
-    expect(events).toContainEqual(
-      expect.objectContaining({ type: "error", code: "TURN_FAILED" }),
-    );
+    expect(events).toContainEqual(expect.objectContaining({ type: "error", code: "TURN_FAILED" }));
     expect(events.at(-1)).toMatchObject({ type: "turn_end", status: "failed" });
   });
 
@@ -134,7 +137,12 @@ describe("caide runner turns (m3)", () => {
           async *stream() {
             calls += 1;
             if (calls <= 2) {
-              throw new ProviderApiError({ status: 503, code: "HTTP_503", message: "down", retryable: true });
+              throw new ProviderApiError({
+                status: 503,
+                code: "HTTP_503",
+                message: "down",
+                retryable: true,
+              });
             }
             yield { type: "token", content: "recovered" } as never;
           },
@@ -153,8 +161,18 @@ describe("caide runner turns (m3)", () => {
   });
 
   it("picks failover targets only for retryable provider errors", () => {
-    const retryable = new ProviderApiError({ status: 503, code: "HTTP_503", message: "down", retryable: true });
-    const fatal = new ProviderApiError({ status: 401, code: "HTTP_401", message: "no", retryable: false });
+    const retryable = new ProviderApiError({
+      status: 503,
+      code: "HTTP_503",
+      message: "down",
+      retryable: true,
+    });
+    const fatal = new ProviderApiError({
+      status: 401,
+      code: "HTTP_401",
+      message: "no",
+      retryable: false,
+    });
     const base = { sessionId: "s", appPath: "/tmp/x", prompt: "hi" };
     expect(nextFailoverTarget(base, new Error("boom"))).toBeNull();
     expect(nextFailoverTarget(base, fatal)).toBeNull();
@@ -166,7 +184,11 @@ describe("caide runner turns (m3)", () => {
     const { applySettingsSync, clearSessionStores } = await import("./sessionStores.ts");
     const sid = `s-taste-${Date.now()}`;
     applySettingsSync(sid, {
-      agentRouting: { mode: "per-step", steps: { scout: {}, builder: {}, planner: {} }, fallbacks: [] },
+      agentRouting: {
+        mode: "per-step",
+        steps: { scout: {}, builder: {}, planner: {} },
+        fallbacks: [],
+      },
     });
     const events: HarnessEvent[] = [];
     const runner = new CaideRunner();
@@ -185,7 +207,8 @@ describe("caide runner turns (m3)", () => {
       });
       expect(
         events.some(
-          (e) => e.type === "token" && (e as { content?: string }).content?.includes("highest-taste"),
+          (e) =>
+            e.type === "token" && (e as { content?: string }).content?.includes("highest-taste"),
         ),
       ).toBe(true);
       expect(events.at(-1)?.type).toBe("turn_end");
@@ -287,8 +310,10 @@ describe("caide runner turns (m3)", () => {
       },
     });
     expect(runner.getStatus()).toBe("completed");
-    const userMsg = seen[0].find((m) => m.role === "user");
-    expect(String(userMsg?.content)).toMatch(/interrupted/);
+    // History now precedes (chain projection): the resume notice rides on
+    // the NEW prompt message, not the first history row.
+    const newPromptMsg = seen[0].filter((m) => m.role === "user").pop();
+    expect(String((newPromptMsg as { content: unknown })?.content)).toMatch(/interrupted/);
   });
 
   it("seeds turns with the project's AI_RULES.md", async () => {
@@ -390,7 +415,8 @@ describe("caide runner turns (m3)", () => {
     );
     expect(
       first.some(
-        (e) => e.type === "token" && (e as { content?: string }).content?.includes("system-reminder"),
+        (e) =>
+          e.type === "token" && (e as { content?: string }).content?.includes("system-reminder"),
       ),
     ).toBe(true);
 
@@ -400,7 +426,9 @@ describe("caide runner turns (m3)", () => {
     const second: HarnessEvent[] = [];
     await runner.startTurn({ ...base, onEvent: (e) => second.push(e) });
     // Second consecutive miss fails the turn.
-    expect(second).toContainEqual(expect.objectContaining({ type: "error", code: "EVIDENCE_REQUIRED" }));
+    expect(second).toContainEqual(
+      expect.objectContaining({ type: "error", code: "EVIDENCE_REQUIRED" }),
+    );
     expect(second.at(-1)).toMatchObject({ type: "turn_end", status: "failed" });
     clearTurnProvenance(sid);
   });

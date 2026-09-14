@@ -114,6 +114,12 @@ export const createEffectServer = Effect.fn(function* (
   );
   if (nodeServer) {
     sharedTurnGateway().attachWs(sharedHarnessHub());
+    // Boot sweep (background): tombstone prompts orphaned by the restart so
+    // replay never resurrects cards whose waiters died with the old process.
+    // Fire-and-forget by design — it must never delay listening.
+    void import("./harness/turn/eventLog.ts")
+      .then((m) => m.tombstoneOrphanedPrompts())
+      .catch(() => 0);
     yield* Effect.addFinalizer(() =>
       Effect.sync(() => {
         sharedTurnGateway().detachWs();

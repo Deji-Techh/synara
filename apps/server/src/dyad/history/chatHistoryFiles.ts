@@ -26,12 +26,18 @@ export function listSessionIds(excludeSessionId: string): string[] {
   } catch {
     return [];
   }
-  return files
-    .filter((f) => f.endsWith(".jsonl"))
-    .map((f) => f.slice(0, -".jsonl".length))
-    .filter((id) => id !== excludeSessionId)
-    .sort()
-    .slice(-MAX_SESSIONS_SCANNED);
+  return (
+    files
+      .filter((f) => f.endsWith(".jsonl"))
+      .map((f) => f.slice(0, -".jsonl".length))
+      .filter((id) => id !== excludeSessionId)
+      // Dev/test artifacts (probes, smoke runs, scratch sessions) pollute
+      // recall with garbage — real threads use UUID ids. Never candidates,
+      // still directly readable via read_chat when explicitly named.
+      .filter((id) => !/^(s-|probe|test|smoke|session-)/i.test(id))
+      .sort()
+      .slice(-MAX_SESSIONS_SCANNED)
+  );
 }
 
 export interface LogLine {
@@ -45,8 +51,32 @@ function eventText(data: any): string {
   switch (data.type) {
     case "token":
       return typeof data.content === "string" ? data.content : "";
-    case "tool_call":
-      return `[tool ${data.name ?? "?"} ${data.status ?? ""}]`.trim();
+    case "turn_start":
+      return typeof data.prompt === "string" ? data.prompt : "";
+    case "steer":
+      return typeof data.prompt === "string" ? `[follow-up] ${data.prompt}` : "";
+    case "tool_call": {
+      // Recall needs WHAT the tool did and WHAT came back — name+status
+      // alone makes answers and decisions invisible to later turns.
+      const name = data.name ?? "?";
+      const status = data.status ?? "";
+      if (status === "completed" || status === "failed") {
+        const result =
+          typeof data.result === "string" ? data.result : JSON.stringify(data.result ?? "");
+        return `[tool ${name} ${status}: ${result.slice(0, 300)}]`.trim();
+      }
+      return `[tool ${name} ${status}]`.trim();
+    }
+    case "ui_prompt": {
+      const questions = (data.payload as { questions?: Array<{ question?: string }> })?.questions;
+      if (Array.isArray(questions) && questions.length > 0) {
+        return `[questions asked: ${questions
+          .map((q) => q.question ?? "")
+          .join(" | ")
+          .slice(0, 300)}]`;
+      }
+      return `[prompt ${data.kind ?? "?"}]`;
+    }
     case "stage":
       return "";
     case "error":
@@ -92,11 +122,13 @@ export function readSessionLines(sessionId: string): LogLine[] {
       } else {
         flushTokens();
         if (text) {
-          lines.push({
-            seq,
-            kind: entry.data?.type === "tool_call" ? "tool" : "assistant",
-            text,
-          });
+          const kind =
+            entry.data?.type === "tool_call"
+              ? "tool"
+              : entry.data?.type === "turn_start" || entry.data?.type === "steer"
+                ? "user"
+                : "assistant";
+          lines.push({ seq, kind, text });
         }
       }
     } else if (entry.type === "user/message") {
@@ -121,9 +153,41 @@ export function readSessionLines(sessionId: string): LogLine[] {
 
 export function keywordsOf(text: string): string[] {
   const stop = new Set([
-    "the", "a", "an", "and", "or", "of", "to", "in", "on", "for", "with", "what", "did",
-    "we", "you", "have", "has", "had", "was", "were", "is", "are", "it", "this", "that",
-    "about", "our", "us", "i", "my", "me", "do", "does", "any", "had",
+    "the",
+    "a",
+    "an",
+    "and",
+    "or",
+    "of",
+    "to",
+    "in",
+    "on",
+    "for",
+    "with",
+    "what",
+    "did",
+    "we",
+    "you",
+    "have",
+    "has",
+    "had",
+    "was",
+    "were",
+    "is",
+    "are",
+    "it",
+    "this",
+    "that",
+    "about",
+    "our",
+    "us",
+    "i",
+    "my",
+    "me",
+    "do",
+    "does",
+    "any",
+    "had",
   ]);
   return text
     .toLowerCase()
@@ -139,4 +203,3 @@ export function scoreLine(line: LogLine, keywords: string[]): number {
   }
   return score;
 }
-

@@ -20,6 +20,16 @@ export interface PendingPrompt {
 
 const pending = new Map<string, PendingPrompt>();
 
+/** RequestIds whose waiter expired on a deadline (vs user dismiss/abort). */
+const timedOut = new Set<string>();
+
+/** Donor deadlines: questionnaire 5min, env/integration 30min. Zero = none. */
+const WAIT_DEADLINES_MS: Record<PendingPrompt["kind"], number> = {
+  questionnaire: 5 * 60_000,
+  "env-vars": 30 * 60_000,
+  integration: 30 * 60_000,
+};
+
 export function nextRequestId(kind: PendingPrompt["kind"]): string {
   // UUID suffix (not a process counter): counters restart at zero on every
   // server restart, which reused requestIds and collided with durable
@@ -27,21 +37,38 @@ export function nextRequestId(kind: PendingPrompt["kind"]): string {
   return `${kind}:${Date.now()}:${randomUUID().slice(0, 8)}`;
 }
 
-/** Park the turn until the user answers (null = dismissed/aborted). */
+/** Park the turn until the user answers (null = dismissed/aborted/timed-out). */
 export function waitForUserInput(
   requestId: string,
   sessionId: string,
   kind: PendingPrompt["kind"],
   signal?: AbortSignal,
+  timeoutMs: number = WAIT_DEADLINES_MS[kind],
 ): Promise<Record<string, string> | null> {
   return new Promise((resolve) => {
     const entry: PendingPrompt = { requestId, sessionId, kind, resolve };
+    let timer: ReturnType<typeof setTimeout> | null = null;
     const done = (value: Record<string, string> | null) => {
+      if (timer !== null) {
+        clearTimeout(timer);
+        timer = null;
+      }
       if (entry.signal && entry.onAbort) entry.signal.removeEventListener("abort", entry.onAbort);
       pending.delete(requestId);
       resolve(value);
     };
     entry.resolve = done;
+    if (timeoutMs > 0) {
+      // Donor parity: an unanswered prompt settles as dismissal after its
+      // deadline instead of parking the turn forever. Callers withdraw the
+      // card via consumeTimedOut() so no zombie remains.
+      timer = setTimeout(() => {
+        if (pending.get(requestId) === entry) {
+          timedOut.add(requestId);
+          done(null);
+        }
+      }, timeoutMs);
+    }
     if (signal) {
       if (signal.aborted) {
         done(null);
@@ -56,6 +83,16 @@ export function waitForUserInput(
     }
     pending.set(requestId, entry);
   });
+}
+
+/**
+ * Whether the waiter's null settlement was a deadline expiry (consumes the
+ * flag). Callers use this to withdraw the card + use timeout wording.
+ */
+export function consumeTimedOut(requestId: string): boolean {
+  if (!timedOut.has(requestId)) return false;
+  timedOut.delete(requestId);
+  return true;
 }
 
 /** Deliver the user's answers (WS layer calls this). */

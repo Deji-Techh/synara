@@ -761,7 +761,7 @@ describe("Milestone M3 — Stateless Loop, Retry, Events, and Inbox", () => {
     );
   });
 
-  it("ends the turn as failed after 3 identical consecutive tool failures", async () => {
+  it("ends the turn as failed after 5 identical consecutive tool failures", async () => {
     const fakeLlm: LLMAdapter = {
       async *stream() {
         yield {
@@ -794,9 +794,114 @@ describe("Milestone M3 — Stateless Loop, Retry, Events, and Inbox", () => {
       })(),
     ).rejects.toThrow(/VALIDATION_LOOP/);
     const failed = events.filter((e) => e.type === "tool_call" && (e as any).status === "failed");
-    expect(failed).toHaveLength(3);
+    expect(failed).toHaveLength(5);
     expect(events.some((e) => e.type === "error" && (e as any).code === "VALIDATION_LOOP")).toBe(
       true,
     );
+  });
+
+  it("fails loud when tools ran but the turn never says anything (ee6dbef7 case)", async () => {
+    let llmCalls = 0;
+    const fakeLlm: LLMAdapter = {
+      async *stream() {
+        llmCalls += 1;
+        if (llmCalls === 1) {
+          yield {
+            type: "tool_call",
+            toolCall: { id: "c1", name: "read_file", args: { path: "a.ts" } },
+          };
+        }
+        // Step 2+: empty (the provider glitch shape).
+      },
+    };
+    const readTool: ToolDefinition = {
+      name: "read_file",
+      description: "reads",
+      execute: async () => "contents",
+    };
+    const events: HarnessEvent[] = [];
+    const loop = runLoop({
+      sessionId: "session-silent-after-tools",
+      maxSteps: 10,
+      llm: fakeLlm,
+      tools: [readTool],
+      buildMessages: () => [{ role: "user", content: "go" }],
+      onEvent: (ev) => events.push(ev),
+    });
+    await expect(
+      (async () => {
+        for await (const _ of loop) {
+          // drain
+        }
+      })(),
+    ).rejects.toThrow(/STEP_EMPTY/);
+    // Step 1 does the work, step 2 is empty (retry nudge), step 3 still
+    // empty (fail loud).
+    expect(llmCalls).toBe(3);
+    expect(events.some((e) => e.type === "error" && (e as any).code === "STEP_EMPTY_RETRY")).toBe(
+      true,
+    );
+  });
+
+  it("exempts semantic-stop handoffs from the end-text rule", async () => {
+    const fakeLlm: LLMAdapter = {
+      async *stream() {
+        yield {
+          type: "tool_call",
+          toolCall: { id: "c1", name: "write_plan", args: {} },
+        };
+      },
+    };
+    const planTool: ToolDefinition = {
+      name: "write_plan",
+      description: "writes a plan",
+      execute: async () => "plan written",
+    };
+    const events: HarnessEvent[] = [];
+    const loop = runLoop({
+      sessionId: "session-handoff",
+      maxSteps: 10,
+      llm: fakeLlm,
+      tools: [planTool],
+      buildMessages: () => [{ role: "user", content: "plan this" }],
+      stopAfterTool: ["write_plan"],
+      onEvent: (ev) => events.push(ev),
+    });
+    // Must NOT throw STEP_EMPTY: the approval card is the surface.
+    for await (const _ of loop) {
+      // drain
+    }
+    expect(events.some((e) => e.type === "error" && (e as any).code === "STEP_EMPTY_RETRY")).toBe(
+      false,
+    );
+  });
+
+  it("emits STEP_LIMIT instead of silently completing on maxSteps exhaustion", async () => {
+    const fakeLlm: LLMAdapter = {
+      async *stream() {
+        yield {
+          type: "tool_call",
+          toolCall: { id: `c-${Math.random()}`, name: "read_file", args: { path: "a.ts" } },
+        };
+      },
+    };
+    const readTool: ToolDefinition = {
+      name: "read_file",
+      description: "reads",
+      execute: async () => "contents",
+    };
+    const events: HarnessEvent[] = [];
+    const loop = runLoop({
+      sessionId: "session-step-limit",
+      maxSteps: 3,
+      llm: fakeLlm,
+      tools: [readTool],
+      buildMessages: () => [{ role: "user", content: "go" }],
+      onEvent: (ev) => events.push(ev),
+    });
+    for await (const _ of loop) {
+      // drain
+    }
+    expect(events.some((e) => e.type === "error" && (e as any).code === "STEP_LIMIT")).toBe(true);
   });
 });

@@ -20,6 +20,7 @@ import type { SettingsLike } from "../../dyad/providers/index.ts";
 import type { ConsentRequestFn } from "../../dyad/tools/permissions.ts";
 import type { McpConsentRequestFn } from "../../dyad/mcp/mcpConsent.ts";
 import { CaideRunner, type StartTurnInput } from "./runner.ts";
+import { appendHarnessEvent } from "./eventLog.ts";
 import { clearSessionApp, getSessionApp, noteSessionApp } from "./sessionStores.ts";
 import { listVersions, restoreVersion } from "../../dyad/vcs/versions.ts";
 
@@ -76,6 +77,9 @@ export class TurnGateway {
   private steerOrLaunch(server: HarnessHub, sessionId: string, prompt: string): void {
     if (this.runner.hasLiveTurn(sessionId)) {
       this.getInbox(sessionId).steer(prompt);
+      // Persist steers: the live loop consumes them in-turn, but later turns
+      // would otherwise never see approvals/follow-ups (turn amnesia).
+      void appendHarnessEvent({ type: "steer", sessionId, prompt }).catch(() => undefined);
       return;
     }
     const appPath = getSessionApp(sessionId);
@@ -267,10 +271,16 @@ export class TurnGateway {
           (blueprint ?? undefined) as AppBlueprint | undefined,
         );
         const name = stored?.appName ?? "the app";
+        // Ground the follow-up with the APPROVED CONTENT, not just its name:
+        // a fresh turn otherwise sees "blueprint approved" with no idea what
+        // was approved (turn amnesia). Cap the JSON so huge visual lists
+        // don't flood context.
+        const blueprintJson = stored ? JSON.stringify(stored).slice(0, 4000) : "";
         this.steerOrLaunch(
           server,
           sessionId,
-          `The app blueprint for "${name}" has been approved. Proceed with implementation using it to guide file creation, design tokens, and visual assets.`,
+          `The app blueprint for "${name}" has been approved. Proceed with implementation using it to guide file creation, design tokens, and visual assets.` +
+            (blueprintJson ? `\n\nApproved blueprint:\n${blueprintJson}` : ""),
         );
       } else {
         this.steerOrLaunch(

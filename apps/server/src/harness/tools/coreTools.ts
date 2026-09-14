@@ -15,7 +15,8 @@ function resolveSafePath(userPath: string, appPath: string): string {
   // Boundary-aware containment (not a raw startsWith: "/root2" must not
   // pass for base "/root"). Donor path_safety logic, Caide error contract.
   const rel = path.relative(base, resolved);
-  const escapes = rel !== "" && (rel === ".." || rel.startsWith(`..${path.sep}`) || path.isAbsolute(rel));
+  const escapes =
+    rel !== "" && (rel === ".." || rel.startsWith(`..${path.sep}`) || path.isAbsolute(rel));
   if (escapes) {
     throw new Error(`Path traversal denied: '${userPath}' is outside workspace root '${appPath}'`);
   }
@@ -44,17 +45,21 @@ export const readFileTool = defineTool({
 export const writeFileTool = defineTool({
   name: "write_file",
   description:
-    "Writes content to a file in the project workspace, creating parent directories if needed. Use relative paths like src/App.tsx, src/components/Card.tsx, src/pages/Home.tsx — never empty, never '.' or '/' or absolute, never the workspace root itself. Example: write_file({\"path\":\"src/App.tsx\",\"content\":\"full file\"})",
+    'Writes content to a file in the project workspace, creating parent directories if needed. Use relative paths like src/App.tsx, src/components/Card.tsx, src/pages/Home.tsx — never empty, never \'.\' or \'/\' or absolute, never the workspace root itself. Example: write_file({"path":"src/App.tsx","content":"full file"})',
   schema: z
     .object({
       path: z
         .string()
         .min(2)
         .refine((p) => p !== "." && p !== "/" && !p.startsWith("/") && p.includes("."), {
-          message: "path must be a valid relative file path like src/App.tsx, not '.' or '/' or empty",
+          message:
+            "path must be a valid relative file path like src/App.tsx, not '.' or '/' or empty",
         })
         .describe("Relative file path, e.g. src/App.tsx or src/components/Button.tsx"),
-      content: z.string().min(1).describe("Full file content to write — must be complete, no placeholders"),
+      content: z
+        .string()
+        .min(1)
+        .describe("Full file content to write — must be complete, no placeholders"),
     })
     .strict(),
   readOnly: false,
@@ -129,8 +134,13 @@ export const searchFilesTool = defineTool({
 export const runCommandTool = defineTool({
   name: "run_command",
   description: "Executes a shell command inside workspace root. Modifies state, SIGTERM killable.",
+  // Donor default: shell commands budget 120s (turn abort still cancels sooner).
+  timeoutMs: 120_000,
   schema: z.object({
-    command: z.string().optional().describe("Full shell command string to execute, e.g. 'bun add expo-router'"),
+    command: z
+      .string()
+      .optional()
+      .describe("Full shell command string to execute, e.g. 'bun add expo-router'"),
     cmd: z.string().optional().describe("Command binary name or full command"),
     args: z.array(z.string()).default([]).describe("Command arguments"),
     cwd: z.string().optional().describe("Working directory relative to project root"),
@@ -181,15 +191,25 @@ export const screenshotTool = defineTool({
   description:
     "Captures a real screenshot of the running app preview for visual verification. Requires an active preview (open_preview first). Saves to .caide/evidence/ and records a screenshot evidence entry. Prefer this over describing visuals from code.",
   schema: z.object({
-    selector: z.string().optional().describe("Optional CSS selector to scope capture (best-effort)"),
+    selector: z
+      .string()
+      .optional()
+      .describe("Optional CSS selector to scope capture (best-effort)"),
     width: z.number().int().min(320).max(2048).optional().describe("Viewport width (default 390)"),
-    height: z.number().int().min(320).max(2048).optional().describe("Viewport height (default 844)"),
+    height: z
+      .number()
+      .int()
+      .min(320)
+      .max(2048)
+      .optional()
+      .describe("Viewport height (default 844)"),
   }),
   readOnly: true,
   modifiesState: false,
   execute: async ({ selector, width, height }, ctx) => {
     const { getPreviewState } = await import("../preview/manager.ts");
-    const { capturePreviewScreenshot, CaptureUnavailableError } = await import("../preview/capture.ts");
+    const { capturePreviewScreenshot, CaptureUnavailableError } =
+      await import("../preview/capture.ts");
     const state = getPreviewState(ctx.sessionId);
     if (!state.running || !state.url) {
       throw new Error("No active preview — call open_preview first, then screenshot.");
@@ -199,7 +219,9 @@ export const screenshotTool = defineTool({
       shot = await capturePreviewScreenshot({ url: state.url, width, height });
     } catch (err) {
       if (err instanceof CaptureUnavailableError) throw err;
-      throw new Error(`Screenshot capture failed: ${err instanceof Error ? err.message : String(err)}`);
+      throw new Error(
+        `Screenshot capture failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
     const rel = `.caide/evidence/shot-${Date.now()}.png`;
     try {
@@ -344,6 +366,8 @@ export const buildProjectTool = defineTool({
   name: "build_project",
   description:
     "Executes project build using the framework's buildSteps (website: bun run build, RN: npx expo export, flutter: flutter build apk --debug). Returns structured { success, stdout, stderr, exitCode } — not raw compiler dump.",
+  // Flutter APK builds take minutes (donor: 10min budget).
+  timeoutMs: 600_000,
   schema: z.object({}),
   readOnly: false,
   modifiesState: true,
@@ -434,6 +458,7 @@ export const testProjectTool = defineTool({
   name: "test_project",
   description:
     "Runs project tests (website/RN: bun run test, flutter: flutter test). Returns structured { passed, stdout, stderr }.",
+  timeoutMs: 300_000,
   schema: z.object({}),
   readOnly: true,
   modifiesState: false,
@@ -567,13 +592,18 @@ export const spawnSubagentTool = defineTool({
   description:
     "Spawn a background subagent thread and return its thread id immediately (the work runs detached — poll it, don't wait inline). Personas: explorer (read-only recon with cited findings), implementer (does the work; write the assignment as GOAL / MUST HOLD / OUT OF SCOPE / DONE WHEN, where MUST HOLD lists every project rule the change could touch or explains why none apply). Give at most one implementer at a time a task, and keep working while it runs only on unrelated files. Poll with check_subagent_status or wait_agents; continue with send_message/followup_task; cancel with cancel_agent.",
   schema: z.object({
-    persona: z.enum(["explorer", "implementer", "generic"]).optional().describe("Subagent persona (default generic)"),
+    persona: z
+      .enum(["explorer", "implementer", "generic"])
+      .optional()
+      .describe("Subagent persona (default generic)"),
     task_name: z.string().min(1).max(100).describe("A stable short name for this task"),
     assignment: z
       .string()
       .min(1)
       .max(20_000)
-      .describe("The assignment. For implementer tasks use GOAL / MUST HOLD / OUT OF SCOPE / DONE WHEN."),
+      .describe(
+        "The assignment. For implementer tasks use GOAL / MUST HOLD / OUT OF SCOPE / DONE WHEN.",
+      ),
     scope: z
       .array(z.string().min(1).max(500))
       .max(100)
@@ -596,7 +626,8 @@ export const spawnSubagentTool = defineTool({
     }
     const { streamProvider, endpointForModel } = await import("../provider/apiAdapter.ts");
     const { formatChatMessagesForEndpoint } = await import("../provider/streamProviderAdapter.ts");
-    const { getSubagentTools, spawnSubagentTask } = await import("../../dyad/sandbox/subagentLoop.ts");
+    const { getSubagentTools, spawnSubagentTask } =
+      await import("../../dyad/sandbox/subagentLoop.ts");
     const llm = {
       async *stream(messages: any, opts?: any) {
         const chat = formatChatMessagesForEndpoint(
@@ -613,12 +644,16 @@ export const spawnSubagentTool = defineTool({
           signal: opts?.signal ?? ctx.signal,
         });
         for await (const chunk of stream) {
-          if (chunk.type === "token" && chunk.content) yield { type: "token", content: chunk.content };
-          else if (chunk.type === "tool_call" && chunk.toolCall) yield { type: "tool_call", toolCall: chunk.toolCall };
+          if (chunk.type === "token" && chunk.content)
+            yield { type: "token", content: chunk.content };
+          else if (chunk.type === "tool_call" && chunk.toolCall)
+            yield { type: "tool_call", toolCall: chunk.toolCall };
         }
       },
     };
-    const task = parsed.context ? `${parsed.context}\n\nASSIGNMENT: ${parsed.assignment}` : parsed.assignment;
+    const task = parsed.context
+      ? `${parsed.context}\n\nASSIGNMENT: ${parsed.assignment}`
+      : parsed.assignment;
     const id = spawnSubagentTask({
       appPath: ctx.appPath,
       sessionId: ctx.sessionId,
@@ -639,7 +674,8 @@ export const spawnSubagentTool = defineTool({
       hint: "Poll with check_subagent_status or wait_agents. Continue with send_message/followup_task.",
     };
   },
-  presentCall: (args: any) => `Spawn ${args.persona ?? "generic"} sub-agent: ${String(args.task_name ?? args.task ?? "").slice(0, 80)}`,
+  presentCall: (args: any) =>
+    `Spawn ${args.persona ?? "generic"} sub-agent: ${String(args.task_name ?? args.task ?? "").slice(0, 80)}`,
 });
 
 export const ALL_CORE_TOOLS: ToolDef[] = [

@@ -169,6 +169,15 @@ export const PlanExitHarnessEvent = Schema.Struct({
 });
 export type PlanExitHarnessEvent = typeof PlanExitHarnessEvent.Type;
 
+/** User steering/follow-up injected into a live turn (or launching one).
+ * Persisted so later turns remember approvals and mid-turn instructions. */
+export const SteerHarnessEvent = Schema.Struct({
+  type: Schema.Literal("steer"),
+  sessionId: Schema.String,
+  prompt: Schema.String,
+});
+export type SteerHarnessEvent = typeof SteerHarnessEvent.Type;
+
 /** update_todos live push (persistent TodoList header above the transcript). */
 export const TodoItemSchema = Schema.Struct({
   id: Schema.String,
@@ -268,6 +277,7 @@ export const HarnessEvent = Schema.Union([
   ErrorHarnessEvent,
   UiPromptHarnessEvent,
   UiPromptWithdrawHarnessEvent,
+  SteerHarnessEvent,
   UiRevealHarnessEvent,
   PlanUpdateHarnessEvent,
   PlanExitHarnessEvent,

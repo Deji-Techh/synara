@@ -5,13 +5,15 @@ import { describe, expect, it } from "vitest";
 import type { LLMAdapter } from "../../harness/loop/loop.ts";
 import { defineTool } from "../../harness/tools/defineTool.ts";
 import { z } from "zod";
-import {
-  clearTaskRegistries,
-  formatSubagentStatus,
-} from "./taskRegistry.ts";
+import { clearTaskRegistries, formatSubagentStatus } from "./taskRegistry.ts";
 import { runSubagentLoop, spawnSubagentTask } from "./subagentLoop.ts";
 
-function fakeLlm(chunks: Array<{ type: "token"; content: string } | { type: "tool_call"; toolCall: { id: string; name: string; args: unknown } }>): LLMAdapter {
+function fakeLlm(
+  chunks: Array<
+    | { type: "token"; content: string }
+    | { type: "tool_call"; toolCall: { id: string; name: string; args: unknown } }
+  >,
+): LLMAdapter {
   return {
     async *stream() {
       for (const chunk of chunks) yield chunk as never;
@@ -36,7 +38,10 @@ describe("dyad subagent loop", () => {
       system: "sys",
       task: "do it",
       tools: [echoTool],
-      llm: fakeLlm([{ type: "token", content: "Hel" }, { type: "token", content: "lo" }]),
+      llm: fakeLlm([
+        { type: "token", content: "Hel" },
+        { type: "token", content: "lo" },
+      ]),
     });
     expect(result.finalText).toBe("Hello");
     expect(result.stepCount).toBeGreaterThanOrEqual(1);
@@ -53,16 +58,27 @@ describe("dyad subagent loop", () => {
         throw new Error("must never run");
       },
     });
+    let calls = 0;
+    const onceLlm: LLMAdapter = {
+      async *stream() {
+        calls += 1;
+        if (calls === 1) {
+          yield {
+            type: "tool_call",
+            toolCall: { id: "c1", name: "spawn_subagent", args: {} },
+          } as never;
+        } else {
+          yield { type: "token", content: "done" } as never;
+        }
+      },
+    };
     const result = await runSubagentLoop({
       appPath: "/tmp/caide-test-app",
       sessionId: "s-sub2",
       system: "sys",
       task: "do it",
       tools: [echoTool, spawn],
-      llm: fakeLlm([
-        { type: "tool_call", toolCall: { id: "c1", name: "spawn_subagent", args: {} } },
-        { type: "token", content: "done" },
-      ]),
+      llm: onceLlm,
     });
     expect(result.finalText).toContain("done");
   });
@@ -96,16 +112,27 @@ describe("dyad subagent loop", () => {
         throw new Error("explorer must never write");
       },
     });
+    let calls = 0;
+    const onceLlm: LLMAdapter = {
+      async *stream() {
+        calls += 1;
+        if (calls === 1) {
+          yield {
+            type: "tool_call",
+            toolCall: { id: "c1", name: "write_file", args: {} },
+          } as never;
+        } else {
+          yield { type: "token", content: "read-only done" } as never;
+        }
+      },
+    };
     const explorerOut = await runSubagentLoop({
       appPath: "/tmp/caide-test-app",
       sessionId: "s-exp",
       system: "sys",
       task: "look",
       tools: [echoTool, writer],
-      llm: fakeLlm([
-        { type: "tool_call", toolCall: { id: "c1", name: "write_file", args: {} } },
-        { type: "token", content: "read-only done" },
-      ]),
+      llm: onceLlm,
       persona: "explorer",
     });
     // write_file is not offered: unknown-tool failure, then the token.
@@ -121,18 +148,20 @@ describe("dyad subagent loop", () => {
       modifiesState: true,
       execute: async () => "ran",
     });
-    // No channel and no stored allow → declined, surfaced as a failed call.
-    const out = await runSubagentLoop({
-      appPath: "/tmp/caide-test-app",
-      sessionId: "s-noconsent",
-      system: "sys",
-      task: "run",
-      tools: [runner],
-      llm: fakeLlm([
-        { type: "tool_call", toolCall: { id: "c1", name: "run_command", args: {} } },
-        { type: "token", content: "blocked" },
-      ]),
-    });
-    expect(out.finalText).toContain("blocked");
+    // No channel and no stored allow → declined every step, which now fails
+    // loud as VALIDATION_LOOP instead of looping silently to maxSteps.
+    await expect(
+      runSubagentLoop({
+        appPath: "/tmp/caide-test-app",
+        sessionId: "s-noconsent",
+        system: "sys",
+        task: "run",
+        tools: [runner],
+        llm: fakeLlm([
+          { type: "tool_call", toolCall: { id: "c1", name: "run_command", args: {} } },
+          { type: "token", content: "blocked" },
+        ]),
+      }),
+    ).rejects.toThrow(/VALIDATION_LOOP/);
   });
 });

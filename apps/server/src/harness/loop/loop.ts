@@ -248,7 +248,6 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
   inbox.markProcessing(true);
 
   let step = 0;
-  const executedReadOnlyToolSignatures = new Map<string, number>();
   // Silent-turn + retry-loop guards (a completed turn with zero assistant
   // output is always a bug — the user stares at a dead chat):
   // - producedOutput: any token or terminal tool event this turn.
@@ -263,6 +262,13 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
   let emptyStepRetriesLeft = 1;
   const consecutiveFailureCounts = new Map<string, number>();
   let lastFailureSignature: string | null = null;
+  // End-text rule: a turn that never says anything readable is a silent
+  // completion (the user stares at tool rows and no reply). Track real text
+  // separately from tool activity, plus the legitimate textless endings:
+  // semantic-stop handoffs (the card is the surface) and summary-only turns.
+  let producedText = false;
+  let handoffStop = false;
+  const executedToolNames = new Set<string>();
   // Per-step routing state: what the previous step did.
   let lastStepAllReadOnly = true;
   let hasMutatedThisTurn = false;
@@ -366,6 +372,7 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
               stepText += chunk.content;
               producedOutput = true;
               awaitingUserFollowUp = false;
+              if (chunk.content.trim().length > 0) producedText = true;
               yield emit({
                 type: "token",
                 sessionId,
@@ -409,17 +416,29 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
       }
 
       // If no tool calls occurred, LLM completed its generation for the turn —
-      // unless it produced NOTHING (no text, no calls). An all-silent turn is
-      // never a valid completion: either the provider glitched (retry once
-      // with an explicit nudge) or the model is stuck (fail loud so the user
-      // sees an error instead of a dead chat).
+      // unless it produced NOTHING readable. A turn that ends with no
+      // assistant text is never a valid completion (the ee6dbef7 case: tools
+      // ran, then an empty step silently completed the turn): either the
+      // provider glitched (retry once with an explicit nudge) or the model
+      // is stuck (fail loud so the user sees an error instead of a dead
+      // chat). Legitimate textless endings: semantic-stop handoffs (the
+      // approval card is the surface) and summary-only title turns.
       if (pendingToolCalls.length === 0) {
-        if (stepText.trim().length === 0 && (!producedOutput || awaitingUserFollowUp)) {
+        const onlySummaryTools =
+          executedToolNames.size > 0 &&
+          [...executedToolNames].every((name) => name === "set_chat_summary");
+        const missingReply =
+          stepText.trim().length === 0 &&
+          !handoffStop &&
+          !onlySummaryTools &&
+          (!producedText || awaitingUserFollowUp);
+        if (missingReply) {
           if (emptyStepRetriesLeft > 0) {
             emptyStepRetriesLeft -= 1;
-            const nudge = awaitingUserFollowUp
-              ? "The user just answered your questions, but your last response was empty. Reply to their answers now — do not end silently and do not re-ask the same questions."
-              : "Your last response was empty (no text, no tool calls). Please respond to the user now instead of ending silently.";
+            const nudge =
+              awaitingUserFollowUp || producedOutput
+                ? "The user just got tool results (or answers) but your last response had no readable text. Summarize what happened and reply to the user now — do not end silently, do not re-ask answered questions."
+                : "Your last response was empty (no text, no tool calls). Please respond to the user now instead of ending silently.";
             stepTranscript.push({ role: "user", content: nudge } as ChatMessage);
             awaitingUserFollowUp = false;
             yield emit({
@@ -534,9 +553,9 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
             durationMs: Date.now() - startTime,
           });
           // Unknown tools loop the same way known ones do — count them.
-          if (recordFailureSignature(call.name, `Unknown tool: '${call.name}'`) >= 3) {
+          if (recordFailureSignature(call.name, `Unknown tool: '${call.name}'`) >= 5) {
             throw new Error(
-              `VALIDATION_LOOP: unknown tool '${call.name}' requested 3 times in a row.`,
+              `VALIDATION_LOOP: unknown tool '${call.name}' requested 5 times in a row.`,
             );
           }
           // Feed the failure back too — otherwise the model retries blind.
@@ -547,34 +566,20 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
         }
 
         try {
-          // Prevent infinite tool call loops: detect if the same read-only tool was called with identical arguments
-          const callSignature = `${resolvedName}:${JSON.stringify(call.args ?? {})}`;
-          const isReadOnly = toolDef.readOnly ?? false;
-          if (isReadOnly) {
-            const count = (executedReadOnlyToolSignatures.get(callSignature) ?? 0) + 1;
-            executedReadOnlyToolSignatures.set(callSignature, count);
-            if (count > 2) {
-              const noticeResult = {
-                notice: `Tool '${resolvedName}' has already executed with these arguments in this turn. No workspace changes occurred. Present your findings to the user now.`,
-              };
-              transcriptResult = noticeResult;
-              yield emit({
-                type: "tool_call",
-                sessionId,
-                id: call.id,
-                name: resolvedName,
-                args: call.args,
-                status: "completed",
-                result: noticeResult,
-                durationMs: Date.now() - startTime,
-              });
-              continue;
-            }
-          }
+          // NOTE: no same-args short-circuit for read-only tools (donor
+          // parity). An earlier guard faked a "already executed" result on
+          // the 3rd identical read — fabricating tool output the model then
+          // treats as ground truth. Legitimate polling (status checks,
+          // screenshots) re-executes by design; runaway repetition is
+          // bounded by maxSteps + the STEP_LIMIT event, and repeated
+          // FAILURES still trip VALIDATION_LOOP below.
 
           // Bound tool execution so a hung tool (network, missing dir) can't
-          // block the turn forever. Default 30s; long tools (preview start,
-          // APK builds) declare their own timeoutMs on the ToolDef.
+          // block the turn forever. Bound lives in the turn context
+          // (per-tool timeoutMs, default 600s) — there is deliberately NO
+          // step-budget race here (donor parity): a race murdered
+          // consent-parked tools at 30s, and human waits carry their own
+          // deadlines (5/30/30min) plus the turn abort.
           const executeCtx: ToolCallContext = {
             sessionId,
             toolId: call.id,
@@ -582,29 +587,7 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
           if (signal) executeCtx.signal = signal;
           if (options.requestConsent) executeCtx.requestConsent = options.requestConsent;
           if (options.consentStore) executeCtx.consentStore = options.consentStore;
-          const budgetMs =
-            toolDef.timeoutMs && Number.isFinite(toolDef.timeoutMs) && toolDef.timeoutMs > 0
-              ? Math.floor(toolDef.timeoutMs)
-              : 30_000;
-          const result = toolDef.waitsForUserInput
-            ? await toolDef.execute(call.args, executeCtx)
-            : await (async () => {
-                let timeoutId: ReturnType<typeof setTimeout> | undefined;
-                try {
-                  return await Promise.race([
-                    toolDef.execute(call.args, executeCtx),
-                    new Promise<never>((_, reject) => {
-                      timeoutId = setTimeout(() => {
-                        reject(new Error(`Tool '${resolvedName}' timed out after ${budgetMs}ms`));
-                      }, budgetMs);
-                    }),
-                  ]);
-                } finally {
-                  // Every settled race must release its timer (leaked timers
-                  // hold the loop open and reject into settled races).
-                  if (timeoutId !== undefined) clearTimeout(timeoutId);
-                }
-              })();
+          const result = await toolDef.execute(call.args, executeCtx);
 
           yield emit({
             type: "tool_call",
@@ -619,6 +602,7 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
           producedOutput = true;
           if (toolDef.waitsForUserInput) awaitingUserFollowUp = true;
           clearFailureSignatures();
+          executedToolNames.add(resolvedName);
           transcriptResult = result;
           if (stopTools.has(resolvedName)) stopAfterStep = true;
         } catch (err) {
@@ -627,10 +611,12 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
           transcriptResult = formattedErr;
           transcriptFailed = true;
           producedOutput = true;
+          executedToolNames.add(resolvedName);
 
-          // Same-signature failure dedup (all tools, not just read-only):
-          // three identical consecutive failures end the turn as failed
-          // instead of burning maxSteps on a validation/timeout loop.
+          // Same-signature failure dedup (all tools): five identical
+          // consecutive failures end the turn as failed instead of burning
+          // maxSteps. Polling tools succeed between polls so their counters
+          // reset — only true stuck loops trip this.
           const failureMessage = err instanceof Error ? err.message : String(err);
           const failureCount = recordFailureSignature(resolvedName, failureMessage);
 
@@ -644,7 +630,7 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
             result: formattedErr,
             durationMs: Date.now() - startTime,
           });
-          if (failureCount >= 3) {
+          if (failureCount >= 5) {
             yield emit({
               type: "error",
               sessionId,
@@ -682,9 +668,23 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
 
       // Semantic stop: a handoff tool ran this step (integration UI flow,
       // plan continue-gate) — end the turn instead of generating further.
+      // handoffStop also exempts the end-text rule: the approval card (not a
+      // text reply) is the legitimate surface of these turns.
       if (stopAfterStep && !signal?.aborted) {
+        handoffStop = true;
         break;
       }
+    }
+    // maxSteps exhaustion is not a success: say so loudly instead of landing
+    // on turn_end completed with work half-done.
+    if (step >= maxSteps && !signal?.aborted) {
+      yield emit({
+        type: "error",
+        sessionId,
+        code: "STEP_LIMIT",
+        message: `Stopped after ${maxSteps} steps without finishing. Send a follow-up to continue from here.`,
+        recoverable: false,
+      });
     }
   } finally {
     inbox.markProcessing(false);

@@ -105,6 +105,13 @@ describe("Harness Contracts", () => {
     };
     expect(Schema.decodeUnknownSync(HarnessEvent)(withdraw).type).toBe("ui_prompt_withdraw");
 
+    const steer: HarnessEventType = {
+      type: "steer",
+      sessionId: "s-123",
+      prompt: "keep going",
+    };
+    expect(Schema.decodeUnknownSync(HarnessEvent)(steer).type).toBe("steer");
+
     const update: HarnessEventType = {
       type: "plan_update",
       sessionId: "s-123",

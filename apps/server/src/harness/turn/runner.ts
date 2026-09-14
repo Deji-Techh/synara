@@ -251,13 +251,23 @@ export class CaideRunner {
     // Duplicate-send guard: a turn is genuinely running. A failover retry
     // (failoverConsumed set) owns the slot — it bypasses the guard. A fresh
     // send steers into the live loop's inbox instead of running a parallel
-    // loop; without an inbox there is nowhere to steer, so fall through to
-    // the legacy parallel run rather than dropping the prompt.
+    // loop; without an inbox there is nowhere to steer, so surface an error
+    // instead of forking a parallel loop against the same session (parallel
+    // loops double-parked questionnaires and forked transcript rows).
     if (turnId.startsWith("buffered:") && (input.failoverConsumed ?? []).length === 0) {
       if (input.inbox) {
         input.inbox.steer(input.prompt);
         return turnId;
       }
+      input.onEvent?.({
+        type: "error",
+        sessionId: input.sessionId,
+        code: "TURN_BUSY",
+        message:
+          "A turn is already running for this chat and it cannot receive follow-ups right now. Wait for it to finish, then send again.",
+        recoverable: true,
+      });
+      return turnId;
     }
     // Per-turn token accounting (provider-reported usage only). Declared
     // up front so every failure path (even before provider setup) can
@@ -490,6 +500,18 @@ export class CaideRunner {
           } else {
             compactedSummary = `[COMPRESSED CONTEXT — extractive fallback]\n${text.slice(0, 3000)}\n…\n${text.slice(-3000)}`;
           }
+          // Durable boundary: persist the summary + covered seq so FUTURE
+          // turns (and restarts) honor it — previously the summary died with
+          // the turn and context kept growing until provider 400s.
+          const coveredThroughSeq = chain.reduce((max, e) => Math.max(max, e.seq), -1);
+          if (compactedSummary && coveredThroughSeq >= 0) {
+            await storage
+              .append(input.sessionId, "compaction/summary", {
+                summary: compactedSummary,
+                coveredThroughSeq,
+              })
+              .catch(() => undefined);
+          }
         } catch {
           // keep full history for this turn
         } finally {
@@ -698,10 +720,16 @@ export class CaideRunner {
         prepareStep: ({ messages }) => repairToolPairing(messages),
         requestConsent: input.requestConsent ?? undefined,
         consentStore: sessionStores.consent,
-        // Semantic stop (donor stopWhen): plan handoff tools end the turn
-        // so the continue-gate takes over. add_integration follows with the
-        // DB milestone once the integration flow is validated end to end.
-        stopAfterTool: chatMode === "plan" ? ["write_plan", "exit_plan"] : [],
+        // Semantic stop (donor stopWhen): handoff tools end the turn so the
+        // human gate takes over. write_app_blueprint + add_integration stop
+        // in ALL modes (donor parity): the turn must not keep generating
+        // against pre-rename appPath or pre-provision backends, and approval
+        // arrives later via steerOrLaunch (launch-when-idle).
+        stopAfterTool: [
+          ...(chatMode === "plan" ? ["write_plan", "exit_plan"] : []),
+          "write_app_blueprint",
+          "add_integration",
+        ],
         // Per-step routing: scout for read-only phases, builder otherwise,
         // planner for plan turns (single mode always returns the turn adapter
         // via adapterForKind).

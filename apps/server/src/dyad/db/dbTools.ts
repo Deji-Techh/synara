@@ -362,7 +362,7 @@ export async function executeAddIntegration(
   // One live integration prompt per session (same supersede rule as
   // questionnaires — and parked under its OWN kind so questionnaire
   // supersede never dismisses it).
-  const { dismissPendingForSession } = await import("../plan/userPrompt.ts");
+  const { consumeTimedOut, dismissPendingForSession } = await import("../plan/userPrompt.ts");
   const transport = integrationTransport;
   for (const staleId of dismissPendingForSession(sessionId, "integration")) {
     transport.sendPromptWithdraw?.(sessionId, staleId);
@@ -371,6 +371,10 @@ export async function executeAddIntegration(
   transport.sendIntegrationPrompt(sessionId, requestId, provider);
   const answers = await waitForUserInput(requestId, sessionId, "integration", signal);
   if (!answers) {
+    if (consumeTimedOut(requestId)) {
+      transport.sendPromptWithdraw?.(sessionId, requestId);
+      return "The integration setup timed out without completion. Ask the user how they'd like to proceed (they can also connect later from settings).";
+    }
     return "The user dismissed the integration setup without completing it. Ask them how they'd like to proceed.";
   }
   const picked = (answers.provider === "neon" ? "neon" : "supabase") as DbProvider;

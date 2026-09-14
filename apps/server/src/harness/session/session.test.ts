@@ -187,4 +187,125 @@ describe("Milestone M2 — JSONL Session Storage & parentUuid Chain", () => {
     const diskContent = fs.readFileSync(path.join(tempDir, "session-debounce.jsonl"), "utf-8");
     expect(diskContent.trim().split("\n").length).toBe(3);
   });
+
+  it("chains flat harness events chronologically (no parent links)", async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "caide-chain-"));
+    const storage = new SessionStorage({ baseDir: dir, debounceMs: 1 });
+    const sid = "s-chain";
+    await storage.append(sid, "harness/event", {
+      type: "turn_start",
+      sessionId: sid,
+      prompt: "build x",
+    });
+    await storage.append(sid, "harness/event", {
+      type: "token",
+      sessionId: sid,
+      content: "On it. ",
+    });
+    await storage.append(sid, "harness/event", {
+      type: "tool_call",
+      sessionId: sid,
+      id: "c1",
+      name: "read_file",
+      args: { path: "a.ts" },
+      status: "started",
+    });
+    await storage.append(sid, "harness/event", {
+      type: "tool_call",
+      sessionId: sid,
+      id: "c1",
+      name: "read_file",
+      args: { path: "a.ts" },
+      status: "completed",
+      result: "contents",
+    });
+    await storage.flushAll();
+    const chain = await buildConversationChain(sid, undefined, storage);
+    // All four flat entries linked (previously: single latest entry only).
+    expect(chain).toHaveLength(4);
+    const messages = buildMessages(chain, { role: "builder", includeSystem: false });
+    const roles = messages.map((m) => m.role);
+    expect(roles).toEqual(["user", "assistant", "user"]);
+    // No consecutive same-role rows (Anthropic rejects those).
+    for (let i = 1; i < roles.length; i += 1) expect(roles[i]).not.toBe(roles[i - 1]);
+    const asst = messages[1] as { content: Array<{ type: string; name?: string }> };
+    expect(asst.content[0]).toMatchObject({ type: "text" });
+    expect(asst.content[1]).toMatchObject({ type: "tool_use", name: "read_file" });
+    const result = messages[2] as { content: Array<{ tool_use_id?: string }> };
+    expect(result.content[0]).toMatchObject({ type: "tool_result", tool_use_id: "c1" });
+  });
+
+  it("projects answers, steers, and errors into later-turn context", async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "caide-chain2-"));
+    const storage = new SessionStorage({ baseDir: dir, debounceMs: 1 });
+    const sid = "s-chain2";
+    await storage.append(sid, "harness/event", {
+      type: "turn_start",
+      sessionId: sid,
+      prompt: "q?",
+    });
+    await storage.append(sid, "harness/event", {
+      type: "tool_call",
+      sessionId: sid,
+      id: "q1",
+      name: "planning_questionnaire",
+      args: {},
+      status: "completed",
+      result: "**Q?**\nGreat",
+    });
+    await storage.append(sid, "harness/event", {
+      type: "turn_end",
+      sessionId: sid,
+      status: "completed",
+    });
+    await storage.append(sid, "harness/event", {
+      type: "steer",
+      sessionId: sid,
+      prompt: "approved, build it",
+    });
+    await storage.flushAll();
+    const messages = buildMessages(await buildConversationChain(sid, undefined, storage), {
+      role: "builder",
+      includeSystem: false,
+    });
+    const texts = messages.map((m) => JSON.stringify(m.content));
+    expect(texts.some((t) => t.includes("Great"))).toBe(true);
+    expect(texts.some((t) => t.includes("approved, build it"))).toBe(true);
+  });
+
+  it("honors durable compaction boundaries across turns", async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "caide-chain3-"));
+    const storage = new SessionStorage({ baseDir: dir, debounceMs: 1 });
+    const sid = "s-chain3";
+    await storage.append(sid, "harness/event", {
+      type: "turn_start",
+      sessionId: sid,
+      prompt: "alpha task",
+    });
+    await storage.append(sid, "harness/event", {
+      type: "token",
+      sessionId: sid,
+      content: "did stuff",
+    });
+    await storage.append(sid, "compaction/summary", {
+      summary: "Beta work is done.",
+      coveredThroughSeq: 1,
+    });
+    await storage.append(sid, "harness/event", {
+      type: "turn_start",
+      sessionId: sid,
+      prompt: "gamma task",
+    });
+    await storage.flushAll();
+    const messages = buildMessages(await buildConversationChain(sid, undefined, storage), {
+      role: "builder",
+      includeSystem: false,
+    });
+    const texts = messages.map((m) => JSON.stringify(m.content));
+    // Pre-boundary content gone, summary + new turn present.
+    expect(texts.some((t) => t.includes("alpha task"))).toBe(false);
+    expect(texts.some((t) => t.includes("did stuff"))).toBe(false);
+    expect(texts.some((t) => t.includes("Beta work is done."))).toBe(true);
+    expect(texts.some((t) => t.includes("gamma task"))).toBe(true);
+  });
 });

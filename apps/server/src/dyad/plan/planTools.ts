@@ -16,7 +16,12 @@ import {
   recordPlanPresented,
   writePlanFile,
 } from "./planStore.ts";
-import { dismissPendingForSession, nextRequestId, waitForUserInput } from "./userPrompt.ts";
+import {
+  consumeTimedOut,
+  dismissPendingForSession,
+  nextRequestId,
+  waitForUserInput,
+} from "./userPrompt.ts";
 
 export class PlanUiNotConnectedError extends Error {
   constructor(toolName: string) {
@@ -97,10 +102,10 @@ const QuestionSchema = z
     options: z
       .array(z.string())
       .min(1)
-      .max(5)
+      .max(3)
       .optional()
       .describe(
-        "Options for radio/checkbox questions. Keep to max 5 — users can always provide a custom answer via the free-form text input. Omit for text questions.",
+        "Options for radio/checkbox questions. Keep to max 3 — users can always provide a custom answer via the free-form text input. Omit for text questions.",
       ),
     required: z
       .boolean()
@@ -123,8 +128,8 @@ const planningQuestionnaireSchema = z.object({
   questions: z
     .array(QuestionSchema)
     .min(1, "questions array must not be empty")
-    .max(3, "questions array must have at most 3 questions")
-    .describe("A non empty array of 1-3 questions to present to the user"),
+    .max(5, "questions array must have at most 5 questions")
+    .describe("A non empty array of 1-5 questions to present to the user"),
 });
 
 export const planningQuestionnaireTool = defineTool({
@@ -145,7 +150,7 @@ The tool accepts ONLY a "questions" array.
 Each question object has these fields:
 - "question" (string, REQUIRED): The question text shown to the user
 - "type" (string, REQUIRED): One of "text", "radio", or "checkbox"
-- "options" (string array, REQUIRED for radio/checkbox, OMIT for text): 1-5 predefined choices
+- "options" (string array, REQUIRED for radio/checkbox, OMIT for text): 1-3 predefined choices
 - "id" (string, optional): Unique identifier, auto-generated if omitted
 - "required" (boolean, optional): Defaults to true
 - "placeholder" (string, optional): Placeholder for text inputs
@@ -183,7 +188,7 @@ WRONG — Empty options array:
 WRONG — Missing options for radio:
 { "type": "radio", "question": "..." }
 
-WRONG — More than 3 questions or more than 5 options
+WRONG — More than 5 questions or more than 3 options
 
 WRONG — Array with empty object (missing required "question" and "type" fields):
 { "questions": [{}] }
@@ -218,7 +223,13 @@ export async function executeQuestionnaire(
   t.sendQuestionnaire(sessionId, requestId, questions);
   const answers = await waitForUserInput(requestId, sessionId, "questionnaire", signal);
   if (!answers) {
-    return "The user dismissed the questionnaire without answering. Proceed with your best-guess defaults, state them explicitly in one short paragraph, and continue — do NOT restart completed work or re-ask the same questions.";
+    if (consumeTimedOut(requestId)) {
+      // Deadline expiry (donor: 5min) is not a user dismissal: withdraw the
+      // card so it can't zombie, and tell the model to ask in chat.
+      t.sendPromptWithdraw?.(sessionId, requestId);
+      return "The questionnaire timed out without answers. Ask the user how they'd like to proceed, or try asking in chat.";
+    }
+    return "The user dismissed the questionnaire without answering. Ask them how they'd like to proceed, or try asking in chat.";
   }
   return questions.map((q) => `**${q.question}**\n${answers[q.id!] || "(no answer)"}`).join("\n\n");
 }
@@ -542,7 +553,11 @@ export async function executeAskEnvVars(
   t.sendEnvVarRequest(sessionId, requestId, parsed.vars);
   const result = await waitForUserInput(requestId, sessionId, "env-vars", signal);
   if (result === null) {
-    return "User aborted or timed out without providing the environment variables. You must ask the user how they would like to proceed without these variables.";
+    if (consumeTimedOut(requestId)) {
+      t.sendPromptWithdraw?.(sessionId, requestId);
+      return "The key request timed out without answers. Ask the user how they would like to proceed without these variables.";
+    }
+    return "User dismissed without providing the environment variables. You must ask the user how they would like to proceed without these variables.";
   }
   let text = "User provided the following environment variables:\n\n";
   for (const [key, value] of Object.entries(result)) {

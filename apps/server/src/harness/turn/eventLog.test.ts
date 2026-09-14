@@ -14,6 +14,7 @@ import {
   flushTurnTokens,
   readHarnessEvents,
   setEventLogStorage,
+  tombstoneOrphanedPrompts,
 } from "./eventLog.ts";
 
 function isolated(): SessionStorage {
@@ -63,5 +64,63 @@ describe("harness event log + replay (e15)", () => {
     expect(events[0]).toMatchObject({ from: `s10` });
     expect(await readHarnessEvents(`missing-${Date.now()}`)).toEqual([]);
     setEventLogStorage(null);
+  });
+
+  it("boot sweep tombstones orphaned prompts but keeps settled ones", async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "caide-sweep-"));
+    const storage = new SessionStorage({ baseDir: dir, debounceMs: 1 });
+    setEventLogStorage(storage);
+    process.env.CAIDE_SESSIONS_DIR = dir;
+    try {
+      const sid = `s-sweep-${Date.now()}`;
+      const line = (data: unknown, seq: number) =>
+        JSON.stringify({
+          id: `${sid}-${seq}`,
+          parentUuid: null,
+          sessionId: sid,
+          seq,
+          time: 1000 + seq,
+          type: "harness/event",
+          data,
+        });
+      fs.writeFileSync(
+        path.join(dir, `${sid}.jsonl`),
+        [
+          line(
+            {
+              type: "ui_prompt",
+              sessionId: sid,
+              requestId: "r-orphan",
+              kind: "questionnaire",
+              payload: {},
+            },
+            0,
+          ),
+          line(
+            {
+              type: "ui_prompt",
+              sessionId: sid,
+              requestId: "r-settled",
+              kind: "questionnaire",
+              payload: {},
+            },
+            1,
+          ),
+          line({ type: "ui_prompt_withdraw", sessionId: sid, requestId: "r-settled" }, 2),
+        ].join("\n") + "\n",
+      );
+      const count = await tombstoneOrphanedPrompts();
+      expect(count).toBe(1);
+      await storage.flush(sid);
+      const events = await readHarnessEvents(sid);
+      const withdraws = events.filter((e) => e.type === "ui_prompt_withdraw");
+      expect(withdraws.map((e) => (e as { requestId: string }).requestId).sort()).toEqual([
+        "r-orphan",
+        "r-settled",
+      ]);
+    } finally {
+      delete process.env.CAIDE_SESSIONS_DIR;
+      setEventLogStorage(null);
+    }
   });
 });

@@ -54,6 +54,16 @@ export function presentBlueprint(sessionId: string, data: AppBlueprint): void {
   entry.approved = false;
 }
 
+/**
+ * Arm the gate for a new-app flow (called when a blueprint is drafted: from
+ * that point, mutating tools block until approval). Donor arms at app
+ * creation; drafting is our equivalent signal — a model that never drafts
+ * never arms, which the write_app_blueprint-first prompt rule covers.
+ */
+export function armBlueprintGate(sessionId: string): void {
+  get(sessionId).required = true;
+}
+
 export function approveBlueprint(sessionId: string, data?: AppBlueprint): AppBlueprint | null {
   const entry = get(sessionId);
   if (data) entry.data = data;

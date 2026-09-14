@@ -265,7 +265,7 @@ describe("dyad plan tools transplant (m2b)", () => {
       // let the tool park, then dismiss from the UI side
       await new Promise((r) => setTimeout(r, 5));
       dismissUserInput((events[events.length - 1] as any).requestId);
-      await expect(aborted).resolves.toMatch(/aborted or timed out/);
+      await expect(aborted).resolves.toMatch(/dismissed without providing/);
     } finally {
       setPlanTransport(null);
     }

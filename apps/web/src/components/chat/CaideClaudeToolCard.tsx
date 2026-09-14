@@ -257,6 +257,16 @@ export const CaideClaudeToolCard: React.FC<CaideClaudeToolCardProps> = ({
             {meta.target}
           </code>
         )}
+        {/* Screen-reader state: status is otherwise color/dot-only. */}
+        <span className="sr-only">
+          {cardState === "pending"
+            ? "Running"
+            : cardState === "error"
+              ? "Failed"
+              : cardState === "aborted"
+                ? "Stopped"
+                : "Done"}
+        </span>
         {cardState === "pending" && (
           <span className="size-1.5 rounded-full bg-blue-500 animate-pulse inline-block" />
         )}

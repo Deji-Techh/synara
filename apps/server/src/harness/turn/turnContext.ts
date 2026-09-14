@@ -166,18 +166,14 @@ export function createTurnContext(input: TurnContextInput): TurnContext {
   const store = input.store ?? new MemoryConsentStore();
   const options = input.options ?? {};
 
-  // Full access bypass: pre-allow every tool without an explicit user
-  // posture for this turn. Explicit "never" bans are preserved (only unset
-  // entries are filled). MCP + SQL paths resolve through these same
-  // session stores downstream, so one seeding covers every gate.
+  // Full access bypass: turn-scoped only. Deliberately NOT seeded into the
+  // session store: seeding would poison later turns (a full-access Turn 1
+  // would leave Ask-mode Turn 2 pre-approved). Explicit "never" bans are
+  // enforced in requireAgentToolConsent + stored-denied checks, which run
+  // before any bypass.
   const consentBypass =
     typeof input.runtimeMode === "string" &&
     input.runtimeMode.replace(/[^a-z]/gi, "").toLowerCase() === "fullaccess";
-  if (consentBypass) {
-    for (const def of UNIFIED_DEFS) {
-      if (store.get(def.name) == null) store.set(def.name, "always");
-    }
-  }
 
   // Provider: explicit id or auto by key presence. Local runtimes need no key.
   const providerId = input.providerId ?? resolveAutoProvider(input.settings ?? {});
@@ -279,12 +275,17 @@ export function createTurnContext(input: TurnContextInput): TurnContext {
       // auto-dismissed parked prompts at exactly 600s, zombifying the card).
       // Waiting tools get the caller's abort only — real cancel/steer still
       // unblocks via waitForUserInput's abort handling. Everything else gets
-      // abort-or-600s, whichever fires first.
+      // abort-or-budget, whichever fires first (per-tool timeoutMs, donor
+      // run_command default 120s, else 600s).
+      const budgetMs =
+        def.timeoutMs && Number.isFinite(def.timeoutMs) && def.timeoutMs > 0
+          ? Math.floor(def.timeoutMs)
+          : 600_000;
       const toolSignal = def.waitsForUserInput
         ? (signal ?? new AbortController().signal)
         : signal
-          ? AbortSignal.any([signal, AbortSignal.timeout(600_000)])
-          : AbortSignal.timeout(600_000);
+          ? AbortSignal.any([signal, AbortSignal.timeout(budgetMs)])
+          : AbortSignal.timeout(budgetMs);
       return def.execute(args, {
         signal: toolSignal,
         appPath: input.appPath,

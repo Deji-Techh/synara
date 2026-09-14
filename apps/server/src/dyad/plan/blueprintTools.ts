@@ -11,7 +11,12 @@ import { z } from "zod";
 import { defineTool, type ToolDef } from "../../harness/tools/defineTool.ts";
 import { CAIDE_FRAMEWORKS } from "../prompts/framework.ts";
 import { detectFrameworkFromDisk } from "../prompts/frameworkDetect.ts";
-import { getBlueprint, presentBlueprint, type AppBlueprint } from "./blueprintStore.ts";
+import {
+  armBlueprintGate,
+  getBlueprint,
+  presentBlueprint,
+  type AppBlueprint,
+} from "./blueprintStore.ts";
 
 export class BlueprintValidationError extends Error {
   constructor(message: string) {
@@ -21,19 +26,29 @@ export class BlueprintValidationError extends Error {
 }
 
 const VisualEntrySchema = z.object({
-  type: z.enum(["logo", "photo", "illustration", "icon", "background", "other"]).describe("The type of visual asset needed"),
+  type: z
+    .enum(["logo", "photo", "illustration", "icon", "background", "other"])
+    .describe("The type of visual asset needed"),
   description: z.string().describe("What this visual is for and where it will be used in the app"),
-  prompt: z.string().describe("A detailed image generation prompt: subject, style, colors, composition, mood"),
+  prompt: z
+    .string()
+    .describe("A detailed image generation prompt: subject, style, colors, composition, mood"),
 });
 
 const writeAppBlueprintSchema = z.object({
-  app_name: z.string().describe("A creative, memorable app name (1-3 words) based on the user's prompt"),
+  app_name: z
+    .string()
+    .describe("A creative, memorable app name (1-3 words) based on the user's prompt"),
   user_prompt: z.string().describe("The original user prompt describing what to build"),
   framework: z
     .enum(CAIDE_FRAMEWORKS as unknown as [string, ...string[]])
     .optional()
-    .describe("Project framework. Omit by default — the project's own framework is used. Only set when the user explicitly names a different stack."),
-  design_direction: z.string().describe("Design direction in 1-2 sentences: industry, audience, mood"),
+    .describe(
+      "Project framework. Omit by default — the project's own framework is used. Only set when the user explicitly names a different stack.",
+    ),
+  design_direction: z
+    .string()
+    .describe("Design direction in 1-2 sentences: industry, audience, mood"),
   primary_color: z
     .string()
     .regex(/^#[0-9a-fA-F]{6}$/, "primary_color must be a 6-digit hex code like '#3B82F6'")
@@ -104,9 +119,14 @@ export async function executeWriteAppBlueprint(
     framework,
     designDirection: parsed.design_direction,
     primaryColor: parsed.primary_color,
-    visuals: parsed.visuals.map((v) => ({ type: v.type, description: v.description, prompt: v.prompt })),
+    visuals: parsed.visuals.map((v) => ({
+      type: v.type,
+      description: v.description,
+      prompt: v.prompt,
+    })),
   };
   presentBlueprint(sessionId, blueprint);
+  armBlueprintGate(sessionId);
   const stored = getBlueprint(sessionId);
   if (stored) transport?.sendBlueprintUpdate(sessionId, stored);
   return "App blueprint written. Waiting for the user to review and approve it via the blueprint card.";

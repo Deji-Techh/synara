@@ -52,7 +52,7 @@ export async function executeSearchChats(
   const parsed = searchChatsSchema.parse(input);
   const keywords = keywordsOf(parsed.query);
   if (keywords.length === 0) {
-    return "No searchable keywords in the query — provide a concise phrase (e.g. \"auth provider decision\").";
+    return 'No searchable keywords in the query — provide a concise phrase (e.g. "auth provider decision").';
   }
   const limit = parsed.limit ?? 5;
   type Hit = { chatId: string; seq: number; score: number; excerpt: string };
@@ -97,14 +97,22 @@ export async function executeSearchChats(
 // --- read_chat (donor description verbatim) ---
 
 const readChatSchema = z.object({
-  chat_id: z.string().min(1).describe("Chat to read (a chat_id from search_chats, or the current session id)"),
+  chat_id: z
+    .string()
+    .min(1)
+    .describe("Chat to read (a chat_id from search_chats, or the current session id)"),
   around_message_id: z
     .number()
     .int()
     .nonnegative()
     .optional()
     .describe("Message seq to center on; returns surrounding discussion"),
-  offset: z.number().int().nonnegative().optional().describe("Chronological offset when paging (default 0)"),
+  offset: z
+    .number()
+    .int()
+    .nonnegative()
+    .optional()
+    .describe("Chronological offset when paging (default 0)"),
   limit: z.number().int().min(1).max(100).optional().describe("Max lines to return (default 30)"),
 });
 
@@ -146,7 +154,10 @@ export async function executeReadChat(
   } else {
     slice = lines.slice(parsed.offset ?? 0, (parsed.offset ?? 0) + limit);
   }
-  const text = slice.map((l) => `[${l.seq}] ${l.kind}: ${l.text}`).join("\n").slice(0, MAX_READ_CHARS);
+  const text = slice
+    .map((l) => `[${l.seq}] ${l.kind}: ${l.text}`)
+    .join("\n")
+    .slice(0, MAX_READ_CHARS);
   return `Chat ${parsed.chat_id} (${slice.length} of ${lines.length} lines):\n\n${text}`;
 }
 
@@ -178,7 +189,10 @@ export async function executeExploreChatHistory(
   const parsed = exploreChatHistorySchema.parse(input);
   const reformulations = [
     parsed.question,
-    ...parsed.question.split(/[,;?]+/).map((s) => s.trim()).filter((s) => s.length > 3),
+    ...parsed.question
+      .split(/[,;?]+/)
+      .map((s) => s.trim())
+      .filter((s) => s.length > 3),
   ].slice(0, 3);
   const cited = new Map<string, { chatId: string; seq: number; score: number; text: string }>();
   const candidates = listSessionIds(sessionId);
@@ -190,6 +204,21 @@ export async function executeExploreChatHistory(
     const prev = cited.get(key);
     if (!prev || hit.score > prev.score) {
       cited.set(key, { chatId: hit.sessionId, seq: hit.seq, score: hit.score, text: hit.excerpt });
+    }
+  }
+  // Thread-first: the CURRENT chat is excluded from candidates above, so
+  // score it directly — its passages outrank every other chat in labeling.
+  for (const reformulation of reformulations) {
+    const keywords = keywordsOf(reformulation);
+    for (const line of readSessionLines(sessionId)) {
+      const score = scoreLine(line, keywords);
+      if (score > 0) {
+        const key = `${sessionId}:${line.seq}`;
+        const prev = cited.get(key);
+        if (!prev || score > prev.score) {
+          cited.set(key, { chatId: sessionId, seq: line.seq, score, text: line.text });
+        }
+      }
     }
   }
   if (cited.size === 0) {
@@ -226,10 +255,29 @@ export async function executeExploreChatHistory(
     if (a.chatId !== b.chatId) return a.chatId < b.chatId ? -1 : 1;
     return a.seq - b.seq;
   });
-  const body = ranked
-    .map((c) => `- [chat ${c.chatId} @${c.seq}] ${c.text.slice(0, MAX_EXCERPT_CHARS)}`)
-    .join("\n");
-  return `History report for "${parsed.question}" (${ranked.length} cited passages, oldest first — later statements supersede earlier ones):\n\n${body}`;
+  // Thread-first labeling: the current chat's passages are THIS conversation
+  // and come first; everything else is explicitly another chat. Models
+  // otherwise present other threads' history as current-thread memory.
+  const own: string[] = [];
+  const other: string[] = [];
+  for (const c of ranked) {
+    const line = `- [chat ${c.chatId} @${c.seq}] ${c.text.slice(0, MAX_EXCERPT_CHARS)}`;
+    if (c.chatId === sessionId) own.push(line);
+    else other.push(line);
+  }
+  const sections: string[] = [];
+  if (own.length > 0) {
+    sections.push(`## Current chat (this conversation):\n\n${own.join("\n")}`);
+  }
+  if (other.length > 0) {
+    sections.push(
+      `## Other chats (DIFFERENT conversations — do NOT present these as this chat's history; verify with the user first):\n\n${other.join("\n")}`,
+    );
+  }
+  return (
+    `History report for "${parsed.question}" (${ranked.length} cited passages, oldest first — later statements supersede earlier ones):\n\n` +
+    sections.join("\n\n")
+  );
 }
 
 export const ALL_CHAT_HISTORY_TOOLS: ToolDef[] = [
