@@ -6,18 +6,25 @@
 // Donor: dyad x caide local_agent/userInputResolvers + questionnaireResolver
 // + envVarResolver (behavior port, Electron stripped).
 
+import { randomUUID } from "node:crypto";
+
 export interface PendingPrompt {
   requestId: string;
   sessionId: string;
   kind: "questionnaire" | "env-vars" | "integration";
   resolve: (value: Record<string, string> | null) => void;
+  /** Abort listener handle (removed on settle to avoid listener leaks). */
+  onAbort?: () => void;
+  signal?: AbortSignal;
 }
 
 const pending = new Map<string, PendingPrompt>();
 
-let counter = 0;
 export function nextRequestId(kind: PendingPrompt["kind"]): string {
-  return `${kind}:${Date.now()}:${++counter}`;
+  // UUID suffix (not a process counter): counters restart at zero on every
+  // server restart, which reused requestIds and collided with durable
+  // withdrawal tombstones — replay then dropped live cards.
+  return `${kind}:${Date.now()}:${randomUUID().slice(0, 8)}`;
 }
 
 /** Park the turn until the user answers (null = dismissed/aborted). */
@@ -29,24 +36,25 @@ export function waitForUserInput(
 ): Promise<Record<string, string> | null> {
   return new Promise((resolve) => {
     const entry: PendingPrompt = { requestId, sessionId, kind, resolve };
-    pending.set(requestId, entry);
+    const done = (value: Record<string, string> | null) => {
+      if (entry.signal && entry.onAbort) entry.signal.removeEventListener("abort", entry.onAbort);
+      pending.delete(requestId);
+      resolve(value);
+    };
+    entry.resolve = done;
     if (signal) {
       if (signal.aborted) {
-        pending.delete(requestId);
-        resolve(null);
+        done(null);
         return;
       }
-      signal.addEventListener(
-        "abort",
-        () => {
-          if (pending.get(requestId) === entry) {
-            pending.delete(requestId);
-            resolve(null);
-          }
-        },
-        { once: true },
-      );
+      const onAbort = () => {
+        if (pending.get(requestId) === entry) done(null);
+      };
+      entry.signal = signal;
+      entry.onAbort = onAbort;
+      signal.addEventListener("abort", onAbort, { once: true });
     }
+    pending.set(requestId, entry);
   });
 }
 

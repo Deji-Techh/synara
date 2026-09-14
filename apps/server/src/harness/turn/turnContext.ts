@@ -101,6 +101,8 @@ export interface TurnContextInput {
   options?: ToolSetOptions;
   requestConsent?: ConsentRequestFn;
   autoApproveNonSchemaSql?: boolean;
+  /** Composer access mode (e.g. "full-access") — drives consent bypass. */
+  runtimeMode?: string;
   /** MCP consent round-trip for sandbox host calls (gateway bridge). */
   requestMcpConsent?: import("../../dyad/mcp/mcpConsent.ts").McpConsentRequestFn;
 }
@@ -163,6 +165,19 @@ export function allUnifiedToolDefs(): ToolDef[] {
 export function createTurnContext(input: TurnContextInput): TurnContext {
   const store = input.store ?? new MemoryConsentStore();
   const options = input.options ?? {};
+
+  // Full access bypass: pre-allow every tool without an explicit user
+  // posture for this turn. Explicit "never" bans are preserved (only unset
+  // entries are filled). MCP + SQL paths resolve through these same
+  // session stores downstream, so one seeding covers every gate.
+  const consentBypass =
+    typeof input.runtimeMode === "string" &&
+    input.runtimeMode.replace(/[^a-z]/gi, "").toLowerCase() === "fullaccess";
+  if (consentBypass) {
+    for (const def of UNIFIED_DEFS) {
+      if (store.get(def.name) == null) store.set(def.name, "always");
+    }
+  }
 
   // Provider: explicit id or auto by key presence. Local runtimes need no key.
   const providerId = input.providerId ?? resolveAutoProvider(input.settings ?? {});
@@ -254,6 +269,7 @@ export function createTurnContext(input: TurnContextInput): TurnContext {
         store,
         autoApproveNonSchemaSql: input.autoApproveNonSchemaSql,
         requestConsent,
+        bypassConsent: consentBypass,
         ...(signal ? { signal } : {}),
       });
       if (!allowed) throw new Error(`Tool call declined: ${toolName}`);
@@ -274,7 +290,15 @@ export function createTurnContext(input: TurnContextInput): TurnContext {
         appPath: input.appPath,
         sessionId: input.sessionId,
         toolId,
-        ...(input.requestMcpConsent ? { requestMcpConsent: input.requestMcpConsent } : {}),
+        ...(input.requestMcpConsent
+          ? {
+              // Full access answers MCP consent directly (stored "denied"
+              // still blocks first inside requireMcpToolConsent).
+              requestMcpConsent: consentBypass
+                ? async () => "accept-always" as const
+                : input.requestMcpConsent,
+            }
+          : {}),
       });
     },
     routeToolEvent(toolName: string): { revealDatabase: boolean } {

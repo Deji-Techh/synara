@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { DisclosureRegion } from "~/components/ui/DisclosureRegion";
+import { cn } from "~/lib/utils";
 
 export interface CheckpointCardProps {
   id: string;
@@ -20,17 +22,16 @@ export function CheckpointCard({
   const [feedback, setFeedback] = useState("");
 
   return (
-    <div className="my-4 p-4 rounded-2xl bg-[#1A1A1A] border border-[#2A2A2A] text-white shadow-xl max-w-2xl">
-      <div className="flex items-center space-x-2 mb-2">
-        <span className="text-lg">🔍</span>
-        <h3 className="font-semibold text-sm tracking-wide text-neutral-200">Review Required</h3>
+    <div className="my-2 rounded-xl border border-border/60 bg-card p-3 text-card-foreground shadow-sm">
+      <div className="mb-2 flex items-center space-x-2">
+        <h3 className="text-sm font-semibold tracking-wide">Review Required</h3>
       </div>
 
-      <p className="text-sm text-neutral-300 font-medium mb-3">{reason}</p>
+      <p className="mb-3 text-sm font-medium text-foreground/90">{reason}</p>
 
       {diff && (
         <div className="mb-4">
-          <div className="bg-[#121212] rounded-xl p-3 border border-[#262626] font-mono text-xs text-neutral-300 overflow-x-auto whitespace-pre-wrap max-h-72">
+          <div className="max-h-72 overflow-auto rounded-lg border border-border/50 bg-muted/30 p-2.5 font-mono text-xs whitespace-pre-wrap text-foreground/85">
             {showFullDiff
               ? diff
               : diff.slice(0, 400) + (diff.length > 400 ? "\n\n... (truncated)" : "")}
@@ -40,7 +41,7 @@ export function CheckpointCard({
             <button
               type="button"
               onClick={() => setShowFullDiff(!showFullDiff)}
-              className="mt-1 text-xs text-neutral-400 hover:text-white underline"
+              className="mt-1 text-xs text-muted-foreground underline hover:text-foreground"
             >
               {showFullDiff ? "Hide Full Diff" : "View Full Diff"}
             </button>
@@ -48,20 +49,20 @@ export function CheckpointCard({
         </div>
       )}
 
-      {isRequestingChange ? (
+      <DisclosureRegion open={isRequestingChange}>
         <div className="mt-3 space-y-2">
           <textarea
             value={feedback}
             onChange={(e) => setFeedback(e.target.value)}
             placeholder="Specify what changes you would like made..."
             rows={3}
-            className="w-full bg-[#121212] border border-[#333333] rounded-xl p-2.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-neutral-400"
+            className="w-full rounded-xl border border-border/70 bg-background p-2.5 text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
           />
           <div className="flex justify-end space-x-2">
             <button
               type="button"
               onClick={() => setIsRequestingChange(false)}
-              className="px-3 py-1.5 rounded-full text-xs text-neutral-400 hover:text-white"
+              className="rounded-full px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground"
             >
               Cancel
             </button>
@@ -72,30 +73,34 @@ export function CheckpointCard({
                 onRequestChange(id, feedback);
                 setIsRequestingChange(false);
               }}
-              className="px-4 py-1.5 rounded-full text-xs font-semibold bg-[#E8493C] text-white hover:bg-opacity-90 disabled:opacity-50"
+              className="rounded-full bg-destructive px-4 py-1.5 text-xs font-semibold text-destructive-foreground hover:opacity-90 disabled:opacity-50"
             >
               Submit Changes
             </button>
           </div>
         </div>
-      ) : (
-        <div className="flex items-center space-x-3 mt-3">
+      </DisclosureRegion>
+      {!isRequestingChange ? (
+        <div className="mt-3 flex items-center space-x-3">
           <button
             type="button"
             onClick={() => onApprove(id)}
-            className="px-5 py-2 rounded-full text-xs font-semibold bg-white text-[#0D0D0D] hover:bg-neutral-200 transition-colors shadow-sm"
+            className={cn(
+              "rounded-full bg-primary px-5 py-2 text-xs font-semibold text-primary-foreground",
+              "transition-colors hover:opacity-90",
+            )}
           >
             Approve
           </button>
           <button
             type="button"
             onClick={() => setIsRequestingChange(true)}
-            className="px-4 py-2 rounded-full text-xs font-medium border border-[#333333] text-neutral-300 hover:text-white hover:border-neutral-500 transition-colors"
+            className="rounded-full border border-border/70 px-4 py-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             Request Change
           </button>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

@@ -8,6 +8,7 @@
 
 export type McpConsent = "ask" | "always" | "denied";
 export type McpConsentDecision = "accept-once" | "accept-always" | "decline";
+import { randomUUID } from "node:crypto";
 
 export interface McpConsentStore {
   get(serverId: number | string, toolName: string): McpConsent | undefined;
@@ -43,7 +44,6 @@ interface PendingEntry {
   resolve: (d: McpConsentDecision) => void;
 }
 
-let counter = 0;
 const pending = new Map<string, PendingEntry>();
 
 export function waitForMcpConsent(
@@ -68,12 +68,12 @@ export function waitForMcpConsent(
   });
 }
 
-export function resolveMcpConsent(requestId: string, decision: McpConsentDecision): void {
+export function resolveMcpConsent(requestId: string, decision: McpConsentDecision): boolean {
   const entry = pending.get(requestId);
-  if (entry) {
-    pending.delete(requestId);
-    entry.resolve(decision);
-  }
+  if (!entry) return false;
+  pending.delete(requestId);
+  entry.resolve(decision);
+  return true;
 }
 
 /** Whether this MCP consent request is still awaiting an answer. */
@@ -133,7 +133,7 @@ export async function requireMcpToolConsent(params: {
     return { allowed: true, autoApproveReason: params.autoApproved.reason };
   }
 
-  const requestId = `mcp:${params.serverName}:${params.toolName}:${++counter}`;
+  const requestId = `mcp:${params.serverName}:${params.toolName}:${randomUUID().slice(0, 8)}`;
   if (params.signal?.aborted) return { allowed: false };
   const decisionPromise = waitForMcpConsent(requestId, params.sessionId, params.signal);
   void Promise.resolve()

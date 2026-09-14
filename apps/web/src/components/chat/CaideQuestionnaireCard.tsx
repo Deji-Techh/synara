@@ -18,10 +18,17 @@ interface CaideQuestionnaireCardProps {
   questions: QuestionnaireQuestion[];
 }
 
-export const CaideQuestionnaireCard: React.FC<CaideQuestionnaireCardProps> = () => {
+export const CaideQuestionnaireCard: React.FC<CaideQuestionnaireCardProps> = (props) => {
+  // Transcript truth: render the tag's own questions ALWAYS. The live
+  // pending store previously overwrote every history card with the
+  // currently-open set (or flipped old cards to Done) — history lied.
+  const questions = props.questions;
   const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
   const [submitted, setSubmitted] = useState(false);
   const pending = useOpenPendingUserInput();
+  // Interactive only while an orchestration questionnaire is actually open;
+  // history tags render read-only.
+  const interactive = pending != null && !submitted;
 
   const handleSelectOption = (qKey: string, opt: string, isMulti: boolean) => {
     if (submitted) return;
@@ -34,6 +41,12 @@ export const CaideQuestionnaireCard: React.FC<CaideQuestionnaireCardProps> = () 
       return { ...prev, [qKey]: opt };
     });
   };
+
+  // Gate empty submits (model reads them as dismissal and re-asks).
+  const answeredCount = questions.filter((q, idx) => {
+    const v = answers[q.id || `q_${idx}`];
+    return Array.isArray(v) ? v.length > 0 : typeof v === "string" && v.trim().length > 0;
+  }).length;
 
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
@@ -61,9 +74,13 @@ export const CaideQuestionnaireCard: React.FC<CaideQuestionnaireCardProps> = () 
     [pending, submitted, answers],
   );
 
-  if (!pending) {
+  if (!interactive) {
     return (
-      <CaideCard state="complete" accent="neutral" className="border border-border/40 bg-card/40 my-1">
+      <CaideCard
+        state="complete"
+        accent="neutral"
+        className="border border-border/40 bg-card/40 my-1"
+      >
         <CaideCardHeader
           icon={<IconCheck size={14} className="text-muted-foreground/80" />}
           accent="neutral"
@@ -71,28 +88,45 @@ export const CaideQuestionnaireCard: React.FC<CaideQuestionnaireCardProps> = () 
           <div className="flex w-full items-center justify-between text-xs">
             <div className="flex items-center gap-1.5">
               <CaideBadge accent="neutral">Questionnaire</CaideBadge>
-              <span className="text-muted-foreground">Answers recorded</span>
+              <span className="text-muted-foreground">
+                {questions.length > 0
+                  ? `${questions.length} question${questions.length === 1 ? "" : "s"}`
+                  : "Answers recorded"}
+              </span>
             </div>
             <span className="text-[11px] text-muted-foreground/60">Done</span>
           </div>
         </CaideCardHeader>
+        {questions.length > 0 ? (
+          <div className="px-2.5 pb-2.5 pt-1 space-y-2 text-xs">
+            {questions.map((q, idx) => (
+              <div key={q.id || `q_${idx}`} className="space-y-1">
+                <div className="font-medium text-foreground/80 text-xs leading-snug">
+                  {idx + 1}. {q.question}
+                </div>
+                {q.options && q.options.length > 0 ? (
+                  <div className="pl-3 text-[11px] text-muted-foreground">
+                    {q.options.join(" · ")}
+                  </div>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        ) : null}
       </CaideCard>
     );
   }
 
-  const questions = (pending.pending?.questions ?? []) as unknown as QuestionnaireQuestion[];
-
   return (
     <CaideCard state="pending" accent="info" className="border border-border/50 bg-card/60 my-1.5">
-      <CaideCardHeader
-        icon={<IconHelpCircle size={15} />}
-        accent="info"
-      >
+      <CaideCardHeader icon={<IconHelpCircle size={15} />} accent="info">
         <div className="flex w-full items-center justify-between text-xs">
           <div className="flex items-center gap-1.5">
             <CaideBadge accent="info">Questionnaire</CaideBadge>
             <span className="font-medium text-foreground/90">
-              {questions.length > 0 ? `${questions.length} question${questions.length === 1 ? "" : "s"}` : "Project questions"}
+              {questions.length > 0
+                ? `${questions.length} question${questions.length === 1 ? "" : "s"}`
+                : "Project questions"}
             </span>
           </div>
           <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[var(--info)]">
@@ -142,13 +176,12 @@ export const CaideQuestionnaireCard: React.FC<CaideQuestionnaireCardProps> = () 
                               : "border-muted-foreground/40",
                           )}
                         >
-                          {isSelected && (
-                            isMulti ? (
+                          {isSelected &&
+                            (isMulti ? (
                               <IconCheck size={10} strokeWidth={3} />
                             ) : (
                               <span className="size-1.5 rounded-full bg-white" />
-                            )
-                          )}
+                            ))}
                         </span>
                         <span className="flex-1">{opt}</span>
                       </button>
@@ -180,6 +213,8 @@ export const CaideQuestionnaireCard: React.FC<CaideQuestionnaireCardProps> = () 
               type="submit"
               size="sm"
               className="h-7 text-xs px-3 rounded-md font-medium"
+              disabled={answeredCount === 0}
+              title={answeredCount === 0 ? "Answer at least one question first" : undefined}
             >
               Submit answers
             </Button>

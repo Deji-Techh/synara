@@ -3,7 +3,7 @@
 // integration setup, tool + MCP consent) from harnessStore and answer over
 // the harness socket. Caide settings primitives + themed tool-card language.
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { answerConsent, answerUiPrompt } from "~/harnessWs";
@@ -73,12 +73,23 @@ function QuestionnaireCard(props: { sessionId: string; entry: UiPromptEntry; sen
         }>;
       }
     )?.questions ?? [];
-  const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
+  const [answers, setAnswers] = useState<Record<string, string | string[]>>(
+    () =>
+      harnessStore.getState().sessions[props.sessionId]?.answerDrafts[props.entry.requestId] ?? {},
+  );
   const [done, setDone] = useState(false);
+  // Double-submit guard: rapid clicks must not dispatch duplicate answers.
+  const answered = useRef(false);
   if (done) return null;
 
   const setOne = (id: string, value: string | string[]) =>
-    setAnswers((prev) => ({ ...prev, [id]: value }));
+    setAnswers((prev) => {
+      const next = { ...prev, [id]: value };
+      // Persist typed answers so reconnect replay (which remounts the card)
+      // never wipes what the user already typed.
+      harnessStore.setAnswerDraft(props.sessionId, props.entry.requestId, next);
+      return next;
+    });
 
   // Empty submits resolve as "(no answer)" everywhere, which the model reads
   // as a dismissal and then re-asks — the submit→hang→re-ask loop. Require at
@@ -89,6 +100,8 @@ function QuestionnaireCard(props: { sessionId: string; entry: UiPromptEntry; sen
   }).length;
 
   const submit = () => {
+    if (answered.current) return;
+    answered.current = true;
     const flat: Record<string, string> = {};
     for (const [k, v] of Object.entries(answers)) flat[k] = Array.isArray(v) ? v.join(", ") : v;
     answerUiPrompt(props.send, props.entry.requestId, flat);
@@ -96,6 +109,8 @@ function QuestionnaireCard(props: { sessionId: string; entry: UiPromptEntry; sen
     setDone(true);
   };
   const dismiss = () => {
+    if (answered.current) return;
+    answered.current = true;
     answerUiPrompt(props.send, props.entry.requestId, null);
     harnessStore.resolvePrompt(props.sessionId, props.entry.requestId);
     setDone(true);
@@ -183,14 +198,22 @@ function EnvVarsCard(props: { sessionId: string; entry: UiPromptEntry; send: Sen
     )?.vars ?? [];
   const [values, setValues] = useState<Record<string, string>>({});
   const [done, setDone] = useState(false);
+  const answered = useRef(false);
   if (done) return null;
 
+  // Gate empty submits (model reads them as dismissal and re-asks).
+  const filledCount = Object.values(values).filter((v) => v.trim().length > 0).length;
+
   const submit = () => {
+    if (answered.current || filledCount === 0) return;
+    answered.current = true;
     answerUiPrompt(props.send, props.entry.requestId, values);
     harnessStore.resolvePrompt(props.sessionId, props.entry.requestId);
     setDone(true);
   };
   const dismiss = () => {
+    if (answered.current) return;
+    answered.current = true;
     answerUiPrompt(props.send, props.entry.requestId, null);
     harnessStore.resolvePrompt(props.sessionId, props.entry.requestId);
     setDone(true);
@@ -217,7 +240,12 @@ function EnvVarsCard(props: { sessionId: string; entry: UiPromptEntry; send: Sen
           <Button size="xs" variant="ghost" onClick={dismiss}>
             Skip
           </Button>
-          <Button size="xs" onClick={submit}>
+          <Button
+            size="xs"
+            onClick={submit}
+            disabled={filledCount === 0}
+            title={filledCount === 0 ? "Fill at least one key first (or Skip)" : undefined}
+          >
             Provide keys
           </Button>
         </div>
@@ -235,9 +263,14 @@ function IntegrationCard(props: { sessionId: string; entry: UiPromptEntry; send:
   const [projectId, setProjectId] = useState("");
   const [managementToken, setManagementToken] = useState("");
   const [done, setDone] = useState(false);
+  const answered = useRef(false);
   if (done) return null;
 
+  const hasUrl = databaseUrl.trim().length > 0;
+
   const submit = () => {
+    if (answered.current || !hasUrl) return;
+    answered.current = true;
     answerUiPrompt(props.send, props.entry.requestId, {
       provider,
       databaseUrl,
@@ -248,6 +281,8 @@ function IntegrationCard(props: { sessionId: string; entry: UiPromptEntry; send:
     setDone(true);
   };
   const dismiss = () => {
+    if (answered.current) return;
+    answered.current = true;
     answerUiPrompt(props.send, props.entry.requestId, null);
     harnessStore.resolvePrompt(props.sessionId, props.entry.requestId);
     setDone(true);
@@ -293,7 +328,12 @@ function IntegrationCard(props: { sessionId: string; entry: UiPromptEntry; send:
           <Button size="xs" variant="ghost" onClick={dismiss}>
             Not now
           </Button>
-          <Button size="xs" onClick={submit}>
+          <Button
+            size="xs"
+            onClick={submit}
+            disabled={!hasUrl}
+            title={!hasUrl ? "Enter a DATABASE_URL first (or Not now)" : undefined}
+          >
             Connect
           </Button>
         </div>
@@ -316,9 +356,12 @@ function ConsentCard(props: {
     autoApproveReason?: string | null;
   };
   const [done, setDone] = useState(false);
+  const decided = useRef(false);
   if (done) return null;
 
   const decide = (decision: "accept-once" | "accept-always" | "decline") => {
+    if (decided.current) return;
+    decided.current = true;
     answerConsent(props.send, props.entry.requestId, decision);
     harnessStore.resolvePrompt(props.sessionId, props.entry.requestId);
     setDone(true);
@@ -366,8 +409,15 @@ export function HarnessPrompts(props: { sessionId: string; send: SendFn }) {
   const state = useHarnessStore();
   const prompts = state.sessions[props.sessionId]?.prompts ?? [];
 
+  if (prompts.length === 0) return null;
+
   return (
-    <div aria-live="polite">
+    <div>
+      {/* Screen-reader status lives apart from the interactive forms: an
+          aria-live wrapper around inputs announces token churn and typing. */}
+      <span className="sr-only" role="status">
+        {`${prompts.length} request${prompts.length === 1 ? "" : "s"} need${prompts.length === 1 ? "s" : ""} your answer`}
+      </span>
       {prompts.map((entry) => {
         switch (entry.kind) {
           case "questionnaire":

@@ -62,6 +62,8 @@ export interface TurnStartPayload {
   providerId?: string;
   modelId?: string;
   maxSteps?: number;
+  /** Composer access mode (e.g. "full-access") — drives consent bypass. */
+  runtimeMode?: string;
   providerSettings?: Record<
     string,
     {
@@ -317,7 +319,17 @@ export class HarnessHub {
 
   broadcastToSession(sessionId: string, event: HarnessEvent): void {
     const clients = this.sessionClients.get(sessionId);
-    if (!clients || clients.size === 0) return;
+    if (!clients || clients.size === 0) {
+      // Delivery diagnostic: a human-gate prompt broadcast to an empty room
+      // is live-lost (replay is the only recovery). Log it so missed cards
+      // name themselves instead of debugging as stale builds.
+      if (event.type === "ui_prompt") {
+        console.warn(
+          `[harness] ui_prompt ${event.kind} ${(event as { requestId?: unknown }).requestId} broadcast to empty room (session ${sessionId}) — live delivery missed, replay only`,
+        );
+      }
+      return;
+    }
     this.broadcastStats.broadcasts += 1;
     const payload = JSON.stringify(event);
     for (const client of [...clients]) {

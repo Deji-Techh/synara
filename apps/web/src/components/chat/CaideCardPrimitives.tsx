@@ -112,22 +112,14 @@ export const CaideCardHeader: React.FC<CaideCardHeaderProps> = ({
 export const CaideBadge: React.FC<{ children: ReactNode; accent?: CardAccent }> = ({
   children,
 }) => {
-  return (
-    <span className="shrink-0 font-medium text-foreground/90">
-      {children}
-    </span>
-  );
+  return <span className="shrink-0 font-medium text-foreground/90">{children}</span>;
 };
 
 export const CaideCardContent: React.FC<{ children: ReactNode; className?: string }> = ({
   children,
   className = "",
 }) => {
-  return (
-    <div className={`mt-1 text-xs ${className}`}>
-      {children}
-    </div>
-  );
+  return <div className={`mt-1 text-xs ${className}`}>{children}</div>;
 };
 
 /**
@@ -161,16 +153,14 @@ export const CaideStateIndicator: React.FC<{
         className="inline-flex shrink-0 items-center gap-1 text-[11px] font-medium opacity-80"
         style={{ color: ACCENT_VAR.info }}
       >
-        <IconLoader2 size={11} className="animate-spin" />
+        <IconLoader2 size={11} className="animate-spin motion-reduce:animate-none" />
         {pendingLabel}
       </span>
     );
   }
   if (state === "complete") {
     return (
-      <span
-        className="inline-flex shrink-0 items-center gap-0.5 text-[11px] text-muted-foreground/50 transition-opacity group-hover:text-muted-foreground"
-      >
+      <span className="inline-flex shrink-0 items-center gap-0.5 text-[11px] text-muted-foreground/50 transition-opacity group-hover:text-muted-foreground">
         <IconCheck size={11} strokeWidth={2} className="opacity-70" />
         Done
       </span>

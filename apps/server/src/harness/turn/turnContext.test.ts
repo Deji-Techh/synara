@@ -220,4 +220,50 @@ describe("turn context wire (m3)", () => {
       ctx.cleanup();
     }
   });
+
+  it("full-access bypasses ask-default consent but preserves user bans", async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "caide-bypass-"));
+    const ctx = createTurnContext({
+      sessionId: "s-bypass",
+      appPath: dir,
+      settings: { providerSettings: { openai: { apiKey: "sk-test" } } },
+      runtimeMode: "full-access",
+      // Throwing transport: any consent park attempt fails the test.
+      requestConsent: async () => {
+        throw new Error("consent should never be requested in full access");
+      },
+    });
+    try {
+      // run_command defaults to ask — runs without a card in full access
+      // (resolves instead of parking on the throwing requestConsent).
+      const out = await ctx.executeWithConsent(
+        "run_command",
+        { command: "echo bypass-ok" },
+        "t-bypass",
+      );
+      expect(out).toBeTruthy();
+    } finally {
+      ctx.cleanup();
+    }
+    // Explicit user bans still hold under full access: a "never" tool is
+    // filtered from the turn (unavailable) rather than auto-allowed.
+    const { MemoryConsentStore } = await import("../../dyad/tools/permissions.ts");
+    const banned = new MemoryConsentStore();
+    banned.set("run_command", "never");
+    const ctx2 = createTurnContext({
+      sessionId: "s-bypass-ban",
+      appPath: dir,
+      settings: { providerSettings: { openai: { apiKey: "sk-test" } } },
+      runtimeMode: "full-access",
+      store: banned,
+      requestConsent: async () => "accept-once",
+    });
+    try {
+      await expect(
+        ctx2.executeWithConsent("run_command", { command: "echo hi" }, "t-ban"),
+      ).rejects.toThrow(/not available/);
+    } finally {
+      ctx2.cleanup();
+    }
+  });
 });

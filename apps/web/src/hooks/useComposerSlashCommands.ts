@@ -1283,6 +1283,7 @@ export function useComposerSlashCommands(input: {
             appPath: harness.appPath,
             prompt: replacement,
             mode: item.command === "ask" ? "ask" : "agent",
+            ...(runtimeMode ? { runtimeMode } : {}),
             ...(slashRouting.providerId ? { providerId: slashRouting.providerId } : {}),
             ...(slashRouting.modelId ? { modelId: slashRouting.modelId } : {}),
           };

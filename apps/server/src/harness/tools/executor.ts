@@ -104,6 +104,12 @@ export async function executeTool<I, O>(
       const timer = setTimeout(() => {
         reject(new Error(`Tool execution timed out after ${timeoutMs}ms`));
       }, timeoutMs);
+      // Release the timer the moment the race settles either way — a leaked
+      // timer holds the loop open and rejects into an already-settled race.
+      void executionPromise.then(
+        () => clearTimeout(timer),
+        () => clearTimeout(timer),
+      );
 
       if (ctx.signal) {
         ctx.signal.addEventListener(

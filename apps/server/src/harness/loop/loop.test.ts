@@ -316,13 +316,16 @@ describe("Milestone M3 — Stateless Loop, Retry, Events, and Inbox", () => {
     expect(llmCalls).toBe(1);
     expect(executed).toEqual(["write_plan"]);
     expect(
-      emitted.filter((e) => e.type === "tool_call" && (e as { status: string }).status === "completed"),
+      emitted.filter(
+        (e) => e.type === "tool_call" && (e as { status: string }).status === "completed",
+      ),
     ).toHaveLength(1);
     expect(emitted.filter((e) => e.type === "stage")).toHaveLength(1);
   });
 
   it("selects the LLM adapter per step and tracks read-only state", async () => {
-    const seen: Array<{ step: number; lastStepAllReadOnly: boolean; hasMutatedThisTurn: boolean }> = [];
+    const seen: Array<{ step: number; lastStepAllReadOnly: boolean; hasMutatedThisTurn: boolean }> =
+      [];
     const used: string[] = [];
     const mkAdapter = (name: string): LLMAdapter => ({
       async *stream() {
@@ -336,7 +339,12 @@ describe("Milestone M3 — Stateless Loop, Retry, Events, and Inbox", () => {
     });
     const main = mkAdapter("main");
     const scout = mkAdapter("scout");
-    const readTool: ToolDefinition = { name: "read_file", description: "r", readOnly: true, execute: async () => "x" };
+    const readTool: ToolDefinition = {
+      name: "read_file",
+      description: "r",
+      readOnly: true,
+      execute: async () => "x",
+    };
     const loop = runLoop({
       sessionId: "session-select-llm",
       maxSteps: 3,
@@ -353,8 +361,16 @@ describe("Milestone M3 — Stateless Loop, Retry, Events, and Inbox", () => {
     }
     // Step 0 used the scout adapter; step 1 observed the read-only step 0.
     expect(used).toEqual(["scout", "main"]);
-    expect(seen[0]).toMatchObject({ step: 0, lastStepAllReadOnly: true, hasMutatedThisTurn: false });
-    expect(seen[1]).toMatchObject({ step: 1, lastStepAllReadOnly: true, hasMutatedThisTurn: false });
+    expect(seen[0]).toMatchObject({
+      step: 0,
+      lastStepAllReadOnly: true,
+      hasMutatedThisTurn: false,
+    });
+    expect(seen[1]).toMatchObject({
+      step: 1,
+      lastStepAllReadOnly: true,
+      hasMutatedThisTurn: false,
+    });
   });
 
   it("repairs orphaned tool blocks and estimates context", () => {
@@ -408,7 +424,9 @@ describe("Milestone M3 — Stateless Loop, Retry, Events, and Inbox", () => {
     }
     expect(calls).toBe(2);
     expect(tokens).toEqual(["partial", "continued"]);
-    expect(events.some((e) => e.type === "error" && (e as { code: string }).code === "STEP_RETRY")).toBe(true);
+    expect(
+      events.some((e) => e.type === "error" && (e as { code: string }).code === "STEP_RETRY"),
+    ).toBe(true);
   });
 
   it("gives up after retries are exhausted", async () => {
@@ -425,11 +443,13 @@ describe("Milestone M3 — Stateless Loop, Retry, Events, and Inbox", () => {
       llm: dead,
       buildMessages: () => [{ role: "user", content: "hi" }],
     });
-    await expect((async () => {
-      for await (const _ of loop) {
-        // drain
-      }
-    })()).rejects.toThrow("always down");
+    await expect(
+      (async () => {
+        for await (const _ of loop) {
+          // drain
+        }
+      })(),
+    ).rejects.toThrow("always down");
   });
 
   it("derives compaction thresholds from model windows", async () => {
@@ -472,7 +492,7 @@ describe("Milestone M3 — Stateless Loop, Retry, Events, and Inbox", () => {
           yield {
             type: "token",
             content:
-              'Writing the profile screen.\n<function=write_file><parameter=content>hello</parameter><parameter=path>app/profile.tsx</parameter></function>',
+              "Writing the profile screen.\n<function=write_file><parameter=content>hello</parameter><parameter=path>app/profile.tsx</parameter></function>",
           };
         } else {
           yield { type: "token", content: "Done." };
@@ -503,9 +523,7 @@ describe("Milestone M3 — Stateless Loop, Retry, Events, and Inbox", () => {
     expect(executed).toEqual([
       { name: "write_file", args: { content: "hello", path: "app/profile.tsx" } },
     ]);
-    const statuses = events
-      .filter((e) => e.type === "tool_call")
-      .map((e) => (e as any).status);
+    const statuses = events.filter((e) => e.type === "tool_call").map((e) => (e as any).status);
     expect(statuses).toEqual(["started", "completed"]);
   });
 
@@ -569,7 +587,8 @@ describe("Milestone M3 — Stateless Loop, Retry, Events, and Inbox", () => {
     ).toHaveLength(0);
   });
 
-  it("resolves donor tool aliases to registry tools instead of failing", async () => {    const executed: string[] = [];
+  it("resolves donor tool aliases to registry tools instead of failing", async () => {
+    const executed: string[] = [];
     let calls = 0;
     const fakeLlm: LLMAdapter = {
       async *stream() {
@@ -614,7 +633,8 @@ describe("Milestone M3 — Stateless Loop, Retry, Events, and Inbox", () => {
     expect((completed[0] as any).name).toBe("list_dir");
   });
 
-  it("feeds step results back so later steps see tool outputs and errors", async () => {    const seenByStep: unknown[][] = [];
+  it("feeds step results back so later steps see tool outputs and errors", async () => {
+    const seenByStep: unknown[][] = [];
     let calls = 0;
     const fakeLlm: LLMAdapter = {
       async *stream(messages) {
@@ -708,5 +728,75 @@ describe("Milestone M3 — Stateless Loop, Retry, Events, and Inbox", () => {
     );
     expect(completed).toHaveLength(1);
     expect((completed[0] as any).result).toBe("user said yes");
+  });
+
+  it("retries an all-silent step once, then fails loud instead of completing silently", async () => {
+    let calls = 0;
+    const fakeLlm: LLMAdapter = {
+      async *stream() {
+        calls += 1;
+        // Always empty: no tokens, no tool calls.
+      },
+    };
+    const events: HarnessEvent[] = [];
+    const loop = runLoop({
+      sessionId: "session-empty",
+      maxSteps: 10,
+      llm: fakeLlm,
+      tools: [],
+      buildMessages: () => [{ role: "user", content: "go" }],
+      onEvent: (ev) => events.push(ev),
+    });
+    await expect(
+      (async () => {
+        for await (const _ of loop) {
+          // drain
+        }
+      })(),
+    ).rejects.toThrow(/STEP_EMPTY/);
+    // One retry nudge, then failure — never a silent completion.
+    expect(calls).toBe(2);
+    expect(events.some((e) => e.type === "error" && (e as any).code === "STEP_EMPTY_RETRY")).toBe(
+      true,
+    );
+  });
+
+  it("ends the turn as failed after 3 identical consecutive tool failures", async () => {
+    const fakeLlm: LLMAdapter = {
+      async *stream() {
+        yield {
+          type: "tool_call",
+          toolCall: { id: `call-${Math.random()}`, name: "flaky", args: { x: 1 } },
+        };
+      },
+    };
+    const failingTool: ToolDefinition = {
+      name: "flaky",
+      description: "always fails identically",
+      execute: async () => {
+        throw new Error("boom");
+      },
+    };
+    const events: HarnessEvent[] = [];
+    const loop = runLoop({
+      sessionId: "session-fail-loop",
+      maxSteps: 100,
+      llm: fakeLlm,
+      tools: [failingTool],
+      buildMessages: () => [{ role: "user", content: "go" }],
+      onEvent: (ev) => events.push(ev),
+    });
+    await expect(
+      (async () => {
+        for await (const _ of loop) {
+          // drain
+        }
+      })(),
+    ).rejects.toThrow(/VALIDATION_LOOP/);
+    const failed = events.filter((e) => e.type === "tool_call" && (e as any).status === "failed");
+    expect(failed).toHaveLength(3);
+    expect(events.some((e) => e.type === "error" && (e as any).code === "VALIDATION_LOOP")).toBe(
+      true,
+    );
   });
 });

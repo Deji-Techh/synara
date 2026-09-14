@@ -93,6 +93,10 @@ export interface SessionState {
   artifacts: ArtifactEntry[];
   errors: Array<{ code: string; message: string }>;
   prompts: UiPromptEntry[];
+  /** Typed-but-unsubmitted questionnaire answers by requestId. Survives
+   * card remounts (reconnect replay); cleared on submit/dismiss/turn_end.
+   * Never used for secrets (env-vars/integration drafts are not kept). */
+  answerDrafts: Record<string, Record<string, string | string[]>>;
   reveals: UiRevealEntry[];
   plan?: PlanEntry;
   blueprint?: BlueprintEntry;
@@ -153,6 +157,7 @@ function getOrCreateSession(sessionId: string): SessionState {
         artifacts: [],
         errors: [],
         prompts: [],
+        answerDrafts: {},
         reveals: [],
         todos: [],
         versions: [],
@@ -186,8 +191,8 @@ export const harnessStore = {
         // at turn_end every waiter is settled — anything still rendered is an
         // orphan (e.g. settled by a path that never notified the client).
         // Settled prompts already carry withdrawal tombstones, so replay
-        // stays clean.
-        const cleared: SessionState = { ...ended, prompts: [] };
+        // stays clean. Drafts belong to settled prompts — drop them too.
+        const cleared: SessionState = { ...ended, prompts: [], answerDrafts: {} };
         state.sessions[event.sessionId] = event.usage
           ? { ...cleared, lastUsage: { ...event.usage } }
           : cleared;
@@ -344,14 +349,76 @@ export const harnessStore = {
     notify();
   },
 
+  /** Force-clear a stuck live-turn flag (Stop with no turn_end arriving).
+   * Prompts are left alone — the server withdraw broadcast (or replay)
+   * settles the cards; this only unlatches the stop control. */
+  clearLiveTurn: (sessionId: string): void => {
+    const session = state.sessions[sessionId];
+    if (!session || session.liveTurnId === undefined) return;
+    const { liveTurnId: _droppedLive, ...rest } = session;
+    void _droppedLive;
+    state.sessions[sessionId] = rest;
+    notify();
+  },
+
   /** Remove a delivered prompt (answered/dismissed in UI). */
   resolvePrompt: (sessionId: string, requestId: string): void => {
     const session = state.sessions[sessionId];
     if (!session) return;
+    const { [requestId]: _droppedDraft, ...restDrafts } = session.answerDrafts;
+    void _droppedDraft;
     state.sessions[sessionId] = {
       ...session,
       prompts: session.prompts.filter((p) => p.requestId !== requestId),
+      answerDrafts: restDrafts,
     };
+    notify();
+  },
+
+  /** Stash typed-but-unsubmitted questionnaire answers (survive remounts). */
+  setAnswerDraft: (
+    sessionId: string,
+    requestId: string,
+    answers: Record<string, string | string[]>,
+  ): void => {
+    const session = getOrCreateSession(sessionId);
+    state.sessions[sessionId] = {
+      ...session,
+      answerDrafts: { ...session.answerDrafts, [requestId]: answers },
+    };
+    notify();
+  },
+
+  /**
+   * Drop an acted-on approval gate (plan/blueprint/checkpoint). Local acted
+   * flags reset on remount, so without this an answered gate resurrects on
+   * thread switch. plan_update/blueprint_update/checkpoint events are not
+   * persisted, so clearing is replay-safe (a genuinely new gate re-adds).
+   */
+  resolvePlan: (sessionId: string): void => {
+    const session = state.sessions[sessionId];
+    if (!session || !session.plan) return;
+    const { plan: _droppedPlan, ...rest } = session;
+    void _droppedPlan;
+    state.sessions[sessionId] = rest;
+    notify();
+  },
+
+  resolveBlueprint: (sessionId: string): void => {
+    const session = state.sessions[sessionId];
+    if (!session || !session.blueprint) return;
+    const { blueprint: _droppedBlueprint, ...rest } = session;
+    void _droppedBlueprint;
+    state.sessions[sessionId] = rest;
+    notify();
+  },
+
+  resolveCheckpoint: (sessionId: string): void => {
+    const session = state.sessions[sessionId];
+    if (!session || !session.checkpoint) return;
+    const { checkpoint: _droppedCheckpoint, ...rest } = session;
+    void _droppedCheckpoint;
+    state.sessions[sessionId] = rest;
     notify();
   },
 

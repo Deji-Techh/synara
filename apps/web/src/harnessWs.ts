@@ -34,9 +34,8 @@ export function makeHarnessUrl(explicitUrl: string | null): string {
   const bridgeUrl = typeof window !== "undefined" ? window.desktopBridge?.getWsUrl() : undefined;
   const envUrl =
     typeof import.meta !== "undefined"
-      ? ((import.meta as unknown as { env?: Record<string, string | undefined> }).env?.VITE_WS_URL as
-          | string
-          | undefined)
+      ? ((import.meta as unknown as { env?: Record<string, string | undefined> }).env
+          ?.VITE_WS_URL as string | undefined)
       : undefined;
   const raw =
     explicitUrl && explicitUrl.length > 0
@@ -87,11 +86,23 @@ export function connectHarnessWs(options: HarnessWsOptions): HarnessWsHandle {
   let backoffMs = 500;
   let heartbeat: ReturnType<typeof setInterval> | null = null;
   let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  // Pong deadline: pings without pongs mean a half-open socket (common
+  // during long model-silence windows). Without this, prompts written to a
+  // dead sender vanish with no onclose to trigger a reconnect — the card
+  // then appears only after a manual navigation remount.
+  let lastPongAt = 0;
+  let pongWatchdog: ReturnType<typeof setInterval> | null = null;
+  // Delivery diagnostics: silent send-drops are otherwise invisible.
+  let droppedSends = 0;
 
   const cleanupSocket = () => {
     if (heartbeat) {
       clearInterval(heartbeat);
       heartbeat = null;
+    }
+    if (pongWatchdog) {
+      clearInterval(pongWatchdog);
+      pongWatchdog = null;
     }
     if (ws) {
       ws.onopen = null;
@@ -109,13 +120,10 @@ export function connectHarnessWs(options: HarnessWsOptions): HarnessWsHandle {
 
   const scheduleReconnect = () => {
     if (closed) return;
-    reconnectTimer = setTimeout(
-      () => {
-        backoffMs = Math.min(backoffMs * 2, maxBackoffMs);
-        open();
-      },
-      backoffMs,
-    );
+    reconnectTimer = setTimeout(() => {
+      backoffMs = Math.min(backoffMs * 2, maxBackoffMs);
+      open();
+    }, backoffMs);
   };
 
   const open = () => {
@@ -126,21 +134,46 @@ export function connectHarnessWs(options: HarnessWsOptions): HarnessWsHandle {
 
     socket.onopen = () => {
       backoffMs = 500;
-      socket.send(JSON.stringify({ type: "subscribe", sessionId: options.sessionId }));
+      // Subscribe send is outside any try upstream: if it throws (race
+      // close), close to trigger a backoff reconnect instead of sitting
+      // open-but-never-subscribed while live broadcasts drop.
+      try {
+        socket.send(JSON.stringify({ type: "subscribe", sessionId: options.sessionId }));
+      } catch {
+        try {
+          socket.close();
+        } catch {
+          // close triggers reconnect
+        }
+        return;
+      }
+      lastPongAt = Date.now();
       try {
         options.onOpen?.();
       } catch {
         // subscriber errors must not break the socket
       }
-      syncHarnessSettings(
-        (message) => {
-          if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify(message));
-        },
-        options.sessionId,
-      );
+      syncHarnessSettings((message) => {
+        if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify(message));
+      }, options.sessionId);
       heartbeat = setInterval(() => {
         if (socket.readyState === WebSocket.OPEN) {
           socket.send(JSON.stringify({ type: "ping" }));
+        }
+      }, heartbeatMs);
+      // Half-open watchdog: two missed pong windows closes the socket so
+      // backoff reconnect + replay resubscribes instead of hanging silently.
+      pongWatchdog = setInterval(() => {
+        if (closed || socket.readyState !== WebSocket.OPEN) return;
+        if (Date.now() - lastPongAt > heartbeatMs * 2 + 5_000) {
+          console.warn(
+            `[caide] harness socket ${options.sessionId} missed pongs — reconnecting to recover live delivery`,
+          );
+          try {
+            socket.close();
+          } catch {
+            // close triggers reconnect
+          }
         }
       }, heartbeatMs);
     };
@@ -154,7 +187,10 @@ export function connectHarnessWs(options: HarnessWsOptions): HarnessWsHandle {
           if (text === null) return;
           const event: unknown = JSON.parse(text);
           if (!isHarnessEvent(event)) return;
-          if ((event as { type: string }).type === "pong") return;
+          if ((event as { type: string }).type === "pong") {
+            lastPongAt = Date.now();
+            return;
+          }
           harnessStore.handleEvent(event);
           try {
             options.onEvent?.(event);
@@ -196,6 +232,27 @@ export function connectHarnessWs(options: HarnessWsOptions): HarnessWsHandle {
     send: (message: Record<string, unknown>) => {
       if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify(message));
+      } else {
+        // Dropped sends are otherwise invisible (answers vanish, turns hang).
+        // Count them; the resubscribe-while-live path in ChatView recovers.
+        droppedSends += 1;
+        if (droppedSends <= 3 || droppedSends % 10 === 0) {
+          console.warn(
+            `[caide] harness send dropped (socket not open, session ${options.sessionId}, type ${(message as { type?: unknown }).type}, dropped=${droppedSends})`,
+          );
+        }
+      }
+    },
+    resubscribe: () => {
+      // Re-send subscribe on the live socket: the server replays missed
+      // prompts (dedupe by requestId makes this safe). Used while a turn is
+      // live but quiet, to self-heal delivery gaps without navigation.
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        try {
+          ws.send(JSON.stringify({ type: "subscribe", sessionId: options.sessionId }));
+        } catch {
+          // send failure surfaces via close/reconnect
+        }
       }
     },
   };
@@ -204,6 +261,8 @@ export function connectHarnessWs(options: HarnessWsOptions): HarnessWsHandle {
 export interface HarnessWsHandle {
   disconnect: () => void;
   send: (message: Record<string, unknown>) => void;
+  /** Re-send subscribe on the live socket to trigger a replay re-sync. */
+  resubscribe: () => void;
 }
 
 export function answerUiPrompt(
@@ -230,7 +289,17 @@ export interface HarnessTurnStart {
   providerId?: string;
   modelId?: string;
   maxSteps?: number;
-  providerSettings?: Record<string, unknown>;
+  /** Composer access mode (e.g. "full-access") — drives consent bypass. */
+  runtimeMode?: string;
+  providerSettings?: Record<
+    string,
+    {
+      apiKey?: { value?: string | null } | string | null;
+      apiBaseUrl?: string | null;
+      baseUrl?: string | null;
+      resourceName?: string | null;
+    }
+  >;
 }
 
 /** Ask the server gateway to start a harness turn on this session. */

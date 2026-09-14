@@ -79,19 +79,27 @@ export function HarnessVersionsCard(props: { sessionId: string; send: SendFn }) 
 
   return (
     <div className="my-2 select-none">
-      <CaideCard accent="neutral" onClick={() => setOpen((v) => !v)} isExpanded={open}>
-        <CaideCardHeader accent="neutral">
-          <div className="flex min-w-0 flex-1 items-center gap-2">
-            <span className="truncate text-[12px] font-semibold tracking-tight">
-              {latest.message}
-            </span>
-            <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
-              {timeAgo(latest.createdAt)} · {versions.length} checkpoint{versions.length === 1 ? "" : "s"}
-            </span>
-          </div>
-          <CaideBadge accent="neutral">Versions</CaideBadge>
-          <DisclosureChevron open={open} className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
-        </CaideCardHeader>
+      {/* Toggle lives on the header ONLY: clicking Restore padding or
+          selecting text must never collapse the card mid-interaction. */}
+      <CaideCard accent="neutral" isExpanded={open}>
+        <div onClick={() => setOpen((v) => !v)} className="cursor-pointer">
+          <CaideCardHeader accent="neutral">
+            <div className="flex min-w-0 flex-1 items-center gap-2">
+              <span className="truncate text-[12px] font-semibold tracking-tight">
+                {latest.message}
+              </span>
+              <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
+                {timeAgo(latest.createdAt)} · {versions.length} checkpoint
+                {versions.length === 1 ? "" : "s"}
+              </span>
+            </div>
+            <CaideBadge accent="neutral">Versions</CaideBadge>
+            <DisclosureChevron
+              open={open}
+              className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70"
+            />
+          </CaideCardHeader>
+        </div>
         <CaideLazyContent open={open}>
           <ul className="flex max-h-64 flex-col gap-1 overflow-auto rounded-lg border border-border/50 bg-muted/20 px-3 py-2.5">
             {versions.map((v) => (

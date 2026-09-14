@@ -39,8 +39,30 @@ import { linkAppDatabase } from "../../dyad/db/connections.ts";
 import { setBlockchainNetworks, type BlockchainNetwork } from "../../dyad/web3/networks.ts";
 import type { HarnessHub } from "./hub.ts";
 
+/**
+ * requestId → sessionId for every emitted prompt (bounded). Answers carry no
+ * sessionId, so when a card is answered after its waiter died (restart),
+ * this map still routes the settling withdraw to the right session.
+ */
+const promptSessions = new Map<string, string>();
+const PROMPT_SESSION_MAP_CAP = 500;
+
+function notePromptSession(requestId: string, sessionId: string): void {
+  promptSessions.set(requestId, sessionId);
+  if (promptSessions.size > PROMPT_SESSION_MAP_CAP) {
+    const oldest = promptSessions.keys().next();
+    if (!oldest.done) promptSessions.delete(oldest.value);
+  }
+}
+
+function findSessionForStalePrompt(requestId: string): string | null {
+  return promptSessions.get(requestId) ?? null;
+}
+
 async function send(server: HarnessHub, sessionId: string, event: HarnessEvent): Promise<void> {
-  // Persist prompts (and only prompts — tokens/turns already persist via the
+  if (event.type === "ui_prompt") {
+    notePromptSession(event.requestId, sessionId);
+  } // Persist prompts (and only prompts — tokens/turns already persist via the
   // runner) so reconnect replay rebuilds parked questionnaires/consents.
   // Withdrawals persist too so replay drops superseded/cancelled cards.
   // Answered prompts are filtered at replay time (see hub.replaySession).
@@ -136,13 +158,15 @@ export function attachUiBridge(server: HarnessHub): {
 
   setIntegrationTransport({
     sendIntegrationPrompt: (sessionId, requestId, provider) =>
-      send(server, sessionId, {
+      void send(server, sessionId, {
         type: "ui_prompt",
         sessionId,
         requestId,
         kind: "integration",
         payload: { provider: provider ?? null },
       }),
+    sendPromptWithdraw: (sessionId, requestId) =>
+      void send(server, sessionId, { type: "ui_prompt_withdraw", sessionId, requestId }),
   });
 
   const requestConsent: ConsentRequestFn = async (req) => {
@@ -182,8 +206,15 @@ export function attachUiBridge(server: HarnessHub): {
     void (async () => {
       const sessionId = sessionForRequest(requestId);
       if (sessionId) await settlePrompt(server, sessionId, requestId);
-      if (answers) resolveUserInput(requestId, answers);
-      else dismissUserInput(requestId);
+      const settled = answers ? resolveUserInput(requestId, answers) : dismissUserInput(requestId);
+      if (!settled) {
+        // Stale card (e.g. replayed after a restart killed its waiter):
+        // answering must at least dismiss the card instead of hanging.
+        const staleSession = sessionId ?? findSessionForStalePrompt(requestId);
+        if (staleSession) {
+          await settlePrompt(server, staleSession, requestId);
+        }
+      }
     })();
   });
   server.onConsentAnswer((requestId, decision) => {
@@ -191,8 +222,13 @@ export function attachUiBridge(server: HarnessHub): {
       const sessionId =
         sessionForConsentRequest(requestId) ?? sessionForMcpConsentRequest(requestId);
       if (sessionId) await settlePrompt(server, sessionId, requestId);
-      resolveConsent(requestId, decision);
-      resolveMcpConsent(requestId, decision);
+      const settled = resolveConsent(requestId, decision) || resolveMcpConsent(requestId, decision);
+      if (!settled) {
+        const staleSession = sessionId ?? findSessionForStalePrompt(requestId);
+        if (staleSession) {
+          await settlePrompt(server, staleSession, requestId);
+        }
+      }
     })();
   });
   server.onMcpOAuthStart((sessionId, input) => {

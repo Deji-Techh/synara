@@ -13,6 +13,7 @@ import { connectHarnessWs, makeHarnessUrl, type HarnessWsHandle } from "~/harnes
 export function useChatHarnessSocket(threadId: string | null): {
   connected: boolean;
   send: HarnessWsHandle["send"];
+  resubscribe: HarnessWsHandle["resubscribe"];
 } {
   const [handle, setHandle] = useState<HarnessWsHandle | null>(null);
   // Real socket state — NOT handle existence. A handle exists while the
@@ -60,6 +61,9 @@ export function useChatHarnessSocket(threadId: string | null): {
       connected: handle !== null && open,
       send: (message: Record<string, unknown>) => {
         handle?.send(message);
+      },
+      resubscribe: () => {
+        handle?.resubscribe();
       },
     }),
     [handle, open],

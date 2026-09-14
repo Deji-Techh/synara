@@ -33,7 +33,14 @@ import {
   deploySupabaseFunction,
   getSupabaseProjectApiKeys,
 } from "./supabaseApi.ts";
-import { listNeonBranches, listNeonProjects, createNeonBranch, createNeonProject, deleteNeonBranch, deleteNeonProject } from "./neonApi.ts";
+import {
+  listNeonBranches,
+  listNeonProjects,
+  createNeonBranch,
+  createNeonProject,
+  deleteNeonBranch,
+  deleteNeonProject,
+} from "./neonApi.ts";
 
 export class DbToolError extends Error {
   constructor(message: string) {
@@ -56,7 +63,10 @@ export function setDbDriver(d: DbDriver | null): void {
 async function bunSqlDriver(): Promise<DbDriver> {
   try {
     const mod = (await Function("return import('bun:sql')")()) as {
-      SQL: new (url: string) => { unsafe: (sql: string) => Promise<unknown[]>; close: () => Promise<void> };
+      SQL: new (url: string) => {
+        unsafe: (sql: string) => Promise<unknown[]>;
+        close: () => Promise<void>;
+      };
     };
     return {
       async query(databaseUrl: string, sql: string) {
@@ -136,7 +146,11 @@ export async function executeSql(
   try {
     const link = getDatabaseLink(sessionId);
     if (link?.provider === "supabase" && classifySql(parsed.query).mutatesSchema) {
-      const file = await writeMigrationFile(appPath, parsed.description ?? "schema change", statements[0]);
+      const file = await writeMigrationFile(
+        appPath,
+        parsed.description ?? "schema change",
+        statements[0],
+      );
       if (file) migrationNote = `\n\nMigration recorded: ${file}`;
     }
   } catch {
@@ -186,7 +200,9 @@ export async function executeTableSchema(
       signal,
     );
     const names = rows.map((r: any) => r.table_name ?? JSON.stringify(r));
-    return names.length === 0 ? `No tables in schema "${parsed.schema}".` : `Tables in "${parsed.schema}":\n${names.join("\n")}`;
+    return names.length === 0
+      ? `No tables in schema "${parsed.schema}".`
+      : `Tables in "${parsed.schema}":\n${names.join("\n")}`;
   }
   const { rows } = await d.query(
     databaseUrl,
@@ -194,7 +210,14 @@ export async function executeTableSchema(
     signal,
   );
   if (rows.length === 0) return `Table "${parsed.table}" not found in schema "${parsed.schema}".`;
-  return [`Columns of "${parsed.table}":`, "", ...rows.map((r: any) => `- ${r.column_name}: ${r.data_type} ${r.is_nullable === "NO" ? "NOT NULL" : "NULL"}${r.column_default ? ` DEFAULT ${r.column_default}` : ""}`)].join("\n");
+  return [
+    `Columns of "${parsed.table}":`,
+    "",
+    ...rows.map(
+      (r: any) =>
+        `- ${r.column_name}: ${r.data_type} ${r.is_nullable === "NO" ? "NOT NULL" : "NULL"}${r.column_default ? ` DEFAULT ${r.column_default}` : ""}`,
+    ),
+  ].join("\n");
 }
 
 // --- get_supabase_project_info / get_neon_project_info ---
@@ -223,10 +246,15 @@ export const getSupabaseProjectInfoTool = defineTool({
         lines.push(
           "",
           `Remote projects (${projects.length}):`,
-          ...projects.slice(0, 20).map((p) => `- ${p.name} (${p.id})${p.region ? ` [${p.region}]` : ""}`),
+          ...projects
+            .slice(0, 20)
+            .map((p) => `- ${p.name} (${p.id})${p.region ? ` [${p.region}]` : ""}`),
         );
       } catch (err) {
-        lines.push("", `Remote listing failed: ${err instanceof Error ? err.message : String(err)}`);
+        lines.push(
+          "",
+          `Remote listing failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
       }
     }
     return lines.join("\n");
@@ -270,7 +298,10 @@ export const getNeonProjectInfoTool = defineTool({
           }
         }
       } catch (err) {
-        lines.push("", `Remote listing failed: ${err instanceof Error ? err.message : String(err)}`);
+        lines.push(
+          "",
+          `Remote listing failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
       }
     }
     return lines.join("\n");
@@ -284,11 +315,15 @@ const addIntegrationSchema = z.object({
   provider: z
     .enum(["none", "supabase", "neon"])
     .optional()
-    .describe("Optional preferred database provider. Use 'none' (or omit) if the user did not explicitly name a provider. Only use 'supabase' or 'neon' if the user specifically mentions that provider name in their prompt."),
+    .describe(
+      "Optional preferred database provider. Use 'none' (or omit) if the user did not explicitly name a provider. Only use 'supabase' or 'neon' if the user specifically mentions that provider name in their prompt.",
+    ),
 });
 
 export interface IntegrationTransport {
   sendIntegrationPrompt(sessionId: string, requestId: string, provider?: DbProvider): void;
+  /** Withdraw a parked prompt card (superseded). Optional for headless/test transports. */
+  sendPromptWithdraw?(sessionId: string, requestId: string): void;
 }
 
 let integrationTransport: IntegrationTransport | null = null;
@@ -324,9 +359,17 @@ export async function executeAddIntegration(
     return "Database setup UI is not wired yet (M3 settings) — ask the user for their Supabase or Neon DATABASE_URL and save it to .env.local, then continue.";
   }
   const provider = parsed.provider && parsed.provider !== "none" ? parsed.provider : undefined;
+  // One live integration prompt per session (same supersede rule as
+  // questionnaires — and parked under its OWN kind so questionnaire
+  // supersede never dismisses it).
+  const { dismissPendingForSession } = await import("../plan/userPrompt.ts");
+  const transport = integrationTransport;
+  for (const staleId of dismissPendingForSession(sessionId, "integration")) {
+    transport.sendPromptWithdraw?.(sessionId, staleId);
+  }
   const requestId = nextRequestId("integration");
-  integrationTransport.sendIntegrationPrompt(sessionId, requestId, provider);
-  const answers = await waitForUserInput(requestId, sessionId, "questionnaire", signal);
+  transport.sendIntegrationPrompt(sessionId, requestId, provider);
+  const answers = await waitForUserInput(requestId, sessionId, "integration", signal);
   if (!answers) {
     return "The user dismissed the integration setup without completing it. Ask them how they'd like to proceed.";
   }
@@ -347,7 +390,9 @@ export async function executeAddIntegration(
 // --- enable_nitro (donor description verbatim; Caide server-layer mapping) ---
 
 const enableNitroSchema = z.object({
-  reason: z.string().describe("One sentence explaining why server-side code is needed for this prompt."),
+  reason: z
+    .string()
+    .describe("One sentence explaining why server-side code is needed for this prompt."),
 });
 
 export const enableNitroTool = defineTool({
@@ -375,43 +420,63 @@ server-only secrets) when no provider is involved.
   schema: enableNitroSchema,
   readOnly: false,
   modifiesState: true,
-  execute: async (args, ctx) => executeEnableNitro(enableNitroSchema.parse(args), ctx.appPath, ctx.sessionId),
+  execute: async (args, ctx) =>
+    executeEnableNitro(enableNitroSchema.parse(args), ctx.appPath, ctx.sessionId),
   presentCall: (args: any) => `Add Nitro server layer (${args.reason})`,
 });
 
 // --- create_neon_branch (referenced by the provision-backend guide) ---
 
 const createNeonBranchSchema = z.object({
-  projectId: z.string().optional().describe("Neon project id. Defaults to the linked integration's project."),
-  branchName: z.string().optional().describe("Branch name, e.g. caide-myapp-dev. Defaults to a caide-<timestamp> name."),
+  projectId: z
+    .string()
+    .optional()
+    .describe("Neon project id. Defaults to the linked integration's project."),
+  branchName: z
+    .string()
+    .optional()
+    .describe("Branch name, e.g. caide-myapp-dev. Defaults to a caide-<timestamp> name."),
 });
 
 // --- create_supabase_project (PAT-based; no hosted broker) ---
 
 const createSupabaseProjectSchema = z.object({
   name: z.string().describe("Project name, e.g. myapp-prod."),
-  organizationId: z.string().optional().describe("Organization slug/id. Defaults to the linked integration's organization."),
+  organizationId: z
+    .string()
+    .optional()
+    .describe("Organization slug/id. Defaults to the linked integration's organization."),
   region: z.string().optional().describe("Region, e.g. us-east-1. Defaults to us-east-1."),
 });
 
-function requireSupabaseManagementToken(sessionId: string): { link: DbLink | undefined; token: string } {
+function requireSupabaseManagementToken(sessionId: string): {
+  link: DbLink | undefined;
+  token: string;
+} {
   const link = getDatabaseLink(sessionId);
   // Session link token wins; otherwise the stored settings key or env
   // (Settings → Database → access token, or SUPABASE_ACCESS_TOKEN).
   const token = link?.provider === "supabase" ? link.managementToken : undefined;
   const resolved = token || getVoiceApiKey("supabase");
   if (!resolved) {
-    throw new DbToolError("Supabase access token missing — add one in Settings → Database, or re-run add_integration.");
+    throw new DbToolError(
+      "Supabase access token missing — add one in Settings → Database, or re-run add_integration.",
+    );
   }
   return { link, token: resolved };
 }
 
-function requireNeonManagementToken(sessionId: string): { link: DbLink | undefined; token: string } {
+function requireNeonManagementToken(sessionId: string): {
+  link: DbLink | undefined;
+  token: string;
+} {
   const link = getDatabaseLink(sessionId);
   const token = link?.provider === "neon" ? link.managementToken : undefined;
   const resolved = token || getVoiceApiKey("neon");
   if (!resolved) {
-    throw new DbToolError("Neon API key missing — add one in Settings → Database, or re-run add_integration.");
+    throw new DbToolError(
+      "Neon API key missing — add one in Settings → Database, or re-run add_integration.",
+    );
   }
   return { link, token: resolved };
 }
@@ -501,7 +566,9 @@ export const createSupabaseProjectTool = defineTool({
       region: parsed.region,
       signal: ctx.signal,
     });
-    upsertSessionProjectLink(ctx.sessionId, ctx.appPath, "supabase", created.id, { organizationSlug: orgId });
+    upsertSessionProjectLink(ctx.sessionId, ctx.appPath, "supabase", created.id, {
+      organizationSlug: orgId,
+    });
     return [
       `Supabase project created and linked: ${created.name} (${created.id}).`,
       "Save its connection string to .env.local as DATABASE_URL with write_file. NEVER print secrets in chat.",
@@ -513,8 +580,13 @@ export const createSupabaseProjectTool = defineTool({
 // --- deploy_supabase_functions ---
 
 const deploySupabaseFunctionsSchema = z.object({
-  projectId: z.string().optional().describe("Project ref. Defaults to the linked integration's project."),
-  slugs: z.array(z.string()).describe("Function slugs to deploy from supabase/functions/<slug>/index.ts in the app."),
+  projectId: z
+    .string()
+    .optional()
+    .describe("Project ref. Defaults to the linked integration's project."),
+  slugs: z
+    .array(z.string())
+    .describe("Function slugs to deploy from supabase/functions/<slug>/index.ts in the app."),
 });
 
 export const deploySupabaseFunctionsTool = defineTool({
@@ -579,29 +651,49 @@ export const supabaseTestUserTool = defineTool({
     if (!projectId) {
       throw new DbToolError("No project ref — re-run add_integration.");
     }
-    const keys = await getSupabaseProjectApiKeys({ token, projectId, reveal: true, signal: ctx.signal });
-    const secret = keys.find((k) => /secret|service_role/i.test(`${k.name} ${k.apiKey ?? ""}`))?.apiKey
-      ?? keys.map((k) => k.apiKey).find(Boolean);
+    const keys = await getSupabaseProjectApiKeys({
+      token,
+      projectId,
+      reveal: true,
+      signal: ctx.signal,
+    });
+    const secret =
+      keys.find((k) => /secret|service_role/i.test(`${k.name} ${k.apiKey ?? ""}`))?.apiKey ??
+      keys.map((k) => k.apiKey).find(Boolean);
     if (!secret) {
-      throw new DbToolError("No secret key revealed for this project — check dashboard permissions.");
+      throw new DbToolError(
+        "No secret key revealed for this project — check dashboard permissions.",
+      );
     }
-    const projectRef = projectId.includes(".") ? projectId.split(".")[0] as string : projectId;
+    const projectRef = projectId.includes(".") ? (projectId.split(".")[0] as string) : projectId;
     if (parsed.action === "delete") {
       if (!parsed.userId?.trim()) throw new DbToolError("userId is required for action=delete.");
-      await deleteSupabaseTestUser({ projectRef, secretKey: secret, userId: parsed.userId, signal: ctx.signal });
+      await deleteSupabaseTestUser({
+        projectRef,
+        secretKey: secret,
+        userId: parsed.userId,
+        signal: ctx.signal,
+      });
       return `Test user ${parsed.userId} deleted.`;
     }
-    const user = await createSupabaseTestUser({ projectRef, secretKey: secret, signal: ctx.signal });
+    const user = await createSupabaseTestUser({
+      projectRef,
+      secretKey: secret,
+      signal: ctx.signal,
+    });
     return `Test user created: ${user.email} (${user.id}). Delete it with supabase_test_user action=delete when done.`;
   },
-  presentCall: (args: any) => args.action === "delete" ? "Delete test user" : "Create test user",
+  presentCall: (args: any) => (args.action === "delete" ? "Delete test user" : "Create test user"),
 });
 
 // --- create_neon_project (PAT-based; no hosted broker) ---
 
 const createNeonProjectSchema = z.object({
   name: z.string().describe("Project name, e.g. myapp."),
-  regionId: z.string().optional().describe("Region id, e.g. aws-us-east-2. Defaults to the account default."),
+  regionId: z
+    .string()
+    .optional()
+    .describe("Region id, e.g. aws-us-east-2. Defaults to the account default."),
 });
 
 export const createNeonProjectTool = defineTool({
@@ -636,7 +728,8 @@ export const createNeonProjectTool = defineTool({
       branchId = branch.id;
       branchNote = ` Development branch ready (${branch.id}).`;
     } catch {
-      branchNote = " Development branch could not be created automatically — create one with create_neon_branch.";
+      branchNote =
+        " Development branch could not be created automatically — create one with create_neon_branch.";
     }
     upsertSessionProjectLink(ctx.sessionId, ctx.appPath, "neon", created.id, {
       ...(branchId ? { branchId } : {}),
@@ -658,7 +751,10 @@ export const createNeonProjectTool = defineTool({
 
 const neonTestBranchSchema = z.object({
   action: z.enum(["create", "delete"]).describe("Create or delete the throwaway test branch."),
-  projectId: z.string().optional().describe("Project id. Defaults to the linked integration's project."),
+  projectId: z
+    .string()
+    .optional()
+    .describe("Project id. Defaults to the linked integration's project."),
   branchId: z.string().optional().describe("Branch id for action=delete."),
 });
 
@@ -679,8 +775,14 @@ export const neonTestBranchTool = defineTool({
       throw new DbToolError("No project id — pass projectId or link a Neon project first.");
     }
     if (parsed.action === "delete") {
-      if (!parsed.branchId?.trim()) throw new DbToolError("branchId is required for action=delete.");
-      await deleteNeonBranch({ apiKey: token, projectId, branchId: parsed.branchId, signal: ctx.signal });
+      if (!parsed.branchId?.trim())
+        throw new DbToolError("branchId is required for action=delete.");
+      await deleteNeonBranch({
+        apiKey: token,
+        projectId,
+        branchId: parsed.branchId,
+        signal: ctx.signal,
+      });
       return `Test branch ${parsed.branchId} deleted.`;
     }
     const branch = await createNeonBranch({
@@ -698,7 +800,8 @@ export const neonTestBranchTool = defineTool({
         : "Copy its connection string from the Neon console for isolated verification, then delete the branch.",
     ].join("\n");
   },
-  presentCall: (args: any) => args.action === "delete" ? "Delete Neon test branch" : "Create Neon test branch",
+  presentCall: (args: any) =>
+    args.action === "delete" ? "Delete Neon test branch" : "Create Neon test branch",
 });
 
 export const createNeonBranchTool = defineTool({
@@ -726,9 +829,7 @@ export const createNeonBranchTool = defineTool({
       branchName,
       signal: ctx.signal,
     });
-    const lines = [
-      `Neon branch created: ${created.name} (${created.id}) in project ${projectId}.`,
-    ];
+    const lines = [`Neon branch created: ${created.name} (${created.id}) in project ${projectId}.`];
     if (created.connectionUri) {
       lines.push(
         writeEnvLocalDatabaseUrl(ctx.appPath, created.connectionUri)
@@ -736,7 +837,9 @@ export const createNeonBranchTool = defineTool({
           : "Connection string could NOT be written automatically — save it to .env.local as DATABASE_URL with write_file.",
       );
     } else {
-      lines.push("No connection URI returned — copy DATABASE_URL from the Neon console into .env.local.");
+      lines.push(
+        "No connection URI returned — copy DATABASE_URL from the Neon console into .env.local.",
+      );
     }
     return lines.join("\n");
   },

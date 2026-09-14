@@ -24,7 +24,7 @@ function StatusIcon(props: { status: TodoEntry["status"]; className?: string }) 
     return (
       <IconLoader2
         size={14}
-        className={`shrink-0 animate-spin text-info ${props.className ?? ""}`}
+        className={`shrink-0 animate-spin motion-reduce:animate-none text-info ${props.className ?? ""}`}
       />
     );
   }
@@ -109,7 +109,7 @@ export function HarnessTodosCard(props: { sessionId: string }) {
           />
         </div>
         <DisclosureRegion open={open}>
-          <ul className="flex flex-col gap-1.5 overflow-hidden rounded-lg border border-border/50 bg-muted/20 px-3 py-2.5">
+          <ul className="flex max-h-56 flex-col gap-1.5 overflow-y-auto overscroll-contain rounded-lg border border-border/50 bg-muted/20 px-3 py-2.5">
             {todos.map((todo) => (
               <li
                 key={todo.id}

@@ -5,9 +5,9 @@
 // Collapsible CaideCard shell (shared disclosure motion) like the other
 // harness cards.
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "~/components/ui/button";
-import { useHarnessStore } from "~/harnessStore";
+import { harnessStore, useHarnessStore } from "~/harnessStore";
 import { CaideAppBlueprintCard } from "~/components/chat/CaideAppBlueprintCard";
 import {
   CaideBadge,
@@ -16,6 +16,7 @@ import {
   CaideLazyContent,
 } from "~/components/chat/CaideCardPrimitives";
 import { DisclosureChevron } from "~/components/ui/DisclosureChevron";
+import { DisclosureRegion } from "~/components/ui/DisclosureRegion";
 
 type SendFn = (message: Record<string, unknown>) => void;
 
@@ -26,34 +27,46 @@ export function HarnessBlueprintCard(props: { sessionId: string; send: SendFn })
   const [changeOpen, setChangeOpen] = useState(false);
   const [feedback, setFeedback] = useState("");
   const [acted, setActed] = useState(false);
+  const responseSent = useRef(false);
 
   if (!blueprint || acted) return null;
 
-  const approve = () => {
-    props.send({
-      type: "blueprint_response",
-      sessionId: props.sessionId,
-      approved: true,
-      blueprint: {
-        appName: blueprint.appName,
-        userPrompt: blueprint.userPrompt,
-        framework: blueprint.framework,
-        designDirection: blueprint.designDirection,
-        primaryColor: blueprint.primaryColor,
-        visuals: blueprint.visuals,
-      },
-    });
+  // Double-submit guard + optimistic store clear (remount resurrection).
+  const respond = (fn: () => void) => {
+    if (responseSent.current) return;
+    responseSent.current = true;
+    fn();
+    harnessStore.resolveBlueprint(props.sessionId);
     setActed(true);
   };
 
+  const approve = () => {
+    respond(() =>
+      props.send({
+        type: "blueprint_response",
+        sessionId: props.sessionId,
+        approved: true,
+        blueprint: {
+          appName: blueprint.appName,
+          userPrompt: blueprint.userPrompt,
+          framework: blueprint.framework,
+          designDirection: blueprint.designDirection,
+          primaryColor: blueprint.primaryColor,
+          visuals: blueprint.visuals,
+        },
+      }),
+    );
+  };
+
   const requestChanges = () => {
-    props.send({
-      type: "blueprint_response",
-      sessionId: props.sessionId,
-      approved: false,
-      feedback,
-    });
-    setActed(true);
+    respond(() =>
+      props.send({
+        type: "blueprint_response",
+        sessionId: props.sessionId,
+        approved: false,
+        feedback,
+      }),
+    );
   };
 
   return (
@@ -92,7 +105,7 @@ export function HarnessBlueprintCard(props: { sessionId: string; send: SendFn })
                   Approve blueprint
                 </Button>
               </div>
-              {changeOpen ? (
+              <DisclosureRegion open={changeOpen}>
                 <div className="flex flex-col gap-2">
                   <textarea
                     className="min-h-16 rounded-md border border-border/70 bg-background px-2.5 py-1.5 text-xs"
@@ -106,7 +119,7 @@ export function HarnessBlueprintCard(props: { sessionId: string; send: SendFn })
                     </Button>
                   </div>
                 </div>
-              ) : null}
+              </DisclosureRegion>
             </div>
           </div>
         </CaideLazyContent>

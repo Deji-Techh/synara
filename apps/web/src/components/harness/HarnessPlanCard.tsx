@@ -4,9 +4,9 @@
 // shows the accepted state with the Start-building gate. Continue/requests
 // travel back as steer messages (the loop treats them as user turns).
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "~/components/ui/button";
-import { useHarnessStore } from "~/harnessStore";
+import { harnessStore, useHarnessStore } from "~/harnessStore";
 import {
   CaideBadge,
   CaideCard,
@@ -14,6 +14,7 @@ import {
   CaideLazyContent,
 } from "~/components/chat/CaideCardPrimitives";
 import { DisclosureChevron } from "~/components/ui/DisclosureChevron";
+import { DisclosureRegion } from "~/components/ui/DisclosureRegion";
 
 type SendFn = (message: Record<string, unknown>) => void;
 
@@ -24,11 +25,18 @@ export function HarnessPlanCard(props: { sessionId: string; send: SendFn }) {
   const [changeOpen, setChangeOpen] = useState(false);
   const [feedback, setFeedback] = useState("");
   const [acted, setActed] = useState(false);
+  const steerSent = useRef(false);
 
   if (!plan || acted) return null;
 
   const steer = (prompt: string) => {
+    // Double-submit guard: rapid clicks must not fork duplicate turns.
+    if (steerSent.current) return;
+    steerSent.current = true;
     props.send({ type: "steer", sessionId: props.sessionId, prompt });
+    // Optimistic store clear: local acted resets on remount, which
+    // resurrected answered gates on thread switch.
+    harnessStore.resolvePlan(props.sessionId);
     setActed(true);
   };
 
@@ -82,7 +90,7 @@ export function HarnessPlanCard(props: { sessionId: string; send: SendFn }) {
                     Looks good — continue
                   </Button>
                 </div>
-                {changeOpen ? (
+                <DisclosureRegion open={changeOpen}>
                   <div className="flex flex-col gap-2">
                     <textarea
                       className="min-h-16 rounded-md border border-border/70 bg-background px-2.5 py-1.5 text-xs"
@@ -100,7 +108,7 @@ export function HarnessPlanCard(props: { sessionId: string; send: SendFn }) {
                       </Button>
                     </div>
                   </div>
-                ) : null}
+                </DisclosureRegion>
               </div>
             )}
           </div>

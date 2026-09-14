@@ -199,6 +199,28 @@ describe("transcriptMirror", () => {
     expect(threads[0].messages[1].text).toBe("");
   });
 
+  it("replaces image payloads with a placeholder instead of base64 text", () => {
+    const { threads, mirrorHarnessTurnEvent } = setup();
+    mirrorHarnessTurnEvent({
+      type: "turn_start",
+      sessionId: "t-1",
+      turnId: "turn-9",
+      prompt: "hey",
+    });
+    mirrorHarnessTurnEvent({
+      type: "tool_call",
+      sessionId: "t-1",
+      id: "c-img",
+      name: "screenshot",
+      args: {},
+      status: "completed",
+      result: JSON.stringify({ base64: `data:image/png;base64,${"A".repeat(300)}` }),
+    });
+    const text: string = threads[0].messages[1].text;
+    expect(text).toContain("[image result");
+    expect(text).not.toContain("AAAAAAAAAA");
+  });
+
   it("closes dangling tool tags on turn_end", () => {
     const { threads, mirrorHarnessTurnEvent } = setup();
     mirrorHarnessTurnEvent({

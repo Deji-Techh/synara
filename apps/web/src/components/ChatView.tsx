@@ -500,7 +500,7 @@ import { HarnessPlanCard } from "./harness/HarnessPlanCard";
 import { HarnessVerifierCard } from "./harness/HarnessVerifierCard";
 import { HarnessVersionsCard } from "./harness/HarnessVersionsCard";
 import { useChatHarnessSocket } from "./chat/useChatHarnessSocket";
-import { useHarnessTurnLive } from "~/harnessStore";
+import { harnessStore, useHarnessStore, useHarnessTurnLive } from "~/harnessStore";
 import { ThreadDetailHydrationState } from "./chat/ThreadDetailHydrationState";
 import type { MessagesTimelineController } from "./chat/MessagesTimeline";
 import { buildTurnDiffSummaryByAssistantMessageId } from "./chat/MessagesTimeline.logic";
@@ -1911,6 +1911,32 @@ export default function ChatView({
   // lifecycle — unlike message streaming flags, it cannot latch on when a
   // turn dies without its turn_end (the stuck-mic/stop-square bug).
   const harnessTurnLive = useHarnessTurnLive(activeThreadId);
+  // Harness UI presence (same store the turn-live flag reads — no extra
+  // subscription cost). Gates strip/tail shells (no empty scroll landmarks)
+  // and honesty-gates the live-changes header while parked on user input.
+  const harnessUiState = useHarnessStore();
+  const harnessSession = activeThreadId ? harnessUiState.sessions[activeThreadId] : undefined;
+  const harnessApprovalCount =
+    (harnessSession?.prompts.length ?? 0) +
+    (harnessSession?.plan ? 1 : 0) +
+    (harnessSession?.blueprint ? 1 : 0) +
+    (harnessSession?.checkpoint ? 1 : 0);
+  const hasHarnessApprovals = harnessApprovalCount > 0;
+  const hasHarnessTailCards =
+    !!harnessSession?.verifier || (harnessSession?.versions.length ?? 0) > 0;
+  const harnessParkedOnUser =
+    (harnessSession?.prompts.length ?? 0) > 0 || !!harnessSession?.checkpoint;
+  // Self-heal delivery gaps without navigation: while a harness turn is live
+  // but quiet, re-subscribe periodically so the server replays any prompt
+  // whose live broadcast was lost (half-open socket, subscribe gap). Replay
+  // dedupes by requestId, so this is a safe no-op when nothing was missed.
+  useEffect(() => {
+    if (!harnessTurnLive || !activeThreadId) return;
+    const id = window.setInterval(() => {
+      chatHarnessSocket.resubscribe();
+    }, 15_000);
+    return () => window.clearInterval(id);
+  }, [harnessTurnLive, activeThreadId, chatHarnessSocket]);
   const activeLatestTurn = activeThread?.latestTurn ?? null;
   // Read once here so memo bodies depend on the turn id instead of the turn object: a
   // `foo?.bar` read inside a memo makes React Compiler infer `foo` as the dependency, which
@@ -4760,6 +4786,13 @@ export default function ChatView({
   );
   const stopActiveThreadSession = useCallback(async () => {
     const api = readNativeApi();
+    // Harness turns are invisible to the orchestration stop below: cancel
+    // the harness turn directly and unlatch the stop control even if no
+    // turn_end arrives (stuck-turn backstop).
+    if (harnessTurnLive && activeThread) {
+      chatHarnessSocket.send({ type: "cancel", sessionId: activeThread.id });
+      harnessStore.clearLiveTurn(activeThread.id);
+    }
     if (
       !api ||
       !isServerThread ||
@@ -4776,7 +4809,7 @@ export default function ChatView({
       threadId: activeThread.id,
       createdAt: new Date().toISOString(),
     });
-  }, [activeThread, isServerThread]);
+  }, [activeThread, isServerThread, harnessTurnLive, chatHarnessSocket]);
   const {
     handoffBusy,
     worktreeHandoffDialogOpen,
@@ -7785,6 +7818,8 @@ export default function ChatView({
         appPath: threadWorkspaceCwd ?? activeProject.cwd,
         prompt: trimmedPromptForSend,
         mode: harnessMode,
+        // Full access bypasses per-tool consent cards server-side.
+        ...(runtimeMode ? { runtimeMode } : {}),
         ...(harnessRouting.providerId ? { providerId: harnessRouting.providerId } : {}),
         ...(harnessRouting.modelId ? { modelId: harnessRouting.modelId } : {}),
         ...(harnessFramework === "blank" ||
@@ -11070,7 +11105,12 @@ export default function ChatView({
       }
     : null;
 
-  const showComposerLiveChangesHeader = latestTurnLive && activeTurnLiveDiffState.hasChanges;
+  // Parked on user input means the agent is waiting, not working: hide the
+  // live-changes header so "N files changed" never implies active progress
+  // while the turn awaits taps. (The loading animation already swaps to a
+  // waiting copy; the stop control stays — cancelling a parked turn is real.)
+  const showComposerLiveChangesHeader =
+    latestTurnLive && activeTurnLiveDiffState.hasChanges && !harnessParkedOnUser;
   const showComposerActiveTaskListCard = Boolean(activeTaskList && !planSidebarOpen);
   const showComposerWorkflowRunCard = workflowRunState !== null;
   const showComposerSubagentStrip = composerSubagentStripItems.length > 0;
@@ -11187,8 +11227,8 @@ export default function ChatView({
                   like questionnaires — they render here (never above the
                   header). Read-only tool history projects inline into the
                   transcript via the mirror instead. */}
-              {activeThreadId ? (
-                <div className="max-h-[32dvh] min-h-0 overflow-y-auto overscroll-contain">
+              {activeThreadId && hasHarnessApprovals ? (
+                <div className="max-h-[32dvh] min-h-0 shrink-0 overflow-y-auto overscroll-contain">
                   <HarnessPlanCard sessionId={activeThreadId} send={chatHarnessSocket.send} />
                   <HarnessBlueprintCard sessionId={activeThreadId} send={chatHarnessSocket.send} />
                   <ChatHarnessCheckpointStrip
@@ -12043,7 +12083,7 @@ export default function ChatView({
                       pushing the composer off-screen. Actionable cards
                       (prompts, checkpoints, plan, blueprint) live in the
                       above-composer strip instead. */}
-                  {activeThreadId ? (
+                  {activeThreadId && hasHarnessTailCards ? (
                     <div className="max-h-[30dvh] min-h-0 shrink-0 overflow-y-auto overscroll-contain">
                       <HarnessVerifierCard sessionId={activeThreadId} />
                       <HarnessVersionsCard

@@ -43,9 +43,11 @@ export const AntigravityToolGroup: React.FC<AntigravityToolGroupProps> = ({
     setExpandedItems((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  // Group summary label
+  // Group summary label. Running vs settled is derived per branch (see
+  // isRunning below for the header switch).
   const { summaryLabel, activeLabel } = useMemo(() => {
-    if (items.length === 0) return { summaryLabel: "Ran operations", activeLabel: "Running operations" };
+    if (items.length === 0)
+      return { summaryLabel: "Ran operations", activeLabel: "Running operations" };
 
     const commands = items.filter((it) => it.type === "command");
     const searches = items.filter((it) => it.type === "search");
@@ -55,7 +57,10 @@ export const AntigravityToolGroup: React.FC<AntigravityToolGroupProps> = ({
 
     // Single command
     if (items.length === 1 && commands.length === 1 && commands[0].target) {
-      const cmd = commands[0].target.length > 55 ? commands[0].target.slice(0, 52) + "..." : commands[0].target;
+      const cmd =
+        commands[0].target.length > 55
+          ? commands[0].target.slice(0, 52) + "..."
+          : commands[0].target;
       return {
         summaryLabel: `Ran ${cmd}`,
         activeLabel: `Running ${cmd}`,
@@ -112,19 +117,40 @@ export const AntigravityToolGroup: React.FC<AntigravityToolGroupProps> = ({
 
     // Mixed
     const parts: string[] = [];
-    if (commands.length > 0) parts.push(`Ran ${commands.length} ${commands.length === 1 ? "command" : "commands"}`);
-    if (edits.length > 0) parts.push(`edited ${edits.length} ${edits.length === 1 ? "file" : "files"}`);
-    if (filesCount > 0) parts.push(`explored ${filesCount} ${filesCount === 1 ? "file" : "files"}`);
-    if (searches.length > 0) parts.push(`${searches.length} ${searches.length === 1 ? "search" : "searches"}`);
+    const activeParts: string[] = [];
+    if (commands.length > 0) {
+      parts.push(`Ran ${commands.length} ${commands.length === 1 ? "command" : "commands"}`);
+      activeParts.push(
+        `Running ${commands.length} ${commands.length === 1 ? "command" : "commands"}`,
+      );
+    }
+    if (edits.length > 0) {
+      parts.push(`edited ${edits.length} ${edits.length === 1 ? "file" : "files"}`);
+      activeParts.push(`editing ${edits.length} ${edits.length === 1 ? "file" : "files"}`);
+    }
+    if (filesCount > 0) {
+      parts.push(`explored ${filesCount} ${filesCount === 1 ? "file" : "files"}`);
+      activeParts.push(`exploring ${filesCount} ${filesCount === 1 ? "file" : "files"}`);
+    }
+    if (searches.length > 0) {
+      parts.push(`${searches.length} ${searches.length === 1 ? "search" : "searches"}`);
+      activeParts.push(
+        `${searches.length} ${searches.length === 1 ? "search" : "searches"} running`,
+      );
+    }
 
     const label = parts.join(", ") || `${items.length} tool calls`;
     return {
       summaryLabel: label,
-      activeLabel: label,
+      activeLabel: activeParts.join(", ") || label,
     };
   }, [items]);
 
-  const displayHeader = isOpen ? activeLabel : summaryLabel;
+  // Liveness comes from the items, NEVER the disclosure toggle: an expanded
+  // settled group must read "Ran", a collapsed running group "Running".
+  const isRunning =
+    isStreaming || items.some((it) => it.state === "running" || it.isStreaming === true);
+  const displayHeader = isRunning ? activeLabel : summaryLabel;
 
   return (
     <div className="my-1 text-left font-sans select-none" style={{ fontSize: `${fontSizePx}px` }}>
@@ -139,7 +165,7 @@ export const AntigravityToolGroup: React.FC<AntigravityToolGroupProps> = ({
         </span>
         <DisclosureChevron
           open={isOpen}
-          className="size-3 text-muted-foreground/60 transition-transform duration-200 group-hover:text-foreground/80"
+          className="size-3 text-muted-foreground/60 group-hover:text-foreground/80"
         />
       </button>
 
@@ -194,7 +220,7 @@ function AntigravityItemRow({
           </span>
           <DisclosureChevron
             open={isExpanded}
-            className="size-2.5 text-muted-foreground/50 transition-transform group-hover:text-foreground/70"
+            className="size-2.5 text-muted-foreground/50 group-hover:text-foreground/70"
           />
         </button>
 
@@ -214,7 +240,11 @@ function AntigravityItemRow({
                 className="absolute top-0 right-1 p-1 text-muted-foreground/40 hover:text-muted-foreground rounded transition-colors"
                 title="Copy thought"
               >
-                {copied ? <CheckIcon className="size-3 text-emerald-500" /> : <CopyIcon className="size-3" />}
+                {copied ? (
+                  <CheckIcon className="size-3 text-emerald-500" />
+                ) : (
+                  <CopyIcon className="size-3" />
+                )}
               </button>
             )}
           </div>
@@ -246,7 +276,7 @@ function AntigravityItemRow({
           {item.content && (
             <DisclosureChevron
               open={isExpanded}
-              className="size-2.5 text-muted-foreground/40 transition-transform group-hover:text-foreground/60 ml-0.5"
+              className="size-2.5 text-muted-foreground/40 group-hover:text-foreground/60 ml-0.5"
             />
           )}
         </button>
@@ -260,7 +290,11 @@ function AntigravityItemRow({
                 className="absolute top-1.5 right-1.5 p-1 bg-background/60 hover:bg-background rounded border border-border/40 text-muted-foreground transition-colors"
                 title="Copy content"
               >
-                {copied ? <CheckIcon className="size-3 text-emerald-500" /> : <CopyIcon className="size-3" />}
+                {copied ? (
+                  <CheckIcon className="size-3 text-emerald-500" />
+                ) : (
+                  <CopyIcon className="size-3" />
+                )}
               </button>
               {item.content}
             </div>
@@ -293,7 +327,7 @@ function AntigravityItemRow({
           {item.content && (
             <DisclosureChevron
               open={isExpanded}
-              className="size-2.5 text-muted-foreground/40 transition-transform group-hover:text-foreground/60 ml-0.5"
+              className="size-2.5 text-muted-foreground/40 group-hover:text-foreground/60 ml-0.5"
             />
           )}
         </button>
@@ -307,7 +341,63 @@ function AntigravityItemRow({
                 className="absolute top-1.5 right-1.5 p-1 bg-background/60 hover:bg-background rounded border border-border/40 text-muted-foreground transition-colors"
                 title="Copy results"
               >
-                {copied ? <CheckIcon className="size-3 text-emerald-500" /> : <CopyIcon className="size-3" />}
+                {copied ? (
+                  <CheckIcon className="size-3 text-emerald-500" />
+                ) : (
+                  <CopyIcon className="size-3" />
+                )}
+              </button>
+              {item.content}
+            </div>
+          </DisclosureRegion>
+        )}
+      </div>
+    );
+  }
+
+  // Other (todos, subagents, approvals, misc): neutral text row — never the
+  // Bash/command chip, which lied about what ran.
+  if (item.type === "other") {
+    return (
+      <div className="flex flex-col py-0.5">
+        <button
+          type="button"
+          onClick={onToggle}
+          className="group inline-flex items-center gap-1.5 text-left text-[12px] text-muted-foreground hover:text-foreground transition-colors cursor-pointer py-0.5"
+        >
+          <span className="text-muted-foreground/80 font-normal">{item.verb}</span>
+          {item.target && (
+            <span className="font-mono text-[11.5px] text-foreground/90 group-hover:text-foreground">
+              {item.target}
+            </span>
+          )}
+          {item.resultBadge && (
+            <span className="rounded bg-muted/60 px-1.5 py-0.2 font-mono text-[10.5px] text-muted-foreground/80">
+              {item.resultBadge}
+            </span>
+          )}
+          {item.content && (
+            <DisclosureChevron
+              open={isExpanded}
+              className="size-2.5 text-muted-foreground/40 group-hover:text-foreground/60 ml-0.5"
+            />
+          )}
+        </button>
+
+        {item.content && (
+          <DisclosureRegion open={isExpanded}>
+            <div className="relative mt-1 mb-1 rounded-md border border-border/40 bg-muted/20 p-2 font-mono text-[11px] leading-relaxed max-h-60 overflow-y-auto whitespace-pre-wrap break-all text-foreground/85">
+              <button
+                type="button"
+                onClick={handleCopy}
+                className="absolute top-1.5 right-1.5 p-1 bg-background/60 hover:bg-background rounded border border-border/40 text-muted-foreground transition-colors"
+                title="Copy results"
+              >
+                {copied ? (
+                  <CheckIcon className="size-3 text-emerald-500" />
+                ) : (
+                  <CopyIcon className="size-3" />
+                )}
               </button>
               {item.content}
             </div>
@@ -333,7 +423,7 @@ function AntigravityItemRow({
         {item.content && (
           <DisclosureChevron
             open={isExpanded}
-            className="size-2.5 text-muted-foreground/40 transition-transform group-hover:text-foreground/60 ml-0.5"
+            className="size-2.5 text-muted-foreground/40 group-hover:text-foreground/60 ml-0.5"
           />
         )}
       </button>
@@ -347,7 +437,11 @@ function AntigravityItemRow({
               className="absolute top-1.5 right-1.5 p-1 bg-background/60 hover:bg-background rounded border border-border/40 text-muted-foreground transition-colors"
               title="Copy output"
             >
-              {copied ? <CheckIcon className="size-3 text-emerald-500" /> : <CopyIcon className="size-3" />}
+              {copied ? (
+                <CheckIcon className="size-3 text-emerald-500" />
+              ) : (
+                <CopyIcon className="size-3" />
+              )}
             </button>
             {item.content}
           </div>

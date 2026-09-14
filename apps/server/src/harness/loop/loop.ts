@@ -195,24 +195,24 @@ export function repairToolPairing(messages: ChatMessage[]): ChatMessage[] {
     if (!Array.isArray(m.content)) continue;
     for (const b of m.content as Array<Record<string, unknown>>) {
       if (b.type === "tool_use" && typeof b.id === "string") used.add(b.id);
-      if (b.type === "tool_result" && typeof b.tool_use_id === "string") resulted.add(b.tool_use_id);
+      if (b.type === "tool_result" && typeof b.tool_use_id === "string")
+        resulted.add(b.tool_use_id);
     }
   }
   const keep = (id: string | undefined, isUse: boolean): boolean => {
     if (typeof id !== "string" || !id) return true;
     return isUse ? resulted.has(id) : used.has(id);
   };
-  return messages
-    .map((m) => {
-      if (!Array.isArray(m.content)) return m;
-      const blocks = (m.content as Array<Record<string, unknown>>).filter((b) => {
-        if (b.type === "tool_use") return keep(typeof b.id === "string" ? b.id : undefined, true);
-        if (b.type === "tool_result")
-          return keep(typeof b.tool_use_id === "string" ? b.tool_use_id : undefined, false);
-        return true;
-      });
-      return { ...m, content: blocks };
+  return messages.map((m) => {
+    if (!Array.isArray(m.content)) return m;
+    const blocks = (m.content as Array<Record<string, unknown>>).filter((b) => {
+      if (b.type === "tool_use") return keep(typeof b.id === "string" ? b.id : undefined, true);
+      if (b.type === "tool_result")
+        return keep(typeof b.tool_use_id === "string" ? b.tool_use_id : undefined, false);
+      return true;
     });
+    return { ...m, content: blocks };
+  });
 }
 
 /** Default terminated-step retries (donor terminated-retry continuation). */
@@ -249,6 +249,20 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
 
   let step = 0;
   const executedReadOnlyToolSignatures = new Map<string, number>();
+  // Silent-turn + retry-loop guards (a completed turn with zero assistant
+  // output is always a bug — the user stares at a dead chat):
+  // - producedOutput: any token or terminal tool event this turn.
+  // - awaitingUserFollowUp: a human wait just resolved; the next step MUST
+  //   say something (the classic silent case: answers arrive, model replies
+  //   with nothing, turn completes).
+  // - emptyStepRetriesLeft: one retry with an explicit nudge, then fail loud.
+  // - consecutiveFailureCounts: identical failures (name+message) in a row;
+  //   3 strikes ends the turn as failed instead of looping to maxSteps.
+  let producedOutput = false;
+  let awaitingUserFollowUp = false;
+  let emptyStepRetriesLeft = 1;
+  const consecutiveFailureCounts = new Map<string, number>();
+  let lastFailureSignature: string | null = null;
   // Per-step routing state: what the previous step did.
   let lastStepAllReadOnly = true;
   let hasMutatedThisTurn = false;
@@ -350,6 +364,8 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
 
             if (chunk.type === "token" && chunk.content) {
               stepText += chunk.content;
+              producedOutput = true;
+              awaitingUserFollowUp = false;
               yield emit({
                 type: "token",
                 sessionId,
@@ -392,14 +408,53 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
         }
       }
 
-      // If no tool calls occurred, LLM completed its generation for the turn
+      // If no tool calls occurred, LLM completed its generation for the turn —
+      // unless it produced NOTHING (no text, no calls). An all-silent turn is
+      // never a valid completion: either the provider glitched (retry once
+      // with an explicit nudge) or the model is stuck (fail loud so the user
+      // sees an error instead of a dead chat).
       if (pendingToolCalls.length === 0) {
+        if (stepText.trim().length === 0 && (!producedOutput || awaitingUserFollowUp)) {
+          if (emptyStepRetriesLeft > 0) {
+            emptyStepRetriesLeft -= 1;
+            const nudge = awaitingUserFollowUp
+              ? "The user just answered your questions, but your last response was empty. Reply to their answers now — do not end silently and do not re-ask the same questions."
+              : "Your last response was empty (no text, no tool calls). Please respond to the user now instead of ending silently.";
+            stepTranscript.push({ role: "user", content: nudge } as ChatMessage);
+            awaitingUserFollowUp = false;
+            yield emit({
+              type: "error",
+              sessionId,
+              code: "STEP_EMPTY_RETRY",
+              message: "Model returned an empty step; retrying once with an explicit nudge.",
+              recoverable: true,
+            });
+            continue;
+          }
+          throw new Error(
+            "STEP_EMPTY: the model returned no text and no tool calls twice in a row with no prior output this turn. The provider may be overloaded — try again.",
+          );
+        }
         break;
       }
 
       // Execute tool calls
       const stopTools = new Set(options.stopAfterTool ?? []);
       let stopAfterStep = false;
+      // Same-signature failure dedup (all tools, not just read-only):
+      // repeated identical failures end the turn instead of looping.
+      const recordFailureSignature = (name: string, message: string): number => {
+        const sig = `${name}:${message}`;
+        const count =
+          sig === lastFailureSignature ? (consecutiveFailureCounts.get(sig) ?? 1) + 1 : 1;
+        lastFailureSignature = sig;
+        consecutiveFailureCounts.set(sig, count);
+        return count;
+      };
+      const clearFailureSignatures = (): void => {
+        consecutiveFailureCounts.clear();
+        lastFailureSignature = null;
+      };
       for (const call of pendingToolCalls) {
         if (signal?.aborted) break;
 
@@ -478,6 +533,12 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
             result: formattedErr,
             durationMs: Date.now() - startTime,
           });
+          // Unknown tools loop the same way known ones do — count them.
+          if (recordFailureSignature(call.name, `Unknown tool: '${call.name}'`) >= 3) {
+            throw new Error(
+              `VALIDATION_LOOP: unknown tool '${call.name}' requested 3 times in a row.`,
+            );
+          }
           // Feed the failure back too — otherwise the model retries blind.
           transcriptResult = formattedErr;
           transcriptFailed = true;
@@ -527,15 +588,23 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
               : 30_000;
           const result = toolDef.waitsForUserInput
             ? await toolDef.execute(call.args, executeCtx)
-            : await Promise.race([
-                toolDef.execute(call.args, executeCtx),
-                new Promise<never>((_, reject) =>
-                  setTimeout(
-                    () => reject(new Error(`Tool '${resolvedName}' timed out after ${budgetMs}ms`)),
-                    budgetMs,
-                  ),
-                ),
-              ]);
+            : await (async () => {
+                let timeoutId: ReturnType<typeof setTimeout> | undefined;
+                try {
+                  return await Promise.race([
+                    toolDef.execute(call.args, executeCtx),
+                    new Promise<never>((_, reject) => {
+                      timeoutId = setTimeout(() => {
+                        reject(new Error(`Tool '${resolvedName}' timed out after ${budgetMs}ms`));
+                      }, budgetMs);
+                    }),
+                  ]);
+                } finally {
+                  // Every settled race must release its timer (leaked timers
+                  // hold the loop open and reject into settled races).
+                  if (timeoutId !== undefined) clearTimeout(timeoutId);
+                }
+              })();
 
           yield emit({
             type: "tool_call",
@@ -547,6 +616,9 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
             result,
             durationMs: Date.now() - startTime,
           });
+          producedOutput = true;
+          if (toolDef.waitsForUserInput) awaitingUserFollowUp = true;
+          clearFailureSignatures();
           transcriptResult = result;
           if (stopTools.has(resolvedName)) stopAfterStep = true;
         } catch (err) {
@@ -554,6 +626,13 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
           const formattedErr = errorFormatter(resolvedName, err);
           transcriptResult = formattedErr;
           transcriptFailed = true;
+          producedOutput = true;
+
+          // Same-signature failure dedup (all tools, not just read-only):
+          // three identical consecutive failures end the turn as failed
+          // instead of burning maxSteps on a validation/timeout loop.
+          const failureMessage = err instanceof Error ? err.message : String(err);
+          const failureCount = recordFailureSignature(resolvedName, failureMessage);
 
           yield emit({
             type: "tool_call",
@@ -565,6 +644,18 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
             result: formattedErr,
             durationMs: Date.now() - startTime,
           });
+          if (failureCount >= 3) {
+            yield emit({
+              type: "error",
+              sessionId,
+              code: "VALIDATION_LOOP",
+              message: `Tool '${resolvedName}' failed identically ${failureCount} times in a row (${failureMessage}). Ending the turn instead of retrying to max steps.`,
+              recoverable: false,
+            });
+            throw new Error(
+              `VALIDATION_LOOP: tool '${resolvedName}' failed identically ${failureCount} times in a row: ${failureMessage}`,
+            );
+          }
         } finally {
           pushTranscriptFeedback();
         }

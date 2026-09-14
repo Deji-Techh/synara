@@ -51,4 +51,20 @@ describe("resolveHarnessToolPresentation", () => {
       completed: "Updated to-dos",
     });
   });
+
+  it("maps plan/memory/approval tools instead of falling back to 'Analyzed'", () => {
+    expect(resolveHarnessToolPresentation("planning_questionnaire")).toMatchObject({
+      type: "other",
+      completed: "Asked",
+    });
+    expect(resolveHarnessToolPresentation("write_plan")).toMatchObject({
+      completed: "Presented plan",
+    });
+    expect(resolveHarnessToolPresentation("write_app_blueprint")).toMatchObject({
+      completed: "Drafted blueprint",
+    });
+    expect(resolveHarnessToolPresentation("execute_sql")).toMatchObject({ completed: "Ran query" });
+    expect(resolveHarnessToolPresentation("delete_file")).toMatchObject({ type: "edit" });
+    expect(resolveHarnessToolPresentation("git_commit")).toMatchObject({ completed: "Committed" });
+  });
 });

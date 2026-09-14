@@ -10,7 +10,7 @@ import { HarnessPlanCard } from "./HarnessPlanCard";
 import { HarnessTodosCard } from "./HarnessTodosCard";
 import { HarnessVerifierCard } from "./HarnessVerifierCard";
 import { HarnessVersionsCard } from "./HarnessVersionsCard";
-import { HarnessTranscript, collapseRepetitiveLines, narrationStem } from "./HarnessTranscript";
+import { collapseRepetitiveLines, narrationStem } from "./transcriptNarrative";
 import { HarnessPrompts } from "./HarnessPrompts";
 
 const send = () => {};
@@ -119,51 +119,6 @@ describe("harness components (m3)", () => {
     harnessStore.clearSession("s-hc");
   });
 
-  it("renders the transcript extras in order: tool card, checkpoint, error (text lives in the thread transcript)", () => {
-    harnessStore.clearSession("s-hc");
-    harnessStore.handleEvent({ type: "token", sessionId: "s-hc", content: "Working on it" });
-    harnessStore.handleEvent({
-      type: "tool_call",
-      sessionId: "s-hc",
-      id: "c9",
-      name: "read_file",
-      args: { path: "a.ts" },
-      status: "started",
-    });
-    harnessStore.handleEvent({
-      type: "tool_call",
-      sessionId: "s-hc",
-      id: "c9",
-      name: "read_file",
-      args: { path: "a.ts" },
-      status: "completed",
-      result: "content here",
-    });
-    harnessStore.handleEvent({
-      type: "checkpoint",
-      sessionId: "s-hc",
-      id: "k9",
-      reason: "Gate review",
-      requiresResponse: true,
-      diff: "diff text",
-    });
-    harnessStore.handleEvent({
-      type: "error",
-      sessionId: "s-hc",
-      code: "E",
-      message: "kaput",
-      recoverable: true,
-    });
-    const markup = renderToStaticMarkup(<HarnessTranscript sessionId="s-hc" send={send} />);
-    // Token text is mirrored into the thread transcript, never the strip.
-    expect(markup).not.toContain("Working on it");
-    expect(markup).toContain("Read");
-    expect(markup).toContain("a.ts");
-    expect(markup).toContain("Gate review");
-    expect(markup).toContain("kaput");
-    harnessStore.clearSession("s-hc");
-  });
-
   it("renders the todos, verifier, and versions cards from store state", () => {
     harnessStore.clearSession("s-hc");
     harnessStore.handleEvent({
@@ -203,11 +158,17 @@ describe("harness components (m3)", () => {
     harnessStore.clearSession("s-hc");
   });
 
-  it("does not render diverted user bubbles in the strip (they live in the thread transcript)", () => {
-    harnessStore.clearSession("s-hc");
-    harnessStore.appendUserMessage("s-hc", "m1", "Build me a marketplace");
-    const markup = renderToStaticMarkup(<HarnessTranscript sessionId="s-hc" send={send} />);
-    expect(markup).not.toContain("Build me a marketplace");
+  it("collapses repeated assistant status narration (item 16 helpers)", () => {
+    expect(narrationStem("Building your IUO marketplace — mapping the project first.")).toBe(
+      "building your iuo marketplace",
+    );
+    expect(narrationStem("Done.")).toBe("");
+    const { text, collapsed } = collapseRepetitiveLines(
+      "Building your IUO marketplace — mapping the project first.\nBuilding your IUO marketplace — mapping the full experience.\nFixing import paths now.",
+    );
+    expect(collapsed).toBe(1);
+    expect(text).toContain("Fixing import paths now.");
+    expect(text.match(/Building your IUO/g)).toHaveLength(1);
     harnessStore.clearSession("s-hc");
   });
 
@@ -243,76 +204,6 @@ describe("harness components (m3)", () => {
     });
     const prompts = renderToStaticMarkup(<HarnessPrompts sessionId="s-hc" send={send} />);
     expect(prompts).toContain("Locks the palette");
-    harnessStore.clearSession("s-hc");
-  });
-
-  it("collapses repeated assistant status narration (item 16 helpers)", () => {
-    expect(narrationStem("Building your IUO marketplace — mapping the project first.")).toBe(
-      "building your iuo marketplace",
-    );
-    expect(narrationStem("Done.")).toBe("");
-    const { text, collapsed } = collapseRepetitiveLines(
-      "Building your IUO marketplace — mapping the project first.\nBuilding your IUO marketplace — mapping the full experience.\nFixing import paths now.",
-    );
-    expect(collapsed).toBe(1);
-    expect(text).toContain("Fixing import paths now.");
-    expect(text.match(/Building your IUO/g)).toHaveLength(1);
-
-    // The strip no longer renders token text (thread transcript owns it),
-    // but tool cards still render around it.
-    harnessStore.clearSession("s-hc");
-    harnessStore.handleEvent({
-      type: "token",
-      sessionId: "s-hc",
-      content: "Building the full marketplace — wiring home first.",
-    });
-    harnessStore.handleEvent({
-      type: "tool_call",
-      sessionId: "s-hc",
-      id: "c1",
-      name: "read_file",
-      args: {},
-      status: "started",
-    });
-    harnessStore.handleEvent({
-      type: "tool_call",
-      sessionId: "s-hc",
-      id: "c1",
-      name: "read_file",
-      args: {},
-      status: "completed",
-      result: "ok",
-    });
-    const markup = renderToStaticMarkup(<HarnessTranscript sessionId="s-hc" send={send} />);
-    expect(markup).not.toContain("Building the full marketplace");
-    expect(markup).toContain("Read");
-    harnessStore.clearSession("s-hc");
-  });
-
-  it("renders inline images from screenshot tool results", () => {
-    harnessStore.clearSession("s-hc");
-    const payload = JSON.stringify({ base64: `data:image/png;base64,${"A".repeat(300)}` });
-    harnessStore.handleEvent({ type: "token", sessionId: "s-hc", content: "Captured." });
-    harnessStore.handleEvent({
-      type: "tool_call",
-      sessionId: "s-hc",
-      id: "c-img",
-      name: "screenshot",
-      args: {},
-      status: "started",
-    });
-    harnessStore.handleEvent({
-      type: "tool_call",
-      sessionId: "s-hc",
-      id: "c-img",
-      name: "screenshot",
-      args: {},
-      status: "completed",
-      result: payload,
-    });
-    const markup = renderToStaticMarkup(<HarnessTranscript sessionId="s-hc" send={send} />);
-    expect(markup).toContain("<img");
-    expect(markup).toContain("data:image/png;base64,");
     harnessStore.clearSession("s-hc");
   });
 });

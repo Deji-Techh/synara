@@ -21,6 +21,7 @@ import {
   TOOL_CATALOG,
   type ToolConsent,
 } from "./toolCatalog.ts";
+import { randomUUID } from "node:crypto";
 
 export interface SqlConsentMetadata {
   sqlMutatesSchema?: boolean;
@@ -63,7 +64,6 @@ interface PendingEntry {
   resolve: (d: ConsentDecision) => void;
 }
 
-let requestCounter = 0;
 const pending = new Map<string, PendingEntry>();
 
 export function waitForConsent(
@@ -89,12 +89,12 @@ export function waitForConsent(
   });
 }
 
-export function resolveConsent(requestId: string, decision: ConsentDecision): void {
+export function resolveConsent(requestId: string, decision: ConsentDecision): boolean {
   const entry = pending.get(requestId);
-  if (entry) {
-    pending.delete(requestId);
-    entry.resolve(decision);
-  }
+  if (!entry) return false;
+  pending.delete(requestId);
+  entry.resolve(decision);
+  return true;
 }
 
 /** Whether this consent request is still awaiting an answer. */
@@ -187,6 +187,8 @@ export async function requireAgentToolConsent(params: {
   autoApproveNonSchemaSql?: boolean;
   store?: ConsentStore;
   requestConsent: ConsentRequestFn;
+  /** Full-access turn: auto-allow everything except explicit user bans. */
+  bypassConsent?: boolean;
   /** Turn abort — settles a parked wait as declined instead of hanging. */
   signal?: AbortSignal;
 }): Promise<boolean> {
@@ -195,6 +197,9 @@ export async function requireAgentToolConsent(params: {
 
   if (current === "always") return true;
   if (current === "never") throw new ToolNeverAllowedError(params.toolName);
+  // Full access bypasses interactive approval — but never resurrects
+  // user-banned tools (checked above).
+  if (params.bypassConsent) return true;
 
   if (
     shouldAutoApproveAgentTool({
@@ -206,7 +211,7 @@ export async function requireAgentToolConsent(params: {
     return true;
   }
 
-  const requestId = `agent:${params.toolName}:${++requestCounter}`;
+  const requestId = `agent:${params.toolName}:${randomUUID().slice(0, 8)}`;
   // Already cancelled — fail fast without emitting a prompt nobody can answer.
   if (params.signal?.aborted) return false;
   // Two integration styles are supported: the WS layer either answers by

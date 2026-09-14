@@ -82,6 +82,8 @@ export interface StartTurnInput {
   requestConsent?: ConsentRequestFn;
   autoApproveNonSchemaSql?: boolean;
   maxSteps?: number;
+  /** Composer access mode (e.g. "full-access") — drives consent bypass. */
+  runtimeMode?: string;
   signal?: AbortSignal;
   onEvent?: (event: HarnessEvent) => void;
   /** Test seam: bypass provider streaming. */
@@ -440,7 +442,7 @@ export class CaideRunner {
         settings: input.settings,
         providerId: input.providerId,
         modelId: input.modelId,
-        // Plan turns get plan-only tools (write_plan/exit_plan); all other
+        ...(input.runtimeMode ? { runtimeMode: input.runtimeMode } : {}), // Plan turns get plan-only tools (write_plan/exit_plan); all other
         // modes exclude them. Previously nothing passed options, so they were
         // filtered from EVERY turn while the plan prompt assumed they exist.
         options: { planModeOnly: chatMode === "plan" },

@@ -33,6 +33,7 @@ export interface GatewayTurnRequest {
   providerId?: string;
   modelId?: string;
   maxSteps?: number;
+  runtimeMode?: StartTurnInput["runtimeMode"];
 }
 
 /**
@@ -66,6 +67,46 @@ export class TurnGateway {
   private requestConsent: ConsentRequestFn | null = null;
   private requestMcpConsent: McpConsentRequestFn | null = null;
 
+  /**
+   * Steer a live turn, or launch a fresh turn when none is running. Steers
+   * into a dead inbox go nowhere (plan continue-gates and blueprint
+   * approvals arrive after their turn ended) — the approval then looks
+   * accepted while the agent never replies.
+   */
+  private steerOrLaunch(server: HarnessHub, sessionId: string, prompt: string): void {
+    if (this.runner.hasLiveTurn(sessionId)) {
+      this.getInbox(sessionId).steer(prompt);
+      return;
+    }
+    const appPath = getSessionApp(sessionId);
+    if (!appPath) {
+      try {
+        server.broadcastToSession(sessionId, {
+          type: "error",
+          sessionId,
+          code: "STEER_WITHOUT_TURN",
+          message: "Nothing is running to continue — send a new message to start.",
+          recoverable: true,
+        });
+      } catch {
+        // socket dead; nothing to settle
+      }
+      return;
+    }
+    void this.startTurn({ sessionId, appPath, prompt }).catch((err) => {
+      try {
+        server.broadcastToSession(sessionId, {
+          type: "error",
+          sessionId,
+          code: "TURN_START_FAILED",
+          message: err instanceof Error ? err.message : String(err),
+          recoverable: true,
+        });
+      } catch {
+        // last resort: socket itself is dead
+      }
+    });
+  }
   /** Attach a WS server: bridge UI transports + steer/cancel bindings. */
   attachWs(server: HarnessHub): void {
     this.ws = server;
@@ -84,6 +125,7 @@ export class TurnGateway {
         providerId: turn.providerId,
         modelId: turn.modelId,
         maxSteps: turn.maxSteps,
+        ...(turn.runtimeMode ? { runtimeMode: turn.runtimeMode } : {}),
         settings: turn.providerSettings ? { providerSettings: turn.providerSettings } : undefined,
       }).catch((err) => {
         // Never swallow: a turn that dies before emitting would otherwise
@@ -102,7 +144,7 @@ export class TurnGateway {
       });
     });
     server.onSteer((sessionId, prompt) => {
-      this.getInbox(sessionId).steer(prompt);
+      this.steerOrLaunch(server, sessionId, prompt);
     });
     server.onProviderSettingsGet((sessionId, requestId) => {
       this.sendProviderState(server, sessionId, requestId);
@@ -225,11 +267,15 @@ export class TurnGateway {
           (blueprint ?? undefined) as AppBlueprint | undefined,
         );
         const name = stored?.appName ?? "the app";
-        this.getInbox(sessionId).steer(
+        this.steerOrLaunch(
+          server,
+          sessionId,
           `The app blueprint for "${name}" has been approved. Proceed with implementation using it to guide file creation, design tokens, and visual assets.`,
         );
       } else {
-        this.getInbox(sessionId).steer(
+        this.steerOrLaunch(
+          server,
+          sessionId,
           `The user requested changes to the app blueprint: ${feedback?.trim() || "no details given"}. Update the blueprint with write_app_blueprint and wait for approval again.`,
         );
       }
@@ -296,24 +342,21 @@ export class TurnGateway {
   }
 
   cancelTurn(sessionId: string, cause?: string): void {
-    const live = this.runner.hasLiveTurn(sessionId);
     if (this.ws) withdrawSessionPrompts(this.ws, sessionId);
     this.runner.cancel(sessionId, cause);
-    if (!live) {
-      // Nothing running (e.g. stale client state after a restart mid-turn):
-      // settle the UI so the composer doesn't latch on stop forever. A real
-      // in-flight turn ends itself with its own turn_end; this is a no-op
-      // for the mirror (no open turn) and idempotent client-side.
-      try {
-        this.ws?.broadcastToSession(sessionId, {
-          type: "turn_end",
-          sessionId,
-          turnId: "settled",
-          status: "cancelled",
-        });
-      } catch {
-        // socket dead; nothing to settle
-      }
+    // Always settle the UI: a turn that died without its own turn_end leaves
+    // the Stop button latched on a dead turn otherwise. An in-flight turn
+    // ends itself with its own turn_end right after; both are idempotent
+    // client-side (liveTurnId cleared, prompts dropped).
+    try {
+      this.ws?.broadcastToSession(sessionId, {
+        type: "turn_end",
+        sessionId,
+        turnId: "settled",
+        status: "cancelled",
+      });
+    } catch {
+      // socket dead; nothing to settle
     }
   }
 

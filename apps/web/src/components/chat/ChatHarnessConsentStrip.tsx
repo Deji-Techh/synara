@@ -5,14 +5,16 @@
 // main transcript and reads as hung until cancel flushes the settle.
 
 import { HarnessPrompts } from "~/components/harness/HarnessPrompts";
+import { useHarnessStore } from "~/harnessStore";
 
 type SendFn = (message: Record<string, unknown>) => void;
 
 export function ChatHarnessConsentStrip(props: { threadId: string | null; send: SendFn }) {
-  if (!props.threadId) return null;
-  // Parked cards stack here (questionnaires, consents, keys). Cap the
-  // height so a full stack scrolls in place instead of overlapping the
-  // transcript or pushing the composer off-screen.
+  const state = useHarnessStore();
+  const promptCount = props.threadId ? (state.sessions[props.threadId]?.prompts.length ?? 0) : 0;
+  // Null (not an empty scroll shell) when there's nothing to show, so the
+  // composer seam is untouched.
+  if (!props.threadId || promptCount === 0) return null;
   return (
     <div className="max-h-80 min-h-0 overflow-y-auto overscroll-contain px-1">
       <HarnessPrompts sessionId={props.threadId} send={props.send} />

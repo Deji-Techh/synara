@@ -8,7 +8,7 @@ import { PROVIDER_KINDS } from "@caide/contracts";
 import { isPhantomInitialThreadId } from "@caide/shared/chatThreads";
 import { resolveAttachmentPathById } from "./attachmentStore.ts";
 import { applyDispatchSystemPromptOverride } from "./harness/prompts/dispatchSystemPrompt.ts";
-import { setTranscriptMirror } from "./harness/turn/gateway.ts";
+import { setTranscriptMirror, sharedTurnGateway } from "./harness/turn/gateway.ts";
 import {
   HARNESS_ASSISTANT_MSG_PREFIX,
   createTranscriptMirror,
@@ -47,36 +47,37 @@ export class CheckpointDiffQuery extends ServiceMap.Service<CheckpointDiffQuery,
 
 export function getThreadWorkspaceCwd(threadId: string): string {
   try {
-loadPersistedState();
+    loadPersistedState();
 
-// Startup reconciliation: no runner turn survives a restart, so any harness
-// assistant row still marked streaming is stale by definition. Finalize them
-// now or composers latch on the stop control forever (the stuck-mic bug).
-try {
-  let staleFixed = false;
-  for (const thread of inMemoryThreads as any[]) {
-    if (!Array.isArray(thread?.messages)) continue;
-    for (const msg of thread.messages) {
-      if (
-        typeof msg?.id === "string" &&
-        msg.id.startsWith(HARNESS_ASSISTANT_MSG_PREFIX) &&
-        msg.streaming
-      ) {
-        msg.streaming = false;
-        msg.updatedAt = new Date().toISOString();
-        thread.updatedAt = msg.updatedAt;
-        staleFixed = true;
+    // Startup reconciliation: no runner turn survives a restart, so any harness
+    // assistant row still marked streaming is stale by definition. Finalize them
+    // now or composers latch on the stop control forever (the stuck-mic bug).
+    try {
+      let staleFixed = false;
+      for (const thread of inMemoryThreads as any[]) {
+        if (!Array.isArray(thread?.messages)) continue;
+        for (const msg of thread.messages) {
+          if (
+            typeof msg?.id === "string" &&
+            msg.id.startsWith(HARNESS_ASSISTANT_MSG_PREFIX) &&
+            msg.streaming
+          ) {
+            msg.streaming = false;
+            msg.updatedAt = new Date().toISOString();
+            thread.updatedAt = msg.updatedAt;
+            staleFixed = true;
+          }
+        }
       }
+      if (staleFixed) savePersistedState();
+    } catch {
+      // never block startup
     }
-  }
-  if (staleFixed) savePersistedState();
-} catch {
-  // never block startup
-}
     const thread = inMemoryThreads.find((t) => t.id === threadId);
     if (thread) {
       if (thread.worktreePath && fs.existsSync(thread.worktreePath)) return thread.worktreePath;
-      if (thread.workingDirectory && fs.existsSync(thread.workingDirectory)) return thread.workingDirectory;
+      if (thread.workingDirectory && fs.existsSync(thread.workingDirectory))
+        return thread.workingDirectory;
       const project = inMemoryProjects.find((p) => p.id === thread.projectId);
       if (project) {
         const dir = project.cwd || project.workspaceRoot;
@@ -113,7 +114,8 @@ export function resolveThreadWorkspaceCwd(input?: any): string {
     if (input.thread) {
       const thread = input.thread;
       if (thread.worktreePath && fs.existsSync(thread.worktreePath)) return thread.worktreePath;
-      if (thread.workingDirectory && fs.existsSync(thread.workingDirectory)) return thread.workingDirectory;
+      if (thread.workingDirectory && fs.existsSync(thread.workingDirectory))
+        return thread.workingDirectory;
       const projects = input.projects ?? inMemoryProjects;
       const project = projects.find((p: any) => p && p.id === thread.projectId);
       if (project) {
@@ -232,7 +234,7 @@ function computeAllProviderStatuses(): any[] {
   const hasVoiceKey = Boolean(
     getProviderApiKeyDirect("google") ||
     getProviderApiKeyDirect("groq") ||
-    getProviderApiKeyDirect("openai")
+    getProviderApiKeyDirect("openai"),
   );
   return PROVIDER_KINDS.map((p) => {
     const apiKey = getProviderApiKeyDirect(p);
@@ -1606,13 +1608,15 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               // thread loses its link to the source thread (close-flow
               // bookkeeping, sidechat identification).
               sidechatSourceThreadId: (command as any).sidechatSourceThreadId ?? null,
-              title: command.title ?? (command.type === "thread.handoff.create" ? "Handoff" : "Fork"),
+              title:
+                command.title ?? (command.type === "thread.handoff.create" ? "Handoff" : "Fork"),
               modelSelection: command.modelSelection ?? {
                 provider: targetProvider,
                 model: "default",
               },
               runtimeMode: command.runtimeMode ?? sourceThread?.runtimeMode ?? "full-access",
-              interactionMode: command.interactionMode ?? sourceThread?.interactionMode ?? "default",
+              interactionMode:
+                command.interactionMode ?? sourceThread?.interactionMode ?? "default",
               envMode: command.envMode ?? sourceThread?.envMode ?? "local",
               branch: command.branch ?? null,
               worktreePath: command.worktreePath ?? null,
@@ -1635,7 +1639,9 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               lastVisitedAt: command.createdAt ?? now,
               archivedAt: null,
               turns: [],
-              messages: Array.isArray(command.importedMessages) ? [...command.importedMessages] : [],
+              messages: Array.isArray(command.importedMessages)
+                ? [...command.importedMessages]
+                : [],
               activities: [],
               pinnedMessages: [],
               threadMarkers: [],
@@ -1734,9 +1740,7 @@ export class OrchestrationEngineService extends ServiceMap.Service<
           // silent-accepting: the UI must never pretend these worked.
           // (The client compensates checkpoint-revert failures; the rest
           // surface as errors.)
-          throw new Error(
-            `${command?.type} is not implemented yet — the action was not applied.`,
-          );
+          throw new Error(`${command?.type} is not implemented yet — the action was not applied.`);
         } else if (command?.type === "thread.delete") {
           const index = inMemoryThreads.findIndex((t) => t.id === command.threadId);
           if (index !== -1) {
@@ -2032,6 +2036,13 @@ export class OrchestrationEngineService extends ServiceMap.Service<
             });
           }
         } else if (command?.type === "thread.session.stop") {
+          // Harness turns are invisible to the legacy abort machinery below —
+          // without this, Stop is a no-op for them (button spins, turn runs).
+          try {
+            sharedTurnGateway().cancelTurn(command.threadId, "thread.session.stop");
+          } catch {
+            // harness gateway unavailable in this embedding; legacy path below
+          }
           const thread = inMemoryThreads.find((t) => t.id === command.threadId);
           if (thread) {
             const controller = activeTurnAbortControllers.get(command.threadId);
@@ -2200,9 +2211,8 @@ export class OrchestrationEngineService extends ServiceMap.Service<
             let pendingTokenFlushTimer: NodeJS.Timeout | null = null;
             let turnAbortController: AbortController | null = null;
             try {
-              const { streamProvider, endpointForModel } = await import(
-                "./harness/provider/apiAdapter.ts"
-              );
+              const { streamProvider, endpointForModel } =
+                await import("./harness/provider/apiAdapter.ts");
               const DEFAULT_PROVIDER_MODELS: Record<string, string> = {
                 google: "gemini-2.5-flash",
                 openai: "gpt-5.5",
@@ -2245,7 +2255,7 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               const modelId =
                 modelSelection.model && modelSelection.model !== "default"
                   ? modelSelection.model
-                  : (DEFAULT_PROVIDER_MODELS[provider] || "gpt-5.6-sol");
+                  : DEFAULT_PROVIDER_MODELS[provider] || "gpt-5.6-sol";
 
               const GO_MODELS = new Set([
                 "minimax-m3",
@@ -2286,7 +2296,10 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               ]);
 
               let baseUrl = PROVIDER_BASE_URLS[provider] || "https://opencode.ai/zen/v1";
-              if (provider === "opencodeGo" || (provider === "opencodeZen" && GO_MODELS.has(modelId))) {
+              if (
+                provider === "opencodeGo" ||
+                (provider === "opencodeZen" && GO_MODELS.has(modelId))
+              ) {
                 baseUrl = "https://opencode.ai/zen/go/v1";
                 provider = "opencodeGo";
               } else if (provider === "groq") {
@@ -2315,9 +2328,7 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               // downloadable while the turn carries text only.
               const MAX_TURN_IMAGE_BYTES = 15 * 1024 * 1024;
               const resolveTurnImageAttachments = (message: any): ResolvedChatImage[] => {
-                const attachments = Array.isArray(message?.attachments)
-                  ? message.attachments
-                  : [];
+                const attachments = Array.isArray(message?.attachments) ? message.attachments : [];
                 const images: ResolvedChatImage[] = [];
                 for (const attachment of attachments) {
                   try {
@@ -2368,9 +2379,15 @@ export class OrchestrationEngineService extends ServiceMap.Service<
 
               let project = inMemoryProjects.find((p: any) => p.id === thread.projectId);
               const homeDir = process.env.HOME || "/home/DejiTech";
-              let appPath = thread.workingDirectory || thread.worktreePath || project?.workspaceRoot;
-              if ((!appPath || appPath === homeDir || thread.projectId === "default") && inMemoryProjects.length > 1) {
-                const realProj = inMemoryProjects.find((p: any) => p.id !== "default" && p.kind !== "chat");
+              let appPath =
+                thread.workingDirectory || thread.worktreePath || project?.workspaceRoot;
+              if (
+                (!appPath || appPath === homeDir || thread.projectId === "default") &&
+                inMemoryProjects.length > 1
+              ) {
+                const realProj = inMemoryProjects.find(
+                  (p: any) => p.id !== "default" && p.kind !== "chat",
+                );
                 if (realProj && realProj.workspaceRoot) {
                   appPath = realProj.workspaceRoot;
                   project = realProj;
@@ -2393,7 +2410,9 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               turnAbortController = new AbortController();
               const existingController = activeTurnAbortControllers.get(command.threadId);
               if (existingController) {
-                try { existingController.abort(); } catch {}
+                try {
+                  existingController.abort();
+                } catch {}
               }
               activeTurnAbortControllers.set(command.threadId, turnAbortController);
               activeAssistantMessagesByThreadId.set(command.threadId, assistantMsg);
@@ -2503,16 +2522,22 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                     // so tools work even when structured function_call is missed (seen as {"path":""} leak)
                     const tentativeText = assistantMsg.text + event.content;
                     const hasCompleteTag = /<\/(?:caide|dyad)-write>/i.test(tentativeText);
-                    const hasLeakedJson = /\{\s*"path"\s*:\s*".*?"\s*(?:,\s*"content")?/.test(tentativeText);
+                    const hasLeakedJson = /\{\s*"path"\s*:\s*".*?"\s*(?:,\s*"content")?/.test(
+                      tentativeText,
+                    );
                     if (hasCompleteTag || hasLeakedJson) {
                       // Try to extract and execute any complete <caide-write> tags now, not just after loop
                       try {
-                        const tagRe2 = /<(?:caide|dyad)-write[^>]*path="([^"]+)"[^>]*>([\s\S]*?)<\/(?:caide|dyad)-write>/gi;
+                        const tagRe2 =
+                          /<(?:caide|dyad)-write[^>]*path="([^"]+)"[^>]*>([\s\S]*?)<\/(?:caide|dyad)-write>/gi;
                         let m2: RegExpExecArray | null;
                         const alreadyExecuted = new Set<string>();
                         // Collect already executed paths from conversation to avoid double-write
                         for (const msg of conversation) {
-                          if (typeof msg.content === "string" && msg.content.includes("[Tool call:")) {
+                          if (
+                            typeof msg.content === "string" &&
+                            msg.content.includes("[Tool call:")
+                          ) {
                             const pm = /\[Tool call: write_file\((.*?)\)\]/.exec(msg.content);
                             if (pm) {
                               try {
@@ -2529,20 +2554,24 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                           if (lines[0]?.trim().startsWith("```")) lines.shift();
                           if (lines[lines.length - 1]?.trim().startsWith("```")) lines.pop();
                           c = lines.join("\n").trim();
-                          if (p && c && !alreadyExecuted.has(p) && p !== "." && p !== "/" && p !== "") {
+                          if (
+                            p &&
+                            c &&
+                            !alreadyExecuted.has(p) &&
+                            p !== "." &&
+                            p !== "/" &&
+                            p !== ""
+                          ) {
                             alreadyExecuted.add(p);
                             // Fire-and-forget write, but also push to conversation so next LLM turn sees it
                             import("./harness/tools/coreTools.ts").then(({ writeFileTool }) => {
                               writeFileTool
-                                .execute(
-                                  { path: p, content: c },
-                                  {
-                                    signal: new AbortController().signal,
-                                    appPath,
-                                    sessionId: thread.id,
-                                    toolId: `tag-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-                                  } as any,
-                                )
+                                .execute({ path: p, content: c }, {
+                                  signal: new AbortController().signal,
+                                  appPath,
+                                  sessionId: thread.id,
+                                  toolId: `tag-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                                } as any)
                                 .catch(() => {});
                             });
                             // Also push to conversation as if it were a tool call, so model knows it succeeded
@@ -2553,7 +2582,13 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                                 {
                                   id: `tag-${p}`,
                                   type: "function",
-                                  function: { name: "write_file", arguments: JSON.stringify({ path: p, content: c.slice(0, 200) + "..." }) },
+                                  function: {
+                                    name: "write_file",
+                                    arguments: JSON.stringify({
+                                      path: p,
+                                      content: c.slice(0, 200) + "...",
+                                    }),
+                                  },
                                 },
                               ],
                             } as any);
@@ -2569,7 +2604,9 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                     // Dedupe: check if current step is echoing a previously completed step's preamble
                     const currentStepSoFar = (stepAssistantText + event.content).trim();
                     const isRepeatingPriorStep = completedStepTexts.some(
-                      (prior) => prior.length > 20 && currentStepSoFar.startsWith(prior.slice(0, Math.min(prior.length, 35)))
+                      (prior) =>
+                        prior.length > 20 &&
+                        currentStepSoFar.startsWith(prior.slice(0, Math.min(prior.length, 35))),
                     );
                     if (isRepeatingPriorStep) {
                       stepAssistantText += event.content;
@@ -2580,8 +2617,14 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                       // Strip leaked {"path":""} immediately so user never sees it (like dyad strips tags from display)
                       if (/\{\s*"path"\s*:\s*"\.?"\s*(?:,\s*"content")?/.test(assistantMsg.text)) {
                         assistantMsg.text = assistantMsg.text
-                          .replace(/\{\s*"path"\s*:\s*"\.?"\s*(?:,\s*"content"\s*:\s*"[^"]*"\s*)?\}/g, "")
-                          .replace(/\{\s*"path"\s*:\s*"[^"]*"\s*(?:,\s*"content"\s*:\s*"[^"]*"\s*)?\}/g, "")
+                          .replace(
+                            /\{\s*"path"\s*:\s*"\.?"\s*(?:,\s*"content"\s*:\s*"[^"]*"\s*)?\}/g,
+                            "",
+                          )
+                          .replace(
+                            /\{\s*"path"\s*:\s*"[^"]*"\s*(?:,\s*"content"\s*:\s*"[^"]*"\s*)?\}/g,
+                            "",
+                          )
                           .trim();
                       }
                       scheduleAssistantMessagePublish(assistantMsg);
@@ -2617,7 +2660,11 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                           arguments: JSON.stringify(event.args ?? {}),
                         },
                       };
-                      if (lastMsg && lastMsg.role === "assistant" && Array.isArray((lastMsg as any).tool_calls)) {
+                      if (
+                        lastMsg &&
+                        lastMsg.role === "assistant" &&
+                        Array.isArray((lastMsg as any).tool_calls)
+                      ) {
                         (lastMsg as any).tool_calls.push(newCall);
                       } else {
                         conversation.push({
@@ -2629,9 +2676,7 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                       stepAssistantText = "";
 
                       const inputSnippet =
-                        Object.keys(toolArgs).length > 0
-                          ? JSON.stringify(toolArgs, null, 2)
-                          : "";
+                        Object.keys(toolArgs).length > 0 ? JSON.stringify(toolArgs, null, 2) : "";
                       const startTag = `\n\n<caide-tool id="${event.id}" name="${event.name}" status="running"${targetAttr}>\n${inputSnippet}\n</caide-tool>\n\n`;
                       assistantMsg.text += startTag;
                       assistantMsg.updatedAt = new Date().toISOString();
@@ -2705,14 +2750,14 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               // makes tool calling work for every model, not just muse-spark.
               // Uses the dyad-compatible parser so <caide-write> tags are handled exactly like dyad x caide.
               try {
-                const { getCaideWriteTags, stripCaideTags } = await import(
-                  "./harness/utils/caideTagParser.ts"
-                );
+                const { getCaideWriteTags, stripCaideTags } =
+                  await import("./harness/utils/caideTagParser.ts");
                 const fallbackWrites: Array<{ path: string; content: string }> = [];
                 const text = assistantMsg.text ?? "";
                 // 1) XML tags: <caide-write path="src/App.tsx">content</caide-write> and <dyad-write>
                 // Use inline regex to avoid async import in this context (already handled above via tagRe2)
-                const tagReFallback = /<(?:caide|dyad)-write[^>]*path="([^"]+)"[^>]*>([\s\S]*?)<\/(?:caide|dyad)-write>/gi;
+                const tagReFallback =
+                  /<(?:caide|dyad)-write[^>]*path="([^"]+)"[^>]*>([\s\S]*?)<\/(?:caide|dyad)-write>/gi;
                 let tm: RegExpExecArray | null;
                 while ((tm = tagReFallback.exec(text)) !== null) {
                   const p = (tm[1] ?? "").trim();
@@ -2721,7 +2766,8 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                   if (lines[0]?.trim().startsWith("```")) lines.shift();
                   if (lines[lines.length - 1]?.trim().startsWith("```")) lines.pop();
                   c = lines.join("\n").trim();
-                  if (p && c && p !== "." && p !== "/" && p !== "") fallbackWrites.push({ path: p, content: c });
+                  if (p && c && p !== "." && p !== "/" && p !== "")
+                    fallbackWrites.push({ path: p, content: c });
                 }
                 // 2) <function=> text-serialized calls (weak models without
                 // native function calling). Only write_file is executed here,
@@ -2731,9 +2777,8 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                 // loop-recovered writes are never applied twice.
                 // Only if no XML tags were found to avoid double-executing.
                 if (fallbackWrites.length === 0) {
-                  const { parseFunctionTagCalls } = await import(
-                    "./harness/utils/caideTagParser.ts"
-                  );
+                  const { parseFunctionTagCalls } =
+                    await import("./harness/utils/caideTagParser.ts");
                   const completedWriteRe =
                     /<caide-tool[^>]*name="write_file"[^>]*status="complete"[^>]*>([\s\S]*?)<\/caide-tool>/gi;
                   const completedBodies: string[] = [];
@@ -2759,7 +2804,8 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                 // 3) JSON-ish: {"path":"src/App.tsx","content":"..."} or {"path":".","content":...}
                 // Only if no XML tags were found to avoid double-executing
                 if (fallbackWrites.length === 0) {
-                  const jsonRe = /\{\s*"path"\s*:\s*"([^"]+)"\s*(?:,\s*"content"\s*:\s*"([\s\S]*?)"\s*)?\}/g;
+                  const jsonRe =
+                    /\{\s*"path"\s*:\s*"([^"]+)"\s*(?:,\s*"content"\s*:\s*"([\s\S]*?)"\s*)?\}/g;
                   while ((m = jsonRe.exec(text)) !== null) {
                     const p = (m[1] ?? "").trim();
                     // content may be JSON-escaped; try to unescape
@@ -2785,15 +2831,12 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                   const { writeFileTool } = await import("./harness/tools/coreTools.ts");
                   for (const w of fallbackWrites) {
                     try {
-                      await writeFileTool.execute(
-                        { path: w.path, content: w.content },
-                        {
-                          signal: new AbortController().signal,
-                          appPath,
-                          sessionId: thread.id,
-                          toolId: `fallback-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-                        } as any,
-                      );
+                      await writeFileTool.execute({ path: w.path, content: w.content }, {
+                        signal: new AbortController().signal,
+                        appPath,
+                        sessionId: thread.id,
+                        toolId: `fallback-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                      } as any);
                       assistantMsg.text += `\n\n✅ Applied ${w.path} via fallback parser`;
                       assistantMsg.updatedAt = new Date().toISOString();
                       flushAssistantMessageImmediate(assistantMsg);
@@ -2805,8 +2848,14 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                   // Strip the leaked tag/JSON to avoid duplication + {"path":"."}
                   assistantMsg.text = assistantMsg.text
                     .replace(/<(?:caide|dyad)-write[^>]*>[\s\S]*?<\/(?:caide|dyad)-write>/gi, "")
-                    .replace(/<function\s*=\s*"?(?:write_file)"?[^>]*>[\s\S]*?<\/function\s*>/gi, "")
-                    .replace(/\{\s*"path"\s*:\s*"[^"]*"\s*(?:,\s*"content"\s*:\s*"[^"]*"\s*)?\}/g, "")
+                    .replace(
+                      /<function\s*=\s*"?(?:write_file)"?[^>]*>[\s\S]*?<\/function\s*>/gi,
+                      "",
+                    )
+                    .replace(
+                      /\{\s*"path"\s*:\s*"[^"]*"\s*(?:,\s*"content"\s*:\s*"[^"]*"\s*)?\}/g,
+                      "",
+                    )
                     .replace(/\n{3,}/g, "\n\n")
                     .trim();
                   flushAssistantMessageImmediate(assistantMsg);
@@ -2814,7 +2863,10 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                   // Leaked JSON with invalid path like {"path":"."} or {"path":""} — strip it so user doesn't see it
                   assistantMsg.text = assistantMsg.text
                     .replace(/\{\s*"path"\s*:\s*"\.?"\s*(?:,\s*"content"\s*:\s*"[^"]*"\s*)?\}/g, "")
-                    .replace(/\{\s*"path"\s*:\s*"[^"]*"\s*(?:,\s*"content"\s*:\s*"[^"]*"\s*)?\}/g, "")
+                    .replace(
+                      /\{\s*"path"\s*:\s*"[^"]*"\s*(?:,\s*"content"\s*:\s*"[^"]*"\s*)?\}/g,
+                      "",
+                    )
                     .replace(/\n{3,}/g, "\n\n")
                     .trim();
                   flushAssistantMessageImmediate(assistantMsg);
@@ -2842,7 +2894,10 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                     rebuiltParts.push(part);
                   }
                 }
-                const dedupedByTags = rebuiltParts.join("").replace(/\n{3,}/g, "\n\n").trim();
+                const dedupedByTags = rebuiltParts
+                  .join("")
+                  .replace(/\n{3,}/g, "\n\n")
+                  .trim();
                 let deduped = dedupedByTags.replace(/(.{40,}?)\1/g, "$1");
                 if (deduped !== assistantMsg.text) {
                   assistantMsg.text = deduped.trim();
@@ -3129,7 +3184,7 @@ function computeLiveProfileStats(utcOffsetMinutes = 0) {
   for (const t of inMemoryThreads) {
     const threadProvider = t.modelSelection?.provider || "opencodeZen";
     const threadModel = t.modelSelection?.model || "default";
-    for (const m of (t.messages || [])) {
+    for (const m of t.messages || []) {
       if (m.role === "user") {
         const createdAt = m.createdAt || now.toISOString();
         const d = new Date(createdAt);
@@ -3258,7 +3313,9 @@ function computeLiveProfileStats(utcOffsetMinutes = 0) {
     percent: inMemoryProjects.length > 0 ? Math.round((count / inMemoryProjects.length) * 100) : 0,
   }));
   const mostUsedFramework =
-    frameworks.length > 0 ? frameworks.reduce((a, b) => (a.count >= b.count ? a : b)).framework : null;
+    frameworks.length > 0
+      ? frameworks.reduce((a, b) => (a.count >= b.count ? a : b)).framework
+      : null;
 
   let mostWorkedProject: any = null;
   if (inMemoryProjects.length > 0) {
@@ -3372,7 +3429,7 @@ function computeLiveProfileTokenStats(utcOffsetMinutes = 0) {
   for (const t of inMemoryThreads) {
     const threadProvider = t.modelSelection?.provider || "opencodeZen";
     const threadModel = t.modelSelection?.model || "default";
-    for (const m of (t.messages || [])) {
+    for (const m of t.messages || []) {
       if (m.role === "user") {
         const createdAt = m.createdAt || now.toISOString();
         const d = new Date(createdAt);
@@ -3822,41 +3879,216 @@ const DEFAULT_MODELS_BY_PROVIDER: Record<string, any[]> = {
     },
   ],
   opencodeGo: [
-    { slug: "minimax-m3", name: "MiniMax M3", description: "MiniMax M3 reasoning and coding model", supportsFastMode: true },
-    { slug: "minimax-m2.7", name: "MiniMax M2.7", description: "MiniMax high-speed reasoning model", supportsFastMode: true },
-    { slug: "minimax-m2.5", name: "MiniMax M2.5", description: "MiniMax fast coding and conversation", supportsFastMode: true },
-    { slug: "kimi-k3", name: "Kimi K3", description: "Moonshot Kimi K3 long-context reasoning model", supportsFastMode: true },
-    { slug: "kimi-k2.7-code", name: "Kimi K2.7 Code", description: "Moonshot Kimi K2.7 Code specialized model", supportsFastMode: true },
-    { slug: "kimi-k2.6", name: "Kimi K2.6", description: "Moonshot Kimi K2.6 agentic workflow model", supportsFastMode: true },
-    { slug: "longcat-2.0", name: "LongCat 2.0", description: "Ultra-long context coding assistant", supportsFastMode: true },
-    { slug: "kimi-k2.5", name: "Kimi K2.5", description: "Moonshot Kimi K2.5 reasoning assistant", supportsFastMode: true },
-    { slug: "glm-5.3", name: "GLM 5.3", description: "Zhipu AI GLM 5.3 flagship model", supportsFastMode: true },
-    { slug: "glm-5.3-flash", name: "GLM 5.3 Flash", description: "Zhipu AI GLM 5.3 Flash low-latency model", supportsFastMode: true },
-    { slug: "glm-5.2", name: "GLM 5.2", description: "Zhipu AI GLM 5.2 frontier model", supportsFastMode: true },
-    { slug: "glm-5.1", name: "GLM 5.1", description: "Zhipu AI GLM 5.1 code assistant", supportsFastMode: true },
-    { slug: "glm-5", name: "GLM 5", description: "Zhipu AI GLM 5 foundational model", supportsFastMode: true },
-    { slug: "deepseek-v4-pro", name: "DeepSeek V4 Pro", description: "DeepSeek V4 Pro frontier reasoning model", supportsFastMode: true },
-    { slug: "deepseek-v4-flash", name: "DeepSeek V4 Flash", description: "DeepSeek V4 Flash ultra-fast model", supportsFastMode: true },
-    { slug: "deepseek-v4-flash-vision-exp", name: "DeepSeek V4 Flash Vision Exp", description: "DeepSeek V4 multimodal vision experimental model", supportsFastMode: true },
-    { slug: "qwen3.8-max", name: "Qwen 3.8 Max", description: "Alibaba Qwen 3.8 Max flagship model", supportsFastMode: true },
-    { slug: "qwen3.8-flash", name: "Qwen 3.8 Flash", description: "Alibaba Qwen 3.8 Flash high-throughput model", supportsFastMode: true },
-    { slug: "qwen3.7-max", name: "Qwen 3.7 Max", description: "Alibaba Qwen 3.7 Max reasoning model", supportsFastMode: true },
-    { slug: "qwen3.7-plus", name: "Qwen 3.7 Plus", description: "Alibaba Qwen 3.7 Plus balanced model", supportsFastMode: true },
-    { slug: "qwen3.6-plus", name: "Qwen 3.6 Plus", description: "Alibaba Qwen 3.6 Plus code generation model", supportsFastMode: true },
-    { slug: "qwen3.5-plus", name: "Qwen 3.5 Plus", description: "Alibaba Qwen 3.5 Plus performant assistant", supportsFastMode: true },
-    { slug: "mimo-v2.5-pro", name: "MiMo V2.5 Pro", description: "Xiaomi MiMo V2.5 Pro advanced reasoning model", supportsFastMode: true },
-    { slug: "mimo-v2.5", name: "MiMo V2.5", description: "Xiaomi MiMo V2.5 high-speed assistant", supportsFastMode: true },
-    { slug: "mimo-v2-pro", name: "MiMo V2 Pro", description: "Xiaomi MiMo V2 Pro reasoning model", supportsFastMode: true },
-    { slug: "mimo-v2-omni", name: "MiMo V2 Omni", description: "Xiaomi MiMo V2 Omni multimodal assistant", supportsFastMode: true },
-    { slug: "hy4-preview", name: "HY4 Preview", description: "Tencent Hunyuan 4 Preview frontier model", supportsFastMode: true },
-    { slug: "hy3", name: "HY3", description: "Tencent Hunyuan 3 general model", supportsFastMode: true },
-    { slug: "hy3-preview", name: "HY3 Preview", description: "Tencent Hunyuan 3 Preview release", supportsFastMode: true },
-    { slug: "gpt-5.6-luna", name: "GPT-5.6 Luna", description: "High-performance coding model", supportsFastMode: true },
-    { slug: "grok-4.6", name: "Grok 4.6", description: "xAI Grok 4.6 reasoning model", supportsFastMode: true },
-    { slug: "grok-4.5", name: "Grok 4.5", description: "xAI Grok 4.5 agentic model", supportsFastMode: true },
-    { slug: "muse-spark-1.3-contributor", name: "Muse Spark 1.3 Contributor", description: "Enhanced contributor coding model", supportsFastMode: true },
-    { slug: "muse-spark-1.2-contributor", name: "Muse Spark 1.2 Contributor", description: "Fast contributor coding model", supportsFastMode: true },
-    { slug: "omen-alpha", name: "Omen Alpha", description: "Experimental reasoning and coding model", supportsFastMode: true },
+    {
+      slug: "minimax-m3",
+      name: "MiniMax M3",
+      description: "MiniMax M3 reasoning and coding model",
+      supportsFastMode: true,
+    },
+    {
+      slug: "minimax-m2.7",
+      name: "MiniMax M2.7",
+      description: "MiniMax high-speed reasoning model",
+      supportsFastMode: true,
+    },
+    {
+      slug: "minimax-m2.5",
+      name: "MiniMax M2.5",
+      description: "MiniMax fast coding and conversation",
+      supportsFastMode: true,
+    },
+    {
+      slug: "kimi-k3",
+      name: "Kimi K3",
+      description: "Moonshot Kimi K3 long-context reasoning model",
+      supportsFastMode: true,
+    },
+    {
+      slug: "kimi-k2.7-code",
+      name: "Kimi K2.7 Code",
+      description: "Moonshot Kimi K2.7 Code specialized model",
+      supportsFastMode: true,
+    },
+    {
+      slug: "kimi-k2.6",
+      name: "Kimi K2.6",
+      description: "Moonshot Kimi K2.6 agentic workflow model",
+      supportsFastMode: true,
+    },
+    {
+      slug: "longcat-2.0",
+      name: "LongCat 2.0",
+      description: "Ultra-long context coding assistant",
+      supportsFastMode: true,
+    },
+    {
+      slug: "kimi-k2.5",
+      name: "Kimi K2.5",
+      description: "Moonshot Kimi K2.5 reasoning assistant",
+      supportsFastMode: true,
+    },
+    {
+      slug: "glm-5.3",
+      name: "GLM 5.3",
+      description: "Zhipu AI GLM 5.3 flagship model",
+      supportsFastMode: true,
+    },
+    {
+      slug: "glm-5.3-flash",
+      name: "GLM 5.3 Flash",
+      description: "Zhipu AI GLM 5.3 Flash low-latency model",
+      supportsFastMode: true,
+    },
+    {
+      slug: "glm-5.2",
+      name: "GLM 5.2",
+      description: "Zhipu AI GLM 5.2 frontier model",
+      supportsFastMode: true,
+    },
+    {
+      slug: "glm-5.1",
+      name: "GLM 5.1",
+      description: "Zhipu AI GLM 5.1 code assistant",
+      supportsFastMode: true,
+    },
+    {
+      slug: "glm-5",
+      name: "GLM 5",
+      description: "Zhipu AI GLM 5 foundational model",
+      supportsFastMode: true,
+    },
+    {
+      slug: "deepseek-v4-pro",
+      name: "DeepSeek V4 Pro",
+      description: "DeepSeek V4 Pro frontier reasoning model",
+      supportsFastMode: true,
+    },
+    {
+      slug: "deepseek-v4-flash",
+      name: "DeepSeek V4 Flash",
+      description: "DeepSeek V4 Flash ultra-fast model",
+      supportsFastMode: true,
+    },
+    {
+      slug: "deepseek-v4-flash-vision-exp",
+      name: "DeepSeek V4 Flash Vision Exp",
+      description: "DeepSeek V4 multimodal vision experimental model",
+      supportsFastMode: true,
+    },
+    {
+      slug: "qwen3.8-max",
+      name: "Qwen 3.8 Max",
+      description: "Alibaba Qwen 3.8 Max flagship model",
+      supportsFastMode: true,
+    },
+    {
+      slug: "qwen3.8-flash",
+      name: "Qwen 3.8 Flash",
+      description: "Alibaba Qwen 3.8 Flash high-throughput model",
+      supportsFastMode: true,
+    },
+    {
+      slug: "qwen3.7-max",
+      name: "Qwen 3.7 Max",
+      description: "Alibaba Qwen 3.7 Max reasoning model",
+      supportsFastMode: true,
+    },
+    {
+      slug: "qwen3.7-plus",
+      name: "Qwen 3.7 Plus",
+      description: "Alibaba Qwen 3.7 Plus balanced model",
+      supportsFastMode: true,
+    },
+    {
+      slug: "qwen3.6-plus",
+      name: "Qwen 3.6 Plus",
+      description: "Alibaba Qwen 3.6 Plus code generation model",
+      supportsFastMode: true,
+    },
+    {
+      slug: "qwen3.5-plus",
+      name: "Qwen 3.5 Plus",
+      description: "Alibaba Qwen 3.5 Plus performant assistant",
+      supportsFastMode: true,
+    },
+    {
+      slug: "mimo-v2.5-pro",
+      name: "MiMo V2.5 Pro",
+      description: "Xiaomi MiMo V2.5 Pro advanced reasoning model",
+      supportsFastMode: true,
+    },
+    {
+      slug: "mimo-v2.5",
+      name: "MiMo V2.5",
+      description: "Xiaomi MiMo V2.5 high-speed assistant",
+      supportsFastMode: true,
+    },
+    {
+      slug: "mimo-v2-pro",
+      name: "MiMo V2 Pro",
+      description: "Xiaomi MiMo V2 Pro reasoning model",
+      supportsFastMode: true,
+    },
+    {
+      slug: "mimo-v2-omni",
+      name: "MiMo V2 Omni",
+      description: "Xiaomi MiMo V2 Omni multimodal assistant",
+      supportsFastMode: true,
+    },
+    {
+      slug: "hy4-preview",
+      name: "HY4 Preview",
+      description: "Tencent Hunyuan 4 Preview frontier model",
+      supportsFastMode: true,
+    },
+    {
+      slug: "hy3",
+      name: "HY3",
+      description: "Tencent Hunyuan 3 general model",
+      supportsFastMode: true,
+    },
+    {
+      slug: "hy3-preview",
+      name: "HY3 Preview",
+      description: "Tencent Hunyuan 3 Preview release",
+      supportsFastMode: true,
+    },
+    {
+      slug: "gpt-5.6-luna",
+      name: "GPT-5.6 Luna",
+      description: "High-performance coding model",
+      supportsFastMode: true,
+    },
+    {
+      slug: "grok-4.6",
+      name: "Grok 4.6",
+      description: "xAI Grok 4.6 reasoning model",
+      supportsFastMode: true,
+    },
+    {
+      slug: "grok-4.5",
+      name: "Grok 4.5",
+      description: "xAI Grok 4.5 agentic model",
+      supportsFastMode: true,
+    },
+    {
+      slug: "muse-spark-1.3-contributor",
+      name: "Muse Spark 1.3 Contributor",
+      description: "Enhanced contributor coding model",
+      supportsFastMode: true,
+    },
+    {
+      slug: "muse-spark-1.2-contributor",
+      name: "Muse Spark 1.2 Contributor",
+      description: "Fast contributor coding model",
+      supportsFastMode: true,
+    },
+    {
+      slug: "omen-alpha",
+      name: "Omen Alpha",
+      description: "Experimental reasoning and coding model",
+      supportsFastMode: true,
+    },
   ],
   anthropic: [
     {

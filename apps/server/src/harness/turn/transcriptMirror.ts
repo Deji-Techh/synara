@@ -61,13 +61,21 @@ function toolLocatorAttrs(args: unknown): string {
 }
 
 /**
- * Result text safe to embed inside a <caide-tool> block: truncated, and
- * close-tag sequences neutralized (a literal </caide-tool> in tool output
- * would otherwise terminate the block early and corrupt grouping).
+ * Result text safe to embed inside a <caide-tool> block: truncated, image
+ * payloads replaced (a base64 screenshot would otherwise dump hundreds of
+ * chars as transcript text), and close-tag sequences neutralized (a literal
+ * </caide-tool> in tool output would otherwise terminate the block early
+ * and corrupt grouping).
  */
 function toolResultText(result: unknown): string {
   const raw = typeof result === "string" ? result : JSON.stringify(result ?? "");
-  return (raw ?? "").replace(/<\//g, "<\u200b/").slice(0, 600);
+  if (/data:image\/[a-zA-Z0-9+.-]+;base64/i.test(raw ?? "")) {
+    return "[image result — view in the preview panel]";
+  }
+  return (raw ?? "")
+    .replace(/<\//g, "<\u200b/")
+    .replace(/<(caide|dyad)-/gi, "<\u200b$1-")
+    .slice(0, 600);
 }
 
 interface OpenMirrorTurn {

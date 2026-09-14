@@ -144,6 +144,10 @@ function ProfileContent({
         <StatTile label="Current streak" value={formatDays(stats.activity.currentStreakDays)} />
         <StatTile label="Longest streak" value={formatDays(stats.activity.longestStreakDays)} />
       </div>
+      <p className="text-[11px] text-muted-foreground">
+        Stats count legacy-engine activity only for now — turns from the new harness engine
+        aren&apos;t included yet. Your chats and usage are unaffected.
+      </p>
 
       {/* Heatmap */}
       <section className="flex min-w-0 flex-col gap-3">
