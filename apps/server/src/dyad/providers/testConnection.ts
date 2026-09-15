@@ -1,7 +1,14 @@
 // FILE: testConnection.ts
-// Purpose: Live key checks per provider (list-models probes where the API
-// shape is stable; honest "saved, live check unavailable" elsewhere).
+// Purpose: Live key checks per provider. Inference probes (a tiny real
+// completion) where V1 probed (deepseek, opencode-zen, google, openrouter —
+// donor provider_api_key_validation_service semantics: catches keys that
+// list models fine but fail inference); list-models probes where the API
+// shape is stable; honest "saved, live check unavailable" elsewhere.
 // Powers the settings Test button and the connection status dot.
+
+import { ProviderApiError, streamProvider } from "../../harness/provider/apiAdapter.ts";
+import { OPENCODE_ZEN_FREE_MODEL_IDS } from "@caide/shared/languageModelCatalog";
+import { PROVIDERS } from "./providers.ts";
 
 export interface ConnectionTestResult {
   ok: boolean;
@@ -9,6 +16,125 @@ export interface ConnectionTestResult {
 }
 
 const TIMEOUT_MS = 15_000;
+
+/** Donor validation prompt: tiny, deterministic, cheap on any model. */
+const VALIDATION_PROMPT = "What number is after four? Reply with only the number.";
+const VALIDATION_TIMEOUT_MS = 20_000;
+
+/** Per-provider probe model (cheap, stable ids — donor choices kept). */
+const INFERENCE_PROBE_MODELS: Record<string, { model: string; baseUrl: string }> = {
+  deepseek: { model: "deepseek-chat", baseUrl: "https://api.deepseek.com" },
+  opencodeZen: { model: OPENCODE_ZEN_FREE_MODEL_IDS[0], baseUrl: "https://opencode.ai/zen/v1" },
+  "opencode-zen": { model: OPENCODE_ZEN_FREE_MODEL_IDS[0], baseUrl: "https://opencode.ai/zen/v1" },
+  google: { model: "gemini-flash-latest", baseUrl: "https://generativelanguage.googleapis.com" },
+  openrouter: { model: "openrouter/free", baseUrl: "https://openrouter.ai/api/v1" },
+};
+
+function displayNameOf(providerId: string): string {
+  return PROVIDERS[providerId]?.displayName ?? providerId;
+}
+
+function errorMessageOf(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
+  return String(error);
+}
+
+function errorStatusOf(error: unknown, depth = 0): number | undefined {
+  if (depth > 5 || typeof error !== "object" || error === null) return undefined;
+  if (error instanceof ProviderApiError && Number.isFinite(error.details.status)) {
+    return error.details.status;
+  }
+  const candidate = error as {
+    statusCode?: unknown;
+    status?: unknown;
+    response?: { status?: unknown };
+    cause?: unknown;
+  };
+  const status = candidate.statusCode ?? candidate.status ?? candidate.response?.status;
+  if (typeof status === "number") return status;
+  const fromMessage = /^\s*([45]\d{2})\b/.exec(errorMessageOf(error));
+  if (fromMessage) return Number(fromMessage[1]);
+  return errorStatusOf(candidate.cause, depth + 1);
+}
+
+function isAuthFailure(message: string): boolean {
+  return /api key|unauthorized|unauthenticated|invalid.?key|permission denied|forbidden/i.test(
+    message,
+  );
+}
+
+function isRateLimited(message: string): boolean {
+  return /rate.?limit|too many requests/i.test(message);
+}
+
+/**
+ * Donor inference probe: run one tiny real completion through the same
+ * streaming path turns use. Success (any token, or clean completion) proves
+ * the key works for inference — strictly stronger than list-models.
+ * Classification mirrors the donor (auth → keep-anyway, 429 → retry-later).
+ */
+async function runInferenceProbe(input: {
+  providerId: string;
+  model: string;
+  baseUrl: string;
+  apiKey: string;
+  signal?: AbortSignal;
+}): Promise<ConnectionTestResult> {
+  const display = displayNameOf(input.providerId);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), VALIDATION_TIMEOUT_MS);
+  const onCallerAbort = () => controller.abort();
+  input.signal?.addEventListener("abort", onCallerAbort, { once: true });
+  try {
+    let sawToken = false;
+    for await (const chunk of streamProvider({
+      modelId: input.model,
+      baseUrl: input.baseUrl,
+      apiKey: input.apiKey,
+      messages: [{ role: "user", content: VALIDATION_PROMPT }],
+      signal: controller.signal,
+    })) {
+      if (chunk.type === "token" && chunk.content) {
+        sawToken = true;
+        break;
+      }
+    }
+    if (!sawToken && controller.signal.aborted && !input.signal?.aborted) {
+      return {
+        ok: false,
+        message: `${display} did not respond while checking this API key. Please try again.`,
+      };
+    }
+    if (input.signal?.aborted) {
+      return { ok: false, message: "Key check cancelled." };
+    }
+    return { ok: true, message: `Connected — ${display} answered a live prompt.` };
+  } catch (error) {
+    const message = errorMessageOf(error);
+    const status = errorStatusOf(error);
+    if (status === 401 || status === 403 || isAuthFailure(message)) {
+      return {
+        ok: false,
+        message: `${display} rejected this API key. Try another API key or keep this one anyway.`,
+      };
+    }
+    if (status === 429 || isRateLimited(message)) {
+      return {
+        ok: false,
+        message: `${display} rate limited the API key check. You can try again later or keep this key anyway.`,
+      };
+    }
+    return {
+      ok: false,
+      message: `Could not verify this ${display} API key: ${message || "Unknown error"}`,
+    };
+  } finally {
+    clearTimeout(timer);
+    input.signal?.removeEventListener("abort", onCallerAbort);
+    controller.abort();
+  }
+}
 
 async function get(
   url: string,
@@ -66,20 +192,12 @@ export async function testProviderConnection(input: {
     }
     case "openai":
     case "xai":
-    case "deepseek":
-    case "openrouter":
-    case "opencodeZen":
-    case "opencode-zen":
     case "opencodeGo":
     case "opencode-go": {
       if (!key) return { ok: false, message: "API key is required." };
       const defaults: Record<string, string> = {
         openai: "https://api.openai.com/v1",
         xai: "https://api.x.ai/v1",
-        deepseek: "https://api.deepseek.com",
-        openrouter: "https://openrouter.ai/api/v1",
-        opencodeZen: "https://opencode.ai/zen/v1",
-        "opencode-zen": "https://opencode.ai/zen/v1",
         opencodeGo: "https://opencode.ai/zen/go/v1",
         "opencode-go": "https://opencode.ai/zen/go/v1",
       };
@@ -90,6 +208,26 @@ export async function testProviderConnection(input: {
       }
       if (status === 401 || status === 403) return { ok: false, message: "Key rejected (401/403). Check the key." };
       return { ok: false, message: `HTTP ${status}. Check the base URL.` };
+    }
+    case "deepseek":
+    case "opencodeZen":
+    case "opencode-zen":
+    case "google":
+    case "openrouter": {
+      // Donor inference probe (provider_api_key_validation_service): a tiny
+      // real completion catches keys that list models fine but fail
+      // inference. Custom base URLs ride along when provided.
+      if (!key) return { ok: false, message: "API key is required." };
+      const probe =
+        INFERENCE_PROBE_MODELS[providerId] ?? INFERENCE_PROBE_MODELS[providerId.replace(/-/g, "")];
+      if (!probe) return { ok: false, message: "No validation probe for this provider." };
+      return runInferenceProbe({
+        providerId,
+        model: probe.model,
+        baseUrl: base || probe.baseUrl,
+        apiKey: key,
+        ...(signal ? { signal } : {}),
+      });
     }
     case "anthropic": {
       if (!key) return { ok: false, message: "API key is required." };

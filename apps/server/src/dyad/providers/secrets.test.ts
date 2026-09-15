@@ -142,6 +142,14 @@ describe("provider connection probes", () => {
         return json(200, { data: [{ id: "m1" }] });
       }
       if (url.pathname === "/api/tags") return json(200, { models: [] });
+      // Minimal OpenAI-style SSE for inference probes (donor validation).
+      if (url.pathname.endsWith("/chat/completions") && req.method === "POST") {
+        if (url.pathname.startsWith("/r429/")) return json(429, { error: { message: "slow down" } });
+        if (auth !== "Bearer good") return json(401, { error: { message: "invalid key" } });
+        res.writeHead(200, { "content-type": "text/event-stream" });
+        res.end('data: {"choices":[{"delta":{"content":"5"}}]}\n\ndata: [DONE]\n\n');
+        return;
+      }
       return json(404, {});
     });
     await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
@@ -165,6 +173,26 @@ describe("provider connection probes", () => {
     await expect(testProviderConnection({ providerId: "minimax", apiKey: "x" })).resolves.toMatchObject({
       ok: true,
       message: "Key saved — no live check for this provider yet.",
+    });
+  });
+
+  it("runs inference probes where the donor probed (009 M3)", async () => {
+    // Live completion through the turn streaming path — good key answers.
+    await expect(
+      testProviderConnection({ providerId: "deepseek", apiKey: "good", baseUrl: base }),
+    ).resolves.toMatchObject({ ok: true, message: /live prompt/ });
+    // 401 classifies as key-rejected with keep-anyway copy (donor wording).
+    await expect(
+      testProviderConnection({ providerId: "deepseek", apiKey: "bad", baseUrl: base }),
+    ).resolves.toMatchObject({ ok: false, message: /rejected this API key/ });
+    // 429 classifies as rate-limited (donor wording).
+    await expect(
+      testProviderConnection({ providerId: "deepseek", apiKey: "good", baseUrl: `${base}/r429` }),
+    ).resolves.toMatchObject({ ok: false, message: /rate limited/ });
+    // Missing key fails before any fetch.
+    await expect(testProviderConnection({ providerId: "deepseek" })).resolves.toMatchObject({
+      ok: false,
+      message: "API key is required.",
     });
   });
 
