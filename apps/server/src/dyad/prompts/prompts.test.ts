@@ -224,7 +224,10 @@ describe("dyad prompt transplant (m1)", () => {
       chatMode: "ask",
       enableTurboEditsV2: false,
     });
-    expect(ask).toContain("EXPLAIN, DON'T BUILD");
+    // Donor parity: streaming ask routes to the read-only local agent, not
+    // the legacy ASK snippet prompt.
+    expect(ask).toContain("READ-ONLY mode");
+    expect(ask).toContain("no write tools available");
 
     const planDirect = constructPlanModePrompt(undefined);
     expect(planDirect).toContain("Tech Stack Context");

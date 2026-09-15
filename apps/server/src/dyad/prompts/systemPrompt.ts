@@ -566,6 +566,35 @@ export const constructSystemPrompt = ({
     });
   }
 
+  if (chatMode === "ask") {
+    // Donor parity: streaming ask runs the LOCAL agent read-only, not the
+    // legacy ASK snippet prompt (V1 chat_stream_handlers rebuilds ask as
+    // {chatMode:local-agent, readOnly:true} → LOCAL_AGENT_ASK_SYSTEM_PROMPT,
+    // whose model contract matches the read-only tool set the runner now
+    // enforces). The legacy ASK_MODE_SYSTEM_PROMPT stays for token-count
+    // callers via getSystemPromptForChatMode only. Turbo stays off for ask
+    // (donor forces false); freeModel/basic modes never apply to ask.
+    return constructLocalAgentPrompt(aiRules, themePrompt, {
+      readOnly: true,
+      frameworkType,
+      hasSupabaseProject,
+      supabaseClientCode,
+      supabaseConnected,
+      hasNeonProject,
+      neonClientCode,
+      neonConnected,
+      neonEmailVerificationEnabled,
+      neonNextjsMajorVersion,
+      gitProvenance: gitProvenance ? "local-agent" : undefined,
+      enableAppBlueprint,
+      codeExplorerAvailable,
+      testingEnabled,
+      appTarget,
+      caideFramework,
+      isWeb3App,
+    });
+  }
+
   let systemPrompt = getSystemPromptForChatMode({
     chatMode,
     frameworkType,

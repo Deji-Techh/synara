@@ -566,8 +566,15 @@ export class CaideRunner {
         // filtered from EVERY turn while the plan prompt assumed they exist.
         // Ask turns are read-only (donor parity): mutating tools are excluded
         // from the turn's tool set (consent cards alone are not enough — V1
-        // withholds the tools entirely).
-        options: { planModeOnly: chatMode === "plan", readOnly: chatMode === "ask" },
+        // withholds the tools entirely). enableAppBlueprint mirrors the gate
+        // state (V1: setting && needsAppBlueprint; the master toggle lands
+        // with 018, default-on like the donor): on gated new-app turns the
+        // blueprint tool is offered, elsewhere it is withheld.
+        options: {
+          planModeOnly: chatMode === "plan",
+          readOnly: chatMode === "ask",
+          enableAppBlueprint: isBlueprintRequired(input.sessionId),
+        },
         requestConsent: input.requestConsent,
         autoApproveNonSchemaSql: input.autoApproveNonSchemaSql ?? sessionStores.safeSql,
         store: sessionStores.consent,
@@ -661,7 +668,10 @@ export class CaideRunner {
       let system = constructSystemPrompt({
         aiRules,
         chatMode,
-        enableTurboEditsV2: false,
+        // Donor turbo rule: build-only (V1 appends the appendix for build
+        // when enabled — default on; ask/plan force false; the agent
+        // constructor ignores it). The master toggle lands with 018.
+        enableTurboEditsV2: chatMode === "build",
         caideFramework: input.framework,
         gitProvenance: inGitRepo,
         isWeb3App,
