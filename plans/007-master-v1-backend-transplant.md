@@ -68,7 +68,13 @@ V2 = this repo. Donor `/home/DejiTech/dev/dyad` is reference-only (ambiguities, 
 
 ## 3. De-Pro policy (everything free)
 
-| V1 Pro mechanism                                            | Free equivalent                                                                     |
+### Temporary hosted dependencies (user decision — replace with ours later)
+
+- Supabase/Neon OAuth uses **Dyad's hosted broker** (`supabase-oauth.dyad.sh`,
+  `oauth.dyad.sh`) received via our deep links (015). Our own broker is a
+  recorded later milestone (013), not a wont-port.
+
+| V1 Pro mechanism | Free equivalent |
 | ----------------------------------------------------------- | ----------------------------------------------------------------------------------- |
 | Engine gateway + `usesEngineEndpoint` tools                 | Direct provider calls with user keys; `basicAgentMode`/`PRO_AGENT_ONLY` stay no-ops |
 | `free-pro` / free-agent quota / `/free` quota               | Deleted. No limits anywhere                                                         |

@@ -12,8 +12,9 @@ menus, OS-theme, crash integrity — keep all of that; close the true gaps below
   `.desktop` mime included) via builder config + `setAsDefaultProtocolClient`.
 - `open-url` (mac) + argv-URL parsing + `second-instance` dispatch + queued
   dispatch (cold-start safe).
-- All 7 V1 routes: `neon-oauth-return`, `supabase-oauth-return`, `dyad-pro-return`
-  (drop — no Pro; record), `mcp-oauth-return` (focus + loopback tokens),
+- All 7 V1 routes: `neon-oauth-return`, `supabase-oauth-return`
+  (both receive **Dyad-hosted broker** callbacks for now — 013; ours later),
+  `dyad-pro-return` (drop — no Pro; record), `mcp-oauth-return` (focus + loopback tokens),
   `add-mcp-server` (prefill panel draft), `add-prompt` (prefill prompt draft),
   `receive-project` (pending-share token → import flow, 012).
 - Bridge `deep-link-received` to renderer/server over WS (no V1 IPC shape).

@@ -36,7 +36,10 @@ other`) with inline retry buttons, expanded callback page (success/error +
 - Link/unlink per app with `assertNoNeonProject` mutual exclusion; `DbLink` gains
   `organizationSlug/parentProjectId`.
 - Test users: create/delete + boot-time orphan reconcile + RLS check tool.
-- OAuth broker (hosted) + deep-link return: port (015) — PAT stays the primary path.
+- OAuth: **use Dyad's hosted broker for now** (`supabase-oauth.dyad.sh` token
+  exchange, received via our `supabase-oauth-return` deep link — 015). PAT stays
+  the primary path. Our own broker is a later milestone (recorded here so it is
+  not forgotten).
 - Settings: per-provider cards (org list, migration/prune switches); chat/dock
   project-info chips.
 
@@ -49,7 +52,9 @@ preview`) + active-branch select + per-branch env resolve + deploy preference
 - Neon Auth: ensure/get/update email verification + cookie secrets per branch;
   verification switch in UI.
 - Vercel sync: per 012 §2. Test branches + boot orphan reconcile.
-- OAuth broker + timeout toast: port (015); API-key-first UI stays.
+- OAuth: **use Dyad's hosted broker for now** (`oauth.dyad.sh` token store,
+  received via our `neon-oauth-return` deep link + 20s timeout toast — 015);
+  API-key-first UI stays. Our own broker is a later milestone.
 
 ## 4. add-integration UX
 
