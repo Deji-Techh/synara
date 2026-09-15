@@ -128,8 +128,10 @@ const planningQuestionnaireSchema = z.object({
   questions: z
     .array(QuestionSchema)
     .min(1, "questions array must not be empty")
-    .max(5, "questions array must have at most 5 questions")
-    .describe("A non empty array of 1-5 questions to present to the user"),
+    // Donor contract (planning_questionnaire.ts): 1–3 questions. More than
+    // that belongs in chat, not in a blocking card.
+    .max(3, "questions array must have at most 3 questions")
+    .describe("A non empty array of 1-3 questions to present to the user"),
 });
 
 export const planningQuestionnaireTool = defineTool({
@@ -188,7 +190,7 @@ WRONG — Empty options array:
 WRONG — Missing options for radio:
 { "type": "radio", "question": "..." }
 
-WRONG — More than 5 questions or more than 3 options
+WRONG — More than 3 questions or more than 3 options
 
 WRONG — Array with empty object (missing required "question" and "type" fields):
 { "questions": [{}] }

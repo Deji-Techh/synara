@@ -84,6 +84,16 @@ describe("dyad plan tools transplant (m2b)", () => {
     );
   });
 
+  it("rejects questionnaires beyond the 1-3 question donor contract", () => {
+    const four = [1, 2, 3, 4].map((n) => ({ question: `Q${n}?`, type: "text" as const }));
+    // Schema-level: the tool refuses to parse (model sees a validation error).
+    expect(() =>
+      (planningQuestionnaireTool.schema as unknown as { parse: (v: unknown) => unknown }).parse({
+        questions: four,
+      }),
+    ).toThrow(/at most 3 questions/);
+  });
+
   it("runs the questionnaire round-trip and formats answers", async () => {
     const events: unknown[] = [];
     setPlanTransport(fakeTransport(events));
