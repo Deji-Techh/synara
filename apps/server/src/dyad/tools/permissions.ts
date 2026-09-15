@@ -301,6 +301,12 @@ export interface InclusionContext {
    */
   /** DB link present (session link counts) — gates execute_sql + DB tools. */
   hasDbLink?: boolean;
+  /**
+   * Managed project connection (donor ID semantics): supabase projectId, or
+   * neon projectId + active branch. Gates add_integration — a bare-URL link
+   * is not managed, so integration stays offered to allow upgrading.
+   */
+  hasManagedDbLink?: boolean;
   /** Linked DB provider — gates per-provider info tools. */
   dbProvider?: string | null;
   /** Sandbox script execution allowed (setting; default true until 018). */
@@ -328,8 +334,9 @@ export function isToolEnabled(toolName: string, ctx: InclusionContext = {}): boo
     if (ctx.hasDbLink === false) return false;
     if (ctx.dbProvider != null && ctx.dbProvider !== "neon") return false;
   }
-  // Donor: add_integration offered only while NO database is connected.
-  if (toolName === "add_integration" && ctx.hasDbLink === true) return false;
+  // Donor: add_integration offered only while NO managed database is
+  // connected (V1 keys off project IDs, not the link itself).
+  if (toolName === "add_integration" && ctx.hasManagedDbLink === true) return false;
   if (toolName === "execute_sandbox_script" && ctx.sandboxEnabled === false) return false;
   if (
     (toolName === "search_mcp_tools" || toolName === "get_mcp_tool_schema") &&

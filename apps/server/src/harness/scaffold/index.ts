@@ -1,4 +1,5 @@
 import type { ProjectFramework } from "@caide/contracts";
+import { stampBlueprintMarker } from "../../dyad/plan/blueprintStore.ts";
 import { scaffoldReactNative } from "./react-native.ts";
 import { scaffoldFlutter } from "./flutter.ts";
 import { scaffoldWebsite } from "./website.ts";
@@ -33,11 +34,6 @@ export async function scaffoldProject(
   // Donor arm-at-creation: a fresh scaffold needs its first blueprint, so
   // the first turn on this app arms the approval gate (blueprintStore).
   // Best-effort — a missing marker only skips the gate, never the scaffold.
-  try {
-    const { stampBlueprintMarker } = await import("../../dyad/plan/blueprintStore.ts");
-    stampBlueprintMarker(root);
-  } catch {
-    // marker stamp must never fail scaffolding
-  }
+  stampBlueprintMarker(root);
   return files;
 }

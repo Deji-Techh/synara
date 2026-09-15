@@ -668,10 +668,13 @@ export class CaideRunner {
       let system = constructSystemPrompt({
         aiRules,
         chatMode,
-        // Donor turbo rule: build-only (V1 appends the appendix for build
-        // when enabled — default on; ask/plan force false; the agent
-        // constructor ignores it). The master toggle lands with 018.
-        enableTurboEditsV2: chatMode === "build",
+        // Donor turbo rule: the appendix ships ONLY when the user opts into
+        // Turbo-Edits v2 (V1 isTurboEditsV2Enabled requires explicit "v2";
+        // default off) — and then build-only (ask/plan force false; the
+        // agent constructor ignores it). V2 has no Turbo setting yet (018),
+        // so this stays false until the setting lands. Never default-on:
+        // an unasked-for appendix changes build behavior vs V1 default.
+        enableTurboEditsV2: false,
         caideFramework: input.framework,
         gitProvenance: inGitRepo,
         isWeb3App,

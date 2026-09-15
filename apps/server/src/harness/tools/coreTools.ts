@@ -169,6 +169,14 @@ export const runCommandTool = defineTool({
   }),
   readOnly: false,
   modifiesState: true,
+  // Donor consent preview (run_command.ts getConsentPreview): `$ <cmd>`.
+  presentCall: (args: any) => {
+    const cmd = args?.command || args?.cmd || "";
+    const extra =
+      Array.isArray(args?.args) && args.args.length > 0 ? ` ${args.args.join(" ")}` : "";
+    const cwd = args?.cwd ? ` (in ./${args.cwd})` : "";
+    return `$ ${cmd}${extra}${cwd}`.trim() || "Run shell command";
+  },
   execute: async ({ command, cmd, args, cwd }, ctx) => {
     const workDir = cwd ? resolveSafePath(cwd, ctx.appPath) : ctx.appPath;
     const rawCmd = (command || cmd || "").trim();
@@ -380,6 +388,9 @@ export const installPackageTool = defineTool({
   }),
   readOnly: false,
   modifiesState: true,
+  // Donor consent preview (add_dependency.ts): `Install <pkgs>`.
+  presentCall: (args: any) =>
+    `Install ${args?.packageName ?? "package"}${args?.dev ? " (dev)" : ""}`,
   execute: async ({ packageName, dev }, ctx) => {
     const args = ["add", packageName];
     if (dev) args.push("-d");
@@ -402,6 +413,7 @@ export const buildProjectTool = defineTool({
   schema: z.object({}),
   readOnly: false,
   modifiesState: true,
+  presentCall: () => "Build project",
   execute: async (_, ctx) => {
     const framework = (() => {
       try {
@@ -471,6 +483,7 @@ export const lintProjectTool = defineTool({
   schema: z.object({}),
   readOnly: true,
   modifiesState: false,
+  presentCall: () => "Run linter",
   execute: async (_, ctx) => {
     const isFlutter = fs.existsSync(`${ctx.appPath}/pubspec.yaml`);
     const cmd = isFlutter ? "flutter" : "bun";
@@ -493,6 +506,7 @@ export const testProjectTool = defineTool({
   schema: z.object({}),
   readOnly: true,
   modifiesState: false,
+  presentCall: () => "Run test suite",
   execute: async (_, ctx) => {
     const isFlutter = fs.existsSync(`${ctx.appPath}/pubspec.yaml`);
     const cmd = isFlutter ? "flutter" : "bun";

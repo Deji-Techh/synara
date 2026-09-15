@@ -271,13 +271,22 @@ export function createTurnContext(input: TurnContextInput): TurnContext {
   // offering tools that fail at connection time). Sandbox/explorer flags
   // default open until their settings land (018/016).
   const turnDbLink = input.dbLink ?? getDatabaseLink(input.sessionId);
+  // Donor managed-connection semantics (V1 keys off project IDs):
+  // supabase needs a projectId; neon needs projectId + active branch.
+  const hasManagedDbLink =
+    turnDbLink?.provider === "supabase"
+      ? turnDbLink.projectId != null
+      : turnDbLink?.provider === "neon"
+        ? turnDbLink.projectId != null && turnDbLink.branchId != null
+        : false;
   const included = UNIFIED_DEFS.filter((def) =>
     shouldIncludeTool(
       def.name,
       {
         hasDbLink: turnDbLink != null,
         ...(turnDbLink ? { dbProvider: turnDbLink.provider ?? null } : {}),
-        mcpSearchEnabled: input.mcpRegistry ? true : undefined,
+        hasManagedDbLink,
+        mcpSearchEnabled: input.mcpRegistry != null,
       },
       options,
       store,

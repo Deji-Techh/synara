@@ -133,7 +133,13 @@ describe("turn context wire (m3)", () => {
   });
 
   it("gates DB tools on the session link (donor isEnabled)", () => {
-    linkDatabase("s-dblink", { provider: "supabase", databaseUrl: "postgres://link/db" });
+    // Managed link (project IDs present): DB tools shown, sibling-provider
+    // info and add_integration hidden.
+    linkDatabase("s-dblink", {
+      provider: "supabase",
+      databaseUrl: "postgres://link/db",
+      projectId: "p1",
+    });
     const ctx = createTurnContext({
       sessionId: "s-dblink",
       appPath: "/tmp/caide-test-app",
@@ -151,6 +157,24 @@ describe("turn context wire (m3)", () => {
     } finally {
       ctx.cleanup();
       unlinkDatabase("s-dblink");
+    }
+    // Bare-URL link (no IDs): raw SQL still runs, but the connection is not
+    // managed — add_integration stays offered to allow upgrading (donor ID
+    // semantics).
+    linkDatabase("s-dbbare", { provider: "supabase", databaseUrl: "postgres://bare/db" });
+    const bare = createTurnContext({
+      sessionId: "s-dbbare",
+      appPath: "/tmp/caide-test-app",
+      settings: { providerSettings: { openai: { apiKey: "sk-test" } } },
+      requestConsent: async () => "accept-once",
+    });
+    try {
+      const names = bare.tools.map((t) => t.name);
+      expect(names).toContain("execute_sql");
+      expect(names).toContain("add_integration");
+    } finally {
+      bare.cleanup();
+      unlinkDatabase("s-dbbare");
     }
   });
 
