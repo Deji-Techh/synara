@@ -39,6 +39,7 @@ import { getTodos, setTodos, clearTodos, type Todo } from "../../dyad/plan/todoS
 import {
   clearBlueprint,
   hasBlueprintMarker,
+  isBlueprintRequired,
   setBlueprintRequired,
 } from "../../dyad/plan/blueprintStore.ts";
 import {
@@ -52,6 +53,8 @@ import { SessionStorage } from "../session/storage.ts";
 import {
   COMPACTION_SYSTEM_PROMPT,
   constructSystemPrompt,
+  detectFrameworkType,
+  detectNextJsMajorVersion,
   readAiRules,
 } from "../../dyad/prompts/index.ts";
 import {
@@ -62,6 +65,7 @@ import {
 import { getContextSummarizer } from "../../dyad/misc/index.ts";
 import type { CaideFramework } from "../../dyad/prompts/index.ts";
 import { shouldRevealDatabasePanel } from "../../dyad/db/dbPanel.ts";
+import { getDatabaseLink } from "../../dyad/db/index.ts";
 import {
   classifyStepKind,
   isSlotSet,
@@ -640,6 +644,20 @@ export class CaideRunner {
       // Web3 vertical (item 32): multi-chain dApps get the web3 skill pack.
       // Disk-detected per turn so a newly added wallet dependency lights it up.
       const isWeb3App = await detectWeb3App(input.appPath).catch(() => false);
+      // Donor prompt context (008 M5): every constructor option with a live
+      // source is fed — no more dead branches. frameworkType restores the
+      // Vite-only Nitro nudge + Neon guide filtering; the DB link restores
+      // the Supabase/Neon invariant blocks; the blueprint gate state restores
+      // blueprint-gated prompt branches; ask turns ride the read-only prompt.
+      // Still unset (owners: 014 theme generator, 014 project skills, 016
+      // code explorer, 018 testing/target settings): themePrompt,
+      // appSkillPack, codeExplorerAvailable, testingEnabled, appTarget.
+      // Client-code snippets (supabaseClientCode/neonClientCode) and
+      // neonEmailVerificationEnabled need generators that do not exist yet —
+      // the available-prompt blocks stay dormant until 013 ports them.
+      const promptDbLink = getDatabaseLink(input.sessionId);
+      const promptSupabase = promptDbLink?.provider === "supabase";
+      const promptNeon = promptDbLink?.provider === "neon";
       let system = constructSystemPrompt({
         aiRules,
         chatMode,
@@ -647,6 +665,14 @@ export class CaideRunner {
         caideFramework: input.framework,
         gitProvenance: inGitRepo,
         isWeb3App,
+        readOnly: chatMode === "ask",
+        frameworkType: detectFrameworkType(input.appPath),
+        hasSupabaseProject: promptSupabase,
+        supabaseConnected: promptSupabase,
+        hasNeonProject: promptNeon,
+        neonConnected: promptNeon,
+        neonNextjsMajorVersion: detectNextJsMajorVersion(input.appPath),
+        enableAppBlueprint: isBlueprintRequired(input.sessionId),
       });
       // Compounding project memory (APP_MEMORY.md + recent decisions).
       // Appended only when the project actually remembers something — and

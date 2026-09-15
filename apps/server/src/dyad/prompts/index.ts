@@ -12,10 +12,7 @@ export {
   buildPlatformPrompt,
 } from "./platformContracts.ts";
 export { CAIDE_WEB_UI_SKILL_PACK } from "./webSkillPack.ts";
-export {
-  DESIGN_ENGINE_CONTRACT,
-  DESIGN_REFERENCE_INDEX_PROMPT,
-} from "./designEngine.ts";
+export { DESIGN_ENGINE_CONTRACT, DESIGN_REFERENCE_INDEX_PROMPT } from "./designEngine.ts";
 export {
   SkillFrontmatterSchema,
   parseFrontmatter,
@@ -60,10 +57,7 @@ export {
   SUPABASE_NOT_AVAILABLE_SYSTEM_PROMPT,
   getSupabaseAvailableSystemPrompt,
 } from "./supabasePrompt.ts";
-export {
-  buildProviderInvariants,
-  type ProviderInvariantOptions,
-} from "./providerInvariants.ts";
+export { buildProviderInvariants, type ProviderInvariantOptions } from "./providerInvariants.ts";
 export {
   TEST_ASSERTION_CODE_SYSTEM_PROMPT,
   buildAssertionCodePayload,
@@ -73,9 +67,7 @@ export {
   type InspirationIconName,
   type InspirationPrompt,
 } from "./inspirationPrompts.ts";
-export {
-  TURBO_EDITS_V2_SYSTEM_PROMPT,
-} from "./turboEditsPrompt.ts";
+export { TURBO_EDITS_V2_SYSTEM_PROMPT } from "./turboEditsPrompt.ts";
 export {
   GIT_CONTEXT_BLOCK,
   BUILD_GIT_CONTEXT_BLOCK,
@@ -84,13 +76,12 @@ export {
 } from "./gitContextPrompt.ts";
 export {
   APP_FRAMEWORK_TYPES,
+  detectFrameworkType,
+  detectNextJsMajorVersion,
   isNeonSupportedFramework,
   type AppFrameworkType,
 } from "./frameworkType.ts";
-export {
-  TEST_WRITING_GUIDANCE,
-  AGENT_TEST_WRITING_GUIDANCE,
-} from "./testGuidance.ts";
+export { TEST_WRITING_GUIDANCE, AGENT_TEST_WRITING_GUIDANCE } from "./testGuidance.ts";
 export { PLAN_MODE_SYSTEM_PROMPT, constructPlanModePrompt } from "./planPrompt.ts";
 export {
   CAIDE_FRAMEWORKS,
@@ -104,10 +95,7 @@ export {
   applyFrameworkBuildExamples,
   type CaideFramework,
 } from "./framework.ts";
-export {
-  LOCAL_AGENT_ASK_SYSTEM_PROMPT,
-  constructLocalAgentPrompt,
-} from "./agentPrompt.ts";
+export { LOCAL_AGENT_ASK_SYSTEM_PROMPT, constructLocalAgentPrompt } from "./agentPrompt.ts";
 export {
   THINKING_PROMPT,
   BUILD_SYSTEM_PREFIX,
