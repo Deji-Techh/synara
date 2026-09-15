@@ -87,6 +87,9 @@ function toLoopTool(
       // Same posture as the parent turn: mutating calls need consent.
       // Without a round-trip, stored allow/deny rules still apply exactly
       // like parent turns (deny throws, SQL auto-approve included).
+      // The loop's per-call signal is forwarded so parent cancel (or
+      // cancel_agent) settles a parked consent wait instead of hanging the
+      // subagent forever with no turn_end.
       if (def.readOnly !== true) {
         const allowed = await requireAgentToolConsent({
           sessionId,
@@ -94,6 +97,8 @@ function toLoopTool(
           toolDescription: def.description,
           store: consentStore,
           toolArgs: args,
+          // exactOptionalPropertyTypes: never pass an explicit undefined.
+          ...(context.signal ? { signal: context.signal } : {}),
           requestConsent:
             requestConsent ??
             (async () => {

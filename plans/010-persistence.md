@@ -9,7 +9,7 @@ harness transport journal; the DB is the source of truth for history.
 ## 1. Threads & messages (relational CRUD)
 
 - Port `apps/chats/messages` schema + `chat_handlers` CRUD: `createChat/forkChat/
-  getChat/getChats/deleteChat/searchChats/deleteMessages` with cascade.
+getChat/getChats/deleteChat/searchChats/deleteMessages` with cascade.
 - Message fidelity: `approvalState`, `sourceCommitHash/commitHash`, `model`,
   `maxTokensUsed`, `aiMessagesJson` envelope, `isCompactionSummary`,
   early `requestId` capture.

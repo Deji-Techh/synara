@@ -23,7 +23,7 @@ publish · project. Do NOT target the unwired legacy `PreviewPanel.tsx`.
 3. `rightDockPaneMeta.tsx` — label + `~/lib/icons` glyph, add-menu
    (`RIGHT_DOCK_ADD_MENU_KINDS`), launcher order/labels/gates
    (`resolveRightDockLauncherItems`: `hasWorkspace/hasGitRepository/hasReview/
-   hasDeviceSupport` pattern), tab overrides, meta test.
+hasDeviceSupport` pattern), tab overrides, meta test.
 4. `SingleChatSurface.tsx` — lazy import, `renderDockPane` case (Suspense +
    `PanelStateMessage` fallback; threadId/workspaceRoot/projectId; `onClose`;
    `pollingEnabled/queriesEnabled/liveRefreshEnabled` pattern; `preview`-mode honor),
@@ -37,19 +37,19 @@ publish · project. Do NOT target the unwired legacy `PreviewPanel.tsx`.
 
 ### Placement map (extend, don't fork)
 
-| Capability | Home |
-|---|---|
-| Versions history | New `History` section in `git` pane (`GitPanel.tsx:312-358`); per-file viewport reuse |
-| Security findings | New `security` pane; interim 4th `Checks` tab on PR panel |
-| Release/toolchain/signing | New rows in `publish` + `PreviewStage` release branch; toolchain card by Publish rows |
-| Collaboration roster / live agents | `publish` GitHub row / `goals` SubagentsTab |
-| Sharing links/QR/preview URLs | `publish` pane (link mirror); stage QR feeds URLs back |
-| MCP servers | Extend `project` `McpSection` (bulk enable, per-tool consent) |
-| Skills | Extend `project` `SkillsSection` (reserved slot) |
-| Env/configure | Promote `project` `EnvironmentSection` read-only → editor |
-| Console/build logs | New agent-output tab in `terminal` pane (keep-mounted) + stage terminal branch |
-| Visual editing | New `visual-edit` pane + `PreviewStage` select branch |
-| Database additions (branches/logs/social-auth/Auth) | New `<section>`s in `database` pane after `ProjectConnectionSection` |
+| Capability                                          | Home                                                                                  |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Versions history                                    | New `History` section in `git` pane (`GitPanel.tsx:312-358`); per-file viewport reuse |
+| Security findings                                   | New `security` pane; interim 4th `Checks` tab on PR panel                             |
+| Release/toolchain/signing                           | New rows in `publish` + `PreviewStage` release branch; toolchain card by Publish rows |
+| Collaboration roster / live agents                  | `publish` GitHub row / `goals` SubagentsTab                                           |
+| Sharing links/QR/preview URLs                       | `publish` pane (link mirror); stage QR feeds URLs back                                |
+| MCP servers                                         | Extend `project` `McpSection` (bulk enable, per-tool consent)                         |
+| Skills                                              | Extend `project` `SkillsSection` (reserved slot)                                      |
+| Env/configure                                       | Promote `project` `EnvironmentSection` read-only → editor                             |
+| Console/build logs                                  | New agent-output tab in `terminal` pane (keep-mounted) + stage terminal branch        |
+| Visual editing                                      | New `visual-edit` pane + `PreviewStage` select branch                                 |
+| Database additions (branches/logs/social-auth/Auth) | New `<section>`s in `database` pane after `ProjectConnectionSection`                  |
 
 ## 2. Composer Context card (`EnvironmentPanel`, title `Context`)
 
@@ -83,9 +83,9 @@ Item union `ComposerCommandMenu.tsx:195-280`; builders
 ### Add-item recipes
 
 - `/` command: `BUILT_IN_COMPOSER_SLASH_COMMANDS` + `COMPOSER_SLASH_COMMAND_DEFINITIONS`
-  + `commandMenuTitle` + `SLASH_COMMAND_ICONS` + `getAvailableComposerSlashCommands`
-  gating + `handleStandaloneSlashCommand` runtime (+ `canOfferX` predicate if
-  state-gated). `/goal` subverbs are args-level (`GOAL_SLASH_SUBCOMMANDS`).
+  - `commandMenuTitle` + `SLASH_COMMAND_ICONS` + `getAvailableComposerSlashCommands`
+    gating + `handleStandaloneSlashCommand` runtime (+ `canOfferX` predicate if
+    state-gated). `/goal` subverbs are args-level (`GOAL_SLASH_SUBCOMMANDS`).
 - `@` source: ranked list in the mention branch + `groupCommandItems` group +
   `onSelectComposerItem` side-effect (+ union/glyph/meta for new types).
 - `$` skill: inject into `skillItems` builders; state in `composerDraft.skills`.
@@ -113,7 +113,7 @@ upload-to-codebase, reference files, generate-image, token toggle, context-picke
   (220ms ease-out). No hand-rolled keyframes. Context rows use `EnvironmentRow`
   chevron/collapsible.
 - Settings-shaped: `SettingsPanelPrimitives.tsx` (`SettingsCard/Section/Row/
-  ListRow/EmptyState/SelectPopup`); container `ScrollArea`; rows
+ListRow/EmptyState/SelectPopup`); container `ScrollArea`; rows
   `rounded-lg border border-border`.
 - Status: `Badge` variants + `StatusPill` + `ThreadStatusPillChip` + goal dots.
 - Cards: `CaideCard + CaideCardHeader + CaideLazyContent`; choice rows

@@ -15,7 +15,7 @@ OAuth broker flows ported where they were the product (MCP servers).
 - Full OAuth: DCR persist, client secret/scope/callback-port in `mcp_oauth_start`,
   port probe (default-first, ephemeral fallback, dual-stack), redirect-URI hint in UI,
   disconnect + `probe_connection`, error taxonomy (`discovery_failed/unauthorized/
-  other`) with inline retry buttons, expanded callback page (success/error +
+other`) with inline retry buttons, expanded callback page (success/error +
   Open-Caide deep link).
 - Encrypted `oauth_state`/bearer at rest + `isOauthStorageEncrypted` banner
   (015 owns safeStorage; this plan consumes it).
@@ -43,7 +43,7 @@ OAuth broker flows ported where they were the product (MCP servers).
 ## 3. Neon (full lifecycle)
 
 - Link/unlink existing projects; branch typing (`production|development|snapshot|
-  preview`) + active-branch select + per-branch env resolve + deploy preference
+preview`) + active-branch select + per-branch env resolve + deploy preference
   (`setSelectedDatabaseBranchType`); Nitro-guard + orphan cleanup + env-snapshot
   restore on failure.
 - Neon Auth: ensure/get/update email verification + cookie secrets per branch;

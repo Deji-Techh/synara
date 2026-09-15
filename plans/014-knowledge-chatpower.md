@@ -59,7 +59,7 @@ Backend stores first, UI bindings second. 17-goal slash parity included.
 ## 5. Slash commands & aux menus
 
 - Restore the 12 dropped `goal-*` subcommands (`status/pause/resume/cancel/edit/
-  steer/tasks/logs/evidence/blockers/retry/verify/history`) onto the goals UI.
+steer/tasks/logs/evidence/blockers/retry/verify/history`) onto the goals UI.
   Keep V2's `/fork /side /review /compact /fast` additions.
 - Shortcuts sheet gains the chat bindings (history-recall, `Cmd/Ctrl+K`
   chat-search, `Ctrl+Shift+T`).

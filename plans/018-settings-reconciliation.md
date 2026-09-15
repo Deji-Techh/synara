@@ -57,11 +57,12 @@ path, auto-install off) · Danger Zone full reset (confirm) · pnpm warning togg
 ## 3. KEEP (V2-new, compatible)
 
 Compaction section (+threshold/Compact-now/status) · ToolApprovals (14 ask-defaults
-+ safe-SQL, default true) · per-project MCP/DB overlays · Agent skills catalog +
-AddSkill · image-generation source/override · blockchain RPC networks · profile/
-stats · keybindings · worktree/archive management · provider visibility/order ·
-appearance system (palettes/density/fonts — do not regress to V1 themes) ·
-per-turn thinking/fast knobs (gain Settings defaults from §1).
+
+- safe-SQL, default true) · per-project MCP/DB overlays · Agent skills catalog +
+  AddSkill · image-generation source/override · blockchain RPC networks · profile/
+  stats · keybindings · worktree/archive management · provider visibility/order ·
+  appearance system (palettes/density/fonts — do not regress to V1 themes) ·
+  per-turn thinking/fast knobs (gain Settings defaults from §1).
 
 ## 4. Sync map (extend `syncHarnessSettings` + `sessionStores`)
 

@@ -46,10 +46,18 @@ interface PendingEntry {
 
 const pending = new Map<string, PendingEntry>();
 
+/**
+ * Backstop for parked MCP consent waits — same 30min deadline as tool
+ * consent (see permissions.ts CONSENT_WAIT_TIMEOUT_MS): a parked card must
+ * never wedge a turn forever when abort and session-clear both miss.
+ */
+export const MCP_CONSENT_WAIT_TIMEOUT_MS = 30 * 60 * 1000;
+
 export function waitForMcpConsent(
   requestId: string,
   sessionId: string,
   signal?: AbortSignal,
+  timeoutMs: number = MCP_CONSENT_WAIT_TIMEOUT_MS,
 ): Promise<McpConsentDecision> {
   return new Promise((resolve) => {
     if (signal?.aborted) {
@@ -57,14 +65,20 @@ export function waitForMcpConsent(
       return;
     }
     let onAbort: (() => void) | undefined;
+    let timer: ReturnType<typeof setTimeout> | undefined;
     const done = (decision: McpConsentDecision) => {
       if (onAbort && signal) signal.removeEventListener("abort", onAbort);
+      if (timer !== undefined) clearTimeout(timer);
       pending.delete(requestId);
       resolve(decision);
     };
     onAbort = () => done("decline");
     pending.set(requestId, { sessionId, resolve: done });
     signal?.addEventListener("abort", onAbort, { once: true });
+    if (Number.isFinite(timeoutMs) && timeoutMs > 0) {
+      timer = setTimeout(() => done("decline"), Math.floor(timeoutMs));
+      (timer as unknown as { unref?: () => void }).unref?.();
+    }
   });
 }
 

@@ -53,6 +53,8 @@ import {
 } from "~/components/pullRequest/pullRequestStatePresentation";
 import { PinStatusIcon, pinActionLabel } from "~/lib/pin";
 import { ensureNativeApi } from "~/nativeApi";
+import { harnessStore } from "~/harnessStore";
+import { getHarnessSession } from "~/harnessSessionRegistry";
 import { autoAnimate } from "@formkit/auto-animate";
 import { FiGitBranch } from "react-icons/fi";
 import { IoIosGitCompare } from "react-icons/io";
@@ -357,7 +359,10 @@ import {
 import { DisclosureRegion } from "./ui/DisclosureRegion";
 import { ProjectSelectionPopup } from "./ProjectSelectionPopup";
 import { SidebarConversationHoverCard } from "./SidebarConversationHoverCard";
-import { resolveSidebarDotColorClass, resolveSidebarFolderColorClass } from "~/lib/sidebarStatusColors";
+import {
+  resolveSidebarDotColorClass,
+  resolveSidebarFolderColorClass,
+} from "~/lib/sidebarStatusColors";
 import { ThreadRunningSpinner } from "./ThreadRunningSpinner";
 import { createClientPointMenuAnchor } from "~/lib/clientPointMenuAnchor";
 import { resolveThreadModelSummary } from "~/lib/threadModelSummary";
@@ -2567,13 +2572,15 @@ export default function Sidebar() {
     null,
   );
   const redirectedFolderProject =
-    redirectedFolderProjectId !== null ? (projectById.get(redirectedFolderProjectId) ?? null) : null;
+    redirectedFolderProjectId !== null
+      ? (projectById.get(redirectedFolderProjectId) ?? null)
+      : null;
 
   const folderRedirectForNewThread = useCallback(
     (projectId: ProjectId) => {
       const project = projectById.get(projectId);
       const target = resolveChatCreationTarget(project ?? null, { homeDir, chatWorkspaceRoot });
-      return target?.kind === "app-dialog" ? project ?? null : null;
+      return target?.kind === "app-dialog" ? (project ?? null) : null;
     },
     [chatWorkspaceRoot, homeDir, projectById],
   );
@@ -3336,7 +3343,9 @@ export default function Sidebar() {
 
         // Snapshot pre-delete membership: the store no longer knows these afterwards.
         const deletedThreadIds = new Set(
-          sidebarThreads.filter((thread) => thread.projectId === projectId).map((thread) => thread.id),
+          sidebarThreads
+            .filter((thread) => thread.projectId === projectId)
+            .map((thread) => thread.id),
         );
         const routeThreadIdBeforeDelete = routeThreadId;
         const routeThreadProjectIdBeforeDelete =
@@ -4629,6 +4638,17 @@ export default function Sidebar() {
   }
 
   const handleInterruptThread = useCallback(async (threadId: ThreadId) => {
+    // Harness turns are invisible to the orchestration interrupt below:
+    // cancel the harness turn over the thread's live socket when one is
+    // registered, and unlatch the row optimistically either way (the server
+    // backstop broadcasts turn_end/cancelled; a lost terminal event must
+    // never leave the row spinning).
+    try {
+      getHarnessSession(threadId)?.send({ type: "cancel", sessionId: threadId });
+      harnessStore.clearLiveTurn(threadId);
+    } catch {
+      // harness settle is best-effort; orchestration interrupt still runs
+    }
     const api = readNativeApi();
     if (!api) return;
     try {
@@ -4669,8 +4689,7 @@ export default function Sidebar() {
     );
     const effectiveProjectName =
       projectName ?? projectById.get(thread.projectId)?.name ?? "Project";
-    const effectiveFramework =
-      projectFramework ?? projectById.get(thread.projectId)?.framework;
+    const effectiveFramework = projectFramework ?? projectById.get(thread.projectId)?.framework;
     const dotColorClass = resolveSidebarDotColorClass(appSettings.sidebarCompletionDotColor);
 
     return (
@@ -4784,7 +4803,10 @@ export default function Sidebar() {
                 {/* Hover view: time + more options */}
                 <div className="hidden items-center gap-1 group-hover/conversation-row:flex">
                   {isPinned && (
-                    <PinStatusIcon pinned={true} className="size-3 text-muted-foreground/60 shrink-0" />
+                    <PinStatusIcon
+                      pinned={true}
+                      className="size-3 text-muted-foreground/60 shrink-0"
+                    />
                   )}
                   <span className="text-[11px] tabular-nums text-muted-foreground/50 mr-0.5">
                     {timeAgo}
@@ -4829,7 +4851,13 @@ export default function Sidebar() {
             projectFramework={effectiveFramework}
             isWorking={isWorking}
             statusLabel={
-              isWorking ? "Running" : showCompletionDot ? "Completed" : thread.latestTurn ? "Seen" : "Not started"
+              isWorking
+                ? "Running"
+                : showCompletionDot
+                  ? "Completed"
+                  : thread.latestTurn
+                    ? "Seen"
+                    : "Not started"
             }
             completionDotVisible={showCompletionDot}
             updatedAt={
@@ -4849,12 +4877,8 @@ export default function Sidebar() {
     const isPinned = pinnedThreadIdSet.has(thread.id);
     const timeAgo = formatRelativeTime(thread.updatedAt ?? thread.createdAt);
     const effectiveProjectName =
-      projectName ??
-      projectById.get(thread.projectId)?.name ??
-      "Project";
-    const branchName =
-      thread.branch ??
-      "main";
+      projectName ?? projectById.get(thread.projectId)?.name ?? "Project";
+    const branchName = thread.branch ?? "main";
 
     return (
       <div
@@ -4889,8 +4913,12 @@ export default function Sidebar() {
       >
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <FolderIcon className="size-3.5 shrink-0 text-muted-foreground/75" />
-          <span className="font-medium text-foreground/90 truncate max-w-[55%]">{effectiveProjectName}</span>
-          {isPinned && <PinStatusIcon pinned={true} className="size-3 shrink-0 text-muted-foreground/60" />}
+          <span className="font-medium text-foreground/90 truncate max-w-[55%]">
+            {effectiveProjectName}
+          </span>
+          {isPinned && (
+            <PinStatusIcon pinned={true} className="size-3 shrink-0 text-muted-foreground/60" />
+          )}
           <div className="ml-auto relative flex items-center h-4 shrink-0 justify-end">
             <span className="text-[11px] text-muted-foreground/50 tabular-nums shrink-0 transition-opacity group-hover/thread-card:opacity-0">
               {timeAgo}
@@ -5998,7 +6026,9 @@ export default function Sidebar() {
                           const recB = resolveActivityRecencyMs(b);
                           const recA = resolveActivityRecencyMs(a);
                           if (recB !== recA) return recB - recA;
-                          return (b.updatedAt || b.createdAt || "").localeCompare(a.updatedAt || a.createdAt || "");
+                          return (b.updatedAt || b.createdAt || "").localeCompare(
+                            a.updatedAt || a.createdAt || "",
+                          );
                         });
 
                       return (
@@ -6027,7 +6057,9 @@ export default function Sidebar() {
                                 className={cn(
                                   "size-3.5 shrink-0 transition-opacity duration-150",
                                   resolveSidebarFolderColorClass(appSettings.sidebarFolderColor),
-                                  project.framework && project.framework !== "blank" && "group-hover/project-row:opacity-0",
+                                  project.framework &&
+                                    project.framework !== "blank" &&
+                                    "group-hover/project-row:opacity-0",
                                 )}
                               />
                               {project.framework && project.framework !== "blank" ? (
@@ -6089,7 +6121,12 @@ export default function Sidebar() {
                                 </div>
                               ) : (
                                 projectThreads.map((thread) =>
-                                  renderSidebarConversationRow(thread, project.name, project.framework, true),
+                                  renderSidebarConversationRow(
+                                    thread,
+                                    project.name,
+                                    project.framework,
+                                    true,
+                                  ),
                                 )
                               )}
                             </div>

@@ -18,18 +18,18 @@ V2 = this repo. Donor `/home/DejiTech/dev/dyad` is reference-only (ambiguities, 
 
 ### BRING IN (V1 → `apps/server/src/dyad/**`, Electron-only bits → `apps/desktop`)
 
-| V1 source | Lands in | Plan |
-|---|---|---|
-| `src/pro/main/ipc/handlers/local_agent/` (handler, tools, consent, MCP) + `src/ipc/handlers/chat_stream_handlers.ts` turn flow | `dyad/agent/` (new) behind harness protocol | 008 |
-| `src/prompts/` (all constructors, skill packs, loader, guides) | `dyad/prompts/` (replace partials) | 008 |
-| Providers: `language_model_constants`, `get_model_client`, `remote_language_model_catalog`, `opencode_zen_models`, ChatGPT auth, custom provider/model handlers | `dyad/providers/` | 009 |
-| `src/db/` + `drizzle/` (threads, messages, versions, goals, MCP, collections, language models) + compaction/memory/goal-scheduler | `dyad/store/` + `persistence/Migrations` | 010 |
-| Preview: `worker/proxy_server.js` + injected clients, `preview_tunnel_service`, `public_preview_service`, console/problems/tests/security/configure, visual editing, DeviceLab, Capacitor + managed toolchain, ReleaseCentre | `dyad/preview/` + `apps/desktop` (toolchain) | 011 |
-| GitHub/Vercel handlers, `vercel_neon_sync`, CAIDEPKG package service, remote share, collaboration + preview sessions (server code already vendored — wire client) | `dyad/publish/`, `dyad/share/`, `dyad/collab/` | 012 |
-| MCP handlers/manager/OAuth/consent, Supabase + Neon full lifecycles, `add_integration` | `dyad/mcp/`, `dyad/db/` (extend) | 013 |
-| Skills/prompts CRUD, context pickers, media mentions, queue/tabs/versions UI-state backends, image-gen backend, theme-gen (user-keyed), help bot (user-keyed) | `dyad/knowledge/` + 017 homes | 014 |
-| Deep-link router (7 routes), file dialogs, safeStorage recovery, first-run, notification events | `apps/desktop` | 015 |
-| Services (`app_runtime`, `git_service`, `isolated_test_db`, `collaboration_service`, `provider_api_key_validation`), code-explorer + tsc workers, explore/code-search/LSP tools, scaffolds, release scripts | `dyad/services/`, `dyad/workers/`, `dyad/scaffolds/` | 016 |
+| V1 source                                                                                                                                                                                                                    | Lands in                                             | Plan |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- | ---- |
+| `src/pro/main/ipc/handlers/local_agent/` (handler, tools, consent, MCP) + `src/ipc/handlers/chat_stream_handlers.ts` turn flow                                                                                               | `dyad/agent/` (new) behind harness protocol          | 008  |
+| `src/prompts/` (all constructors, skill packs, loader, guides)                                                                                                                                                               | `dyad/prompts/` (replace partials)                   | 008  |
+| Providers: `language_model_constants`, `get_model_client`, `remote_language_model_catalog`, `opencode_zen_models`, ChatGPT auth, custom provider/model handlers                                                              | `dyad/providers/`                                    | 009  |
+| `src/db/` + `drizzle/` (threads, messages, versions, goals, MCP, collections, language models) + compaction/memory/goal-scheduler                                                                                            | `dyad/store/` + `persistence/Migrations`             | 010  |
+| Preview: `worker/proxy_server.js` + injected clients, `preview_tunnel_service`, `public_preview_service`, console/problems/tests/security/configure, visual editing, DeviceLab, Capacitor + managed toolchain, ReleaseCentre | `dyad/preview/` + `apps/desktop` (toolchain)         | 011  |
+| GitHub/Vercel handlers, `vercel_neon_sync`, CAIDEPKG package service, remote share, collaboration + preview sessions (server code already vendored — wire client)                                                            | `dyad/publish/`, `dyad/share/`, `dyad/collab/`       | 012  |
+| MCP handlers/manager/OAuth/consent, Supabase + Neon full lifecycles, `add_integration`                                                                                                                                       | `dyad/mcp/`, `dyad/db/` (extend)                     | 013  |
+| Skills/prompts CRUD, context pickers, media mentions, queue/tabs/versions UI-state backends, image-gen backend, theme-gen (user-keyed), help bot (user-keyed)                                                                | `dyad/knowledge/` + 017 homes                        | 014  |
+| Deep-link router (7 routes), file dialogs, safeStorage recovery, first-run, notification events                                                                                                                              | `apps/desktop`                                       | 015  |
+| Services (`app_runtime`, `git_service`, `isolated_test_db`, `collaboration_service`, `provider_api_key_validation`), code-explorer + tsc workers, explore/code-search/LSP tools, scaffolds, release scripts                  | `dyad/services/`, `dyad/workers/`, `dyad/scaffolds/` | 016  |
 
 ### DELETE (never port)
 
@@ -68,15 +68,15 @@ V2 = this repo. Donor `/home/DejiTech/dev/dyad` is reference-only (ambiguities, 
 
 ## 3. De-Pro policy (everything free)
 
-| V1 Pro mechanism | Free equivalent |
-|---|---|
-| Engine gateway + `usesEngineEndpoint` tools | Direct provider calls with user keys; `basicAgentMode`/`PRO_AGENT_ONLY` stay no-ops |
-| `free-pro` / free-agent quota / `/free` quota | Deleted. No limits anywhere |
-| `autoApproveSafeMcpTools` Pro+free gate | Plain user setting, default off |
-| Pro-gated web tools, lazy edits, smart context | User settings (018), work with user keys |
-| Theme-generator / help-bot catalog aliases | Resolved against user-keyed models (009/014) |
-| Annotator `AnnotatorOnlyForPro`, `ProBanner`, quota banners | Dropped (were stubs or paywalls) |
-| ChatGPT device-flow auth | Ported (account auth, not Pro) |
+| V1 Pro mechanism                                            | Free equivalent                                                                     |
+| ----------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Engine gateway + `usesEngineEndpoint` tools                 | Direct provider calls with user keys; `basicAgentMode`/`PRO_AGENT_ONLY` stay no-ops |
+| `free-pro` / free-agent quota / `/free` quota               | Deleted. No limits anywhere                                                         |
+| `autoApproveSafeMcpTools` Pro+free gate                     | Plain user setting, default off                                                     |
+| Pro-gated web tools, lazy edits, smart context              | User settings (018), work with user keys                                            |
+| Theme-generator / help-bot catalog aliases                  | Resolved against user-keyed models (009/014)                                        |
+| Annotator `AnnotatorOnlyForPro`, `ProBanner`, quota banners | Dropped (were stubs or paywalls)                                                    |
+| ChatGPT device-flow auth                                    | Ported (account auth, not Pro)                                                      |
 
 ## 4. Phase order (commit after each milestone)
 
@@ -84,7 +84,7 @@ V2 = this repo. Donor `/home/DejiTech/dev/dyad` is reference-only (ambiguities, 
   shell blocklist, ask-`readOnly` threading, full-access opt-in. Nothing else is
   verifiable while turns wedge. Live stuck-turn repro must pass.
 - **Phase 1 — Agent core (008).** Modes matrix, tool registry + `isEnabled`, consent
-  + deadlines, questionnaire 3q, blueprint semantics, post-turn pipeline, budgets.
+  - deadlines, questionnaire 3q, blueprint semantics, post-turn pipeline, budgets.
 - **Phase 2 — Providers + persistence (009, 010).**
 - **Phase 3 — Preview + publish/share (011, 012).**
 - **Phase 4 — MCP/integrations + knowledge/chatpower (013, 014).**

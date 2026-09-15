@@ -27,6 +27,7 @@ V1 refs: `src/ipc/handlers/chat_stream_handlers.ts:2273-2298` (`chat:cancel` →
 5. **Safety P0s.** Shell blocklist restored as pre-consent refusal (007 §6.6);
    ask-mode `readOnly` threaded (007 §6.7); full-access → explicit opt-in, default
    `approval-required` (018).
+
 - **Acceptance:** live stuck-turn repro (parked consent + parked questionnaire +
   half-open socket) cancels within 2s, Stop unlatches, `turn_end/cancelled` observed.
 
@@ -57,13 +58,13 @@ Port V1 `local_agent_handler.ts` flow as `apps/server/src/dyad/agent/turnEngine.
 
 ## 3. Modes matrix (behavioral parity, not just prompts)
 
-| Mode | Handler | Prompt | Tools |
-|---|---|---|---|
-| build | `simpleStreamText` + XML pipeline: `<caide-write>/<dyad-search-replace>` emit → dry-run repair (2 attempts) → unclosed-write continuation (2) → `processFullResponseActions` or proposal approve/reject | `BUILD_SYSTEM_PREFIX/POSTFIX` + turbo (iff enabled) + Nitro nudge (vite-only) + test guidance | Zero native tools (MCP-agent detour only iff `enableMcpServersForBuildMode`) |
-| agent | `handleLocalAgentStream`, native tool calls | `constructLocalAgentPrompt` (Pro vs basic) | Full set minus plan-only, minus `never`, minus `isEnabled`-false, minus deferred |
-| ask | `handleLocalAgentStream {readOnly:true}` | `LOCAL_AGENT_ASK_SYSTEM_PROMPT` (NOT legacy ASK prompt) | Non-modifying only; sandbox-write host off; MCP direct off; no deploy/commit; `updatedFiles:false`; `stripDyadTags` in history |
-| plan | `handleLocalAgentStream {planModeOnly:true}` | `constructPlanModePrompt` | Non-modifying + `write_plan`/`exit_plan`/`planning_questionnaire` only |
-| doctor | Not a chat mode in V1 (repair-dispatch action) | — | Keep V2 `DoctorDialog` + `/doctor`; do not invent a mode |
+| Mode   | Handler                                                                                                                                                                                                 | Prompt                                                                                        | Tools                                                                                                                          |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| build  | `simpleStreamText` + XML pipeline: `<caide-write>/<dyad-search-replace>` emit → dry-run repair (2 attempts) → unclosed-write continuation (2) → `processFullResponseActions` or proposal approve/reject | `BUILD_SYSTEM_PREFIX/POSTFIX` + turbo (iff enabled) + Nitro nudge (vite-only) + test guidance | Zero native tools (MCP-agent detour only iff `enableMcpServersForBuildMode`)                                                   |
+| agent  | `handleLocalAgentStream`, native tool calls                                                                                                                                                             | `constructLocalAgentPrompt` (Pro vs basic)                                                    | Full set minus plan-only, minus `never`, minus `isEnabled`-false, minus deferred                                               |
+| ask    | `handleLocalAgentStream {readOnly:true}`                                                                                                                                                                | `LOCAL_AGENT_ASK_SYSTEM_PROMPT` (NOT legacy ASK prompt)                                       | Non-modifying only; sandbox-write host off; MCP direct off; no deploy/commit; `updatedFiles:false`; `stripDyadTags` in history |
+| plan   | `handleLocalAgentStream {planModeOnly:true}`                                                                                                                                                            | `constructPlanModePrompt`                                                                     | Non-modifying + `write_plan`/`exit_plan`/`planning_questionnaire` only                                                         |
+| doctor | Not a chat mode in V1 (repair-dispatch action)                                                                                                                                                          | —                                                                                             | Keep V2 `DoctorDialog` + `/doctor`; do not invent a mode                                                                       |
 
 - Turbo-edits: build-only (ask/plan force false; agent constructor ignores).
 - Build proposal flow: `autoApproveChanges` vs approve/reject; ask throws on approve.

@@ -36,7 +36,11 @@ import { clearPendingConsentsForSession } from "../../dyad/tools/permissions.ts"
 import { clearPendingMcpConsentsForSession } from "../../dyad/mcp/mcpConsent.ts";
 import { clearUserInputForSession } from "../../dyad/plan/userPrompt.ts";
 import { getTodos, setTodos, clearTodos, type Todo } from "../../dyad/plan/todoStore.ts";
-import { isSubagentTerminal, listSubagentTasks } from "../../dyad/sandbox/taskRegistry.ts";
+import {
+  isSubagentTerminal,
+  listSubagentTasks,
+  requestSubagentCancel,
+} from "../../dyad/sandbox/taskRegistry.ts";
 import { buildConversationChain, buildMessages, type ChatMessage } from "../session/buildChain.ts";
 import { resolveDispatchSystemPromptOverride } from "../prompts/dispatchSystemPrompt.ts";
 import { SessionStorage } from "../session/storage.ts";
@@ -281,6 +285,17 @@ export class CaideRunner {
     // instead of misreporting as buffered; the aborted loop's terminal
     // finish is a no-op against the cleared slot.
     this.flows.get(sessionId)?.cancel(cause);
+    // Cancel means stop everything: abort session-owned subagent threads so
+    // a cancelled turn cannot keep running detached (their later status
+    // traffic otherwise reads as a stuck turn). Non-terminal only; completed
+    // or failed threads are already settled and need no handle.
+    try {
+      for (const task of listSubagentTasks(sessionId)) {
+        if (!isSubagentTerminal(task)) requestSubagentCancel(task.id);
+      }
+    } catch {
+      // registry read best-effort; turn cancel must not fail
+    }
     // Parked waits never observe the abort otherwise — settle them so the
     // turn fails fast instead of hanging. Questionnaire/env cards are
     // withdrawn by the gateway (it owns the broadcast); clearing here covers
@@ -522,7 +537,10 @@ export class CaideRunner {
         ...(input.runtimeMode ? { runtimeMode: input.runtimeMode } : {}), // Plan turns get plan-only tools (write_plan/exit_plan); all other
         // modes exclude them. Previously nothing passed options, so they were
         // filtered from EVERY turn while the plan prompt assumed they exist.
-        options: { planModeOnly: chatMode === "plan" },
+        // Ask turns are read-only (donor parity): mutating tools are excluded
+        // from the turn's tool set (consent cards alone are not enough — V1
+        // withholds the tools entirely).
+        options: { planModeOnly: chatMode === "plan", readOnly: chatMode === "ask" },
         requestConsent: input.requestConsent,
         autoApproveNonSchemaSql: input.autoApproveNonSchemaSql ?? sessionStores.safeSql,
         store: sessionStores.consent,

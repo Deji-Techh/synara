@@ -13,6 +13,7 @@ import { connectHarnessWs, makeHarnessUrl, type HarnessWsHandle } from "~/harnes
 export function useChatHarnessSocket(threadId: string | null): {
   connected: boolean;
   send: HarnessWsHandle["send"];
+  sendCancel: (sessionId: string) => Promise<boolean>;
   resubscribe: HarnessWsHandle["resubscribe"];
 } {
   const [handle, setHandle] = useState<HarnessWsHandle | null>(null);
@@ -61,6 +62,13 @@ export function useChatHarnessSocket(threadId: string | null): {
       connected: handle !== null && open,
       send: (message: Record<string, unknown>) => {
         handle?.send(message);
+      },
+      // Cancel delivery is retried across the reconnect window; resolves
+      // false when undeliverable so the caller can report instead of
+      // silently leaving the turn running.
+      sendCancel: (sessionId: string) => {
+        if (!handle) return Promise.resolve(false);
+        return handle.sendWithRetry({ type: "cancel", sessionId });
       },
       resubscribe: () => {
         handle?.resubscribe();

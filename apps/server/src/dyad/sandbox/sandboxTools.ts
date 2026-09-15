@@ -125,6 +125,11 @@ export async function executeSandboxScript(
           autoApproveSafe: stores.mcpAutoApproveSafe,
           toolArgs: args,
           store: stores.mcp,
+          // Forward the sandbox execution signal so turn cancel settles a
+          // parked MCP consent instead of hanging the script with no turn_end.
+          // (Conditional spread: exactOptionalPropertyTypes forbids explicit
+          // undefined.)
+          ...(signal ? { signal } : {}),
           requestConsent: hostCtx.requestMcpConsent ?? (async () => "decline" as const),
         });
         if (!allowed) throw new Error(`MCP call declined: ${def.toolKey}`);

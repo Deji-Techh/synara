@@ -30,7 +30,7 @@ lifecycle stays; V1's missing planes are ported in. Never target the unwired leg
   virtualized list, per-source search, clear, click-to-AI. Engine ring → `server`,
   iframe errors → `client`.
 - **Loading screen:** session-boundary logs + error taxonomy (`dyad-app/dyad-sync/
-  preview-app`) + actionable banner (Rebuild / Fix-with-AI, `MAX_ERRORS_FOR_AI_FIX=10`).
+preview-app`) + actionable banner (Rebuild / Fix-with-AI, `MAX_ERRORS_FOR_AI_FIX=10`).
 - **Package-manager banner:** pnpm-migration/release-age + one-click fix + Node guard.
 - **Problems:** checklist + fix-selected (batched `createProblemFixPrompt`, incl.
   TS-vs-UI-quality framing).

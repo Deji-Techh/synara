@@ -243,6 +243,44 @@ export function connectHarnessWs(options: HarnessWsOptions): HarnessWsHandle {
         }
       }
     },
+    sendWithRetry: (message: Record<string, unknown>, opts?: SendRetryOptions) => {
+      // Critical sends (cancel) must not vanish silently on a reconnecting
+      // or half-open socket: poll for OPEN until sent or the budget expires.
+      // Cancel is idempotent server-side, so a late delivery is always safe.
+      const timeoutMs = opts?.timeoutMs ?? 10_000;
+      const intervalMs = opts?.intervalMs ?? 250;
+      return new Promise<boolean>((resolve) => {
+        if (closed) {
+          resolve(false);
+          return;
+        }
+        const started = Date.now();
+        const trySend = () => {
+          if (closed) {
+            resolve(false);
+            return;
+          }
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            try {
+              ws.send(JSON.stringify(message));
+              resolve(true);
+              return;
+            } catch {
+              // send threw — fall through to retry until the budget expires
+            }
+          }
+          if (Date.now() - started >= timeoutMs) {
+            console.warn(
+              `[caide] harness critical send undelivered after ${timeoutMs}ms (session ${options.sessionId}, type ${(message as { type?: unknown }).type})`,
+            );
+            resolve(false);
+            return;
+          }
+          setTimeout(trySend, intervalMs);
+        };
+        trySend();
+      });
+    },
     resubscribe: () => {
       // Re-send subscribe on the live socket: the server replays missed
       // prompts (dedupe by requestId makes this safe). Used while a turn is
@@ -258,9 +296,20 @@ export function connectHarnessWs(options: HarnessWsOptions): HarnessWsHandle {
   };
 }
 
+export interface SendRetryOptions {
+  timeoutMs?: number;
+  intervalMs?: number;
+}
+
 export interface HarnessWsHandle {
   disconnect: () => void;
   send: (message: Record<string, unknown>) => void;
+  /**
+   * Send, waiting for the socket to be OPEN (reconnect window included).
+   * Resolves true once written, false when the budget expires or the handle
+   * disconnects. For idempotent critical messages (cancel) only.
+   */
+  sendWithRetry: (message: Record<string, unknown>, opts?: SendRetryOptions) => Promise<boolean>;
   /** Re-send subscribe on the live socket to trigger a replay re-sync. */
   resubscribe: () => void;
 }

@@ -6185,19 +6185,34 @@ export default function ChatView({
   ]);
 
   const onInterrupt = useCallback(async () => {
+    if (!activeThread) return;
+    // Harness cancel is transport-independent: parked consent waits only
+    // settle via consent_answer or session cancel, and the loop abort alone
+    // never reaches them — so the harness send must fire even when the
+    // orchestration API is unavailable (web surfaces). Unlatch the Stop
+    // control optimistically: the server broadcasts turn_end/cancelled, but
+    // a lost terminal event must never latch Stop forever.
+    if (harnessTurnLive) {
+      // Unlatch instantly so the control never spins; delivery is retried
+      // across the reconnect window, and a failure throws to the stop
+      // control's toast instead of silently leaving the turn running.
+      harnessStore.clearLiveTurn(activeThread.id);
+      const delivered = await chatHarnessSocket.sendCancel(activeThread.id);
+      if (!delivered) {
+        throw new Error(
+          "The stop signal could not reach the server (connection lost). The turn may still be running — it will settle when the connection recovers.",
+        );
+      }
+    }
     const api = readNativeApi();
-    if (!api || !activeThread) return;
-    // Cancel the harness turn too: parked consent waits only settle via
-    // consent_answer or session cancel, and the loop abort alone never
-    // reaches them.
-    chatHarnessSocket.send({ type: "cancel", sessionId: activeThread.id });
+    if (!api) return;
     await api.orchestration.dispatchCommand({
       type: "thread.turn.interrupt",
       commandId: newCommandId(),
       threadId: activeThread.id,
       createdAt: new Date().toISOString(),
     });
-  }, [activeThread, chatHarnessSocket]);
+  }, [activeThread, chatHarnessSocket, harnessTurnLive]);
 
   // A rejected interrupt (orchestration dispatch timeout, dead runtime) leaves the
   // UI spinning with no explanation, so the stop affordances report it.

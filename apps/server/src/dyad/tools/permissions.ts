@@ -69,10 +69,18 @@ interface PendingEntry {
 
 const pending = new Map<string, PendingEntry>();
 
+/**
+ * Backstop for parked consent waits: even with no abort signal and no
+ * session-scoped clear, a consent card must never park a turn forever.
+ * Matches the longest human-wait deadline (integration/env/checkpoint: 30min).
+ */
+export const CONSENT_WAIT_TIMEOUT_MS = 30 * 60 * 1000;
+
 export function waitForConsent(
   requestId: string,
   sessionId: string,
   signal?: AbortSignal,
+  timeoutMs: number = CONSENT_WAIT_TIMEOUT_MS,
 ): Promise<ConsentDecision> {
   return new Promise((resolve) => {
     // Already cancelled — decline immediately so the turn fails fast.
@@ -81,14 +89,23 @@ export function waitForConsent(
       return;
     }
     let onAbort: (() => void) | undefined;
+    let timer: ReturnType<typeof setTimeout> | undefined;
     const done = (decision: ConsentDecision) => {
       if (onAbort && signal) signal.removeEventListener("abort", onAbort);
+      if (timer !== undefined) clearTimeout(timer);
       pending.delete(requestId);
       resolve(decision);
     };
     onAbort = () => done("decline");
     pending.set(requestId, { sessionId, resolve: done });
     signal?.addEventListener("abort", onAbort, { once: true });
+    // Deadline never extends the process lifetime (unref) and never wins
+    // over an answer or abort that lands first (done is idempotent via
+    // pending.delete + resolve-once semantics of the Promise executor).
+    if (Number.isFinite(timeoutMs) && timeoutMs > 0) {
+      timer = setTimeout(() => done("decline"), Math.floor(timeoutMs));
+      (timer as unknown as { unref?: () => void }).unref?.();
+    }
   });
 }
 

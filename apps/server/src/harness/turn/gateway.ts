@@ -258,12 +258,11 @@ export class TurnGateway {
       })();
     });
     server.onCancel((sessionId, reason) => {
-      // Withdraw parked questionnaire/env cards first (captures the live
-      // requestIds), then cancel the turn — runner.cancel re-clears as a
-      // no-op for non-WS paths.
-      withdrawSessionPrompts(server, sessionId);
-      cancelMcpOAuthForSession(sessionId);
-      this.runner.cancel(sessionId, reason ?? "cancelled");
+      // Single cancel path: cancelTurn withdraws parked cards, cancels the
+      // turn (incl. owned subagents), and broadcasts the synthetic
+      // turn_end/cancelled backstop so a lost terminal event can never latch
+      // the Stop button. this.ws === server here (set in attachWs above).
+      this.cancelTurn(sessionId, reason ?? "cancelled");
     });
     server.onVersionsList((sessionId) => {
       void (async () => {

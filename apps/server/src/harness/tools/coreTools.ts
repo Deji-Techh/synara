@@ -138,6 +138,21 @@ export const searchFilesTool = defineTool({
 });
 
 // 5. run_command
+//
+// Donor safety (dyad x caide run_command.ts): shell patterns that are always
+// blocked regardless of user consent — checked at execution so even a
+// full-access turn (no consent card) refuses them.
+const BLOCKED_COMMAND_PATTERNS = [
+  /rm\s+-[rRf]*f\s*\/(?:\s|$)/, // rm -rf / and variants
+  /:\s*\(\s*\)\s*\{/, // fork bomb: :() { :|:& };:
+  />\s*\/dev\/sd[a-z]/, // overwriting disk devices
+  /mkfs\./,
+  /dd\s+.*of=\/dev\/(?!null|zero|urandom)/,
+  /sudo\s/,
+  /curl\s+.*\|\s*(?:bash|sh|zsh|fish)/,
+  /wget\s+.*-\s*\|\s*(?:bash|sh|zsh|fish)/,
+];
+
 export const runCommandTool = defineTool({
   name: "run_command",
   description: "Executes a shell command inside workspace root. Modifies state, SIGTERM killable.",
@@ -164,6 +179,15 @@ export const runCommandTool = defineTool({
       args && args.length > 0 && !rawCmd.includes(" ")
         ? `${rawCmd} ${args.map((a) => (a.includes(" ") ? JSON.stringify(a) : a)).join(" ")}`
         : rawCmd;
+
+    // Pre-execution refusal (donor parity): never run what V1 refused, in
+    // any mode. Returns an error string (not a throw) so the model sees the
+    // refusal as a tool result and can choose a safer command.
+    for (const pattern of BLOCKED_COMMAND_PATTERNS) {
+      if (pattern.test(commandToRun)) {
+        return `ERROR: Command blocked for safety reasons: \`${commandToRun}\`\nThis matches a dangerous command pattern. Use more specific commands instead.`;
+      }
+    }
 
     const { stdout, stderr } = await execAsync(commandToRun, {
       cwd: workDir,
