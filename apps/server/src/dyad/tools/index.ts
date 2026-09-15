@@ -25,6 +25,7 @@ export {
   shouldAutoApproveAgentTool,
   requireAgentToolConsent,
   shouldIncludeTool,
+  isToolEnabled,
   toolNamesForTurn,
   ToolNeverAllowedError,
   type ConsentStore,

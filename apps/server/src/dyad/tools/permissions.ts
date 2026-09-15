@@ -293,6 +293,57 @@ export interface ToolSetOptions {
 
 export interface InclusionContext {
   modifiesState?: (toolName: string) => boolean;
+  /**
+   * Context/state gates (donor isEnabled parity). Every gate is tri-state:
+   * explicit false/true enforces, undefined preserves legacy behavior (tool
+   * stays). Callers that know the turn state (turnContext) pass explicit
+   * values; tests and partial callers pass nothing and see no change.
+   */
+  /** DB link present (session link counts) — gates execute_sql + DB tools. */
+  hasDbLink?: boolean;
+  /** Linked DB provider — gates per-provider info tools. */
+  dbProvider?: string | null;
+  /** Sandbox script execution allowed (setting; default true until 018). */
+  sandboxEnabled?: boolean;
+  /** MCP tool search available (registry present + sandbox). */
+  mcpSearchEnabled?: boolean;
+  /** Code-explorer backend ready (016 wires readiness). */
+  codeExplorerEnabled?: boolean;
+}
+
+/** Tools requiring any linked database. */
+const DB_LINK_TOOLS = new Set(["execute_sql", "get_database_table_schema"]);
+
+/**
+ * Whether a tool is offered given turn context/state (donor isEnabled).
+ * Tri-state: only explicit false (or a mismatched provider) excludes.
+ */
+export function isToolEnabled(toolName: string, ctx: InclusionContext = {}): boolean {
+  if (DB_LINK_TOOLS.has(toolName) && ctx.hasDbLink === false) return false;
+  if (toolName === "get_supabase_project_info") {
+    if (ctx.hasDbLink === false) return false;
+    if (ctx.dbProvider != null && ctx.dbProvider !== "supabase") return false;
+  }
+  if (toolName === "get_neon_project_info") {
+    if (ctx.hasDbLink === false) return false;
+    if (ctx.dbProvider != null && ctx.dbProvider !== "neon") return false;
+  }
+  // Donor: add_integration offered only while NO database is connected.
+  if (toolName === "add_integration" && ctx.hasDbLink === true) return false;
+  if (toolName === "execute_sandbox_script" && ctx.sandboxEnabled === false) return false;
+  if (
+    (toolName === "search_mcp_tools" || toolName === "get_mcp_tool_schema") &&
+    ctx.mcpSearchEnabled === false
+  ) {
+    return false;
+  }
+  if (
+    (toolName === "explore_code" || toolName === "lsp_symbol_lookup") &&
+    ctx.codeExplorerEnabled === false
+  ) {
+    return false;
+  }
+  return true;
 }
 
 /**
@@ -328,6 +379,7 @@ export function shouldIncludeTool(
     return false;
   }
   if (options.toolAvailable && !options.toolAvailable(toolName)) return false;
+  if (!isToolEnabled(toolName, ctx)) return false;
   void CAPABILITY_GATED_BLUEPRINT_TOOLS;
   return true;
 }

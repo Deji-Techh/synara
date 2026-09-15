@@ -12,6 +12,7 @@ import {
   detectFrameworkFromDisk,
   detectWeb3App,
 } from "./turnContext.ts";
+import { linkDatabase, unlinkDatabase } from "../../dyad/db/index.ts";
 
 describe("turn context wire (m3)", () => {
   it("detects frameworks from workspace files", async () => {
@@ -100,7 +101,11 @@ describe("turn context wire (m3)", () => {
       expect(names).toContain("write_file");
       expect(names).toContain("search_replace");
       expect(names).toContain("open_preview");
-      expect(names).toContain("execute_sql");
+      // Donor isEnabled: no DB link → DB tools hidden, add_integration shown.
+      expect(names).not.toContain("execute_sql");
+      expect(names).not.toContain("get_supabase_project_info");
+      expect(names).not.toContain("get_neon_project_info");
+      expect(names).toContain("add_integration");
       expect(names).not.toContain("write_plan");
       expect(allUnifiedToolDefs().length).toBeGreaterThanOrEqual(50);
       // Phase 5 sweep: FTS chat-history tools ride every agent turn.
@@ -124,6 +129,28 @@ describe("turn context wire (m3)", () => {
       }
     } finally {
       ctx.cleanup();
+    }
+  });
+
+  it("gates DB tools on the session link (donor isEnabled)", () => {
+    linkDatabase("s-dblink", { provider: "supabase", databaseUrl: "postgres://link/db" });
+    const ctx = createTurnContext({
+      sessionId: "s-dblink",
+      appPath: "/tmp/caide-test-app",
+      settings: { providerSettings: { openai: { apiKey: "sk-test" } } },
+      requestConsent: async () => "accept-once",
+    });
+    try {
+      const names = ctx.tools.map((t) => t.name);
+      expect(names).toContain("execute_sql");
+      expect(names).toContain("get_database_table_schema");
+      expect(names).toContain("get_supabase_project_info");
+      // Sibling-provider info stays hidden; integration is pointless linked.
+      expect(names).not.toContain("get_neon_project_info");
+      expect(names).not.toContain("add_integration");
+    } finally {
+      ctx.cleanup();
+      unlinkDatabase("s-dblink");
     }
   });
 

@@ -40,13 +40,14 @@ import {
   ALL_CODE_TOOLS,
 } from "../../dyad/web/index.ts";
 import { ALL_WEB3_TOOLS } from "../../dyad/web3/index.ts";
-import { ALL_DB_TOOLS, linkDatabase, type DbLink } from "../../dyad/db/index.ts";
+import { ALL_DB_TOOLS, getDatabaseLink, linkDatabase, type DbLink } from "../../dyad/db/index.ts";
 import {
   MemoryConsentStore,
   requireAgentToolConsent,
   shouldIncludeTool,
   type ConsentStore,
   type ConsentRequestFn,
+  type SqlConsentMetadata,
   type ToolSetOptions,
 } from "../../dyad/tools/index.ts";
 import {
@@ -56,6 +57,7 @@ import {
   type SettingsLike,
 } from "../../dyad/providers/index.ts";
 import { setContextSummarizer } from "../../dyad/misc/index.ts";
+import { sqlConsentInfo } from "../../dyad/db/dbTools.ts";
 import { setSkillRunner } from "../../dyad/sandbox/index.ts";
 import { setSubagentToolSource } from "../../dyad/sandbox/subagentLoop.ts";
 import { setExplorerRunner as setCodeExplorerRunner } from "../../dyad/web/index.ts";
@@ -129,6 +131,36 @@ export interface TurnContext {
 /** Framework detection from workspace files — re-exported here for compatibility. */
 export { detectFrameworkFromDisk } from "../../dyad/prompts/frameworkDetect.ts";
 export { detectWeb3App } from "../../dyad/prompts/frameworkDetect.ts";
+
+/**
+ * Consent-card input preview (donor getConsentPreview parity): per-tool
+ * presentCall rendering, best-effort — never fails the turn when args do
+ * not match the tool schema.
+ */
+function presentToolCall(def: ToolDef, args: unknown): string | null {
+  try {
+    return def.presentCall?.(args) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * SQL consent metadata for the safe-SQL auto-approve (donor parity):
+ * only execute_sql calls carry it; unparseable input yields no metadata
+ * (fail-closed — the card asks).
+ */
+function sqlMetadataForConsent(toolName: string, args: unknown): SqlConsentMetadata | null {
+  if (toolName !== "execute_sql") return null;
+  const query = (args as { query?: unknown } | null)?.query;
+  if (typeof query !== "string" || query.length === 0) return null;
+  try {
+    const info = sqlConsentInfo(query);
+    return { sqlMutatesSchema: info.mutatesSchema, sqlDeletesData: info.deletesData };
+  } catch {
+    return null;
+  }
+}
 
 const UNIFIED_DEFS: ToolDef[] = [
   ...ALL_CORE_TOOLS,
@@ -230,7 +262,27 @@ export function createTurnContext(input: TurnContextInput): TurnContext {
   if (input.mcpRegistry !== undefined) setMcpToolRegistry(input.mcpRegistry);
   if (input.dbLink) linkDatabase(input.sessionId, input.dbLink);
 
-  const included = UNIFIED_DEFS.filter((def) => shouldIncludeTool(def.name, {}, options, store));
+  // Donor isEnabled gates: DB tools only when a database is linked (session
+  // link counts — settings-sync, turn link, and snapshot restores all funnel
+  // through connections.ts, so getDatabaseLink is accurate at turn time),
+  // per-provider info only for the linked provider, add_integration only
+  // while unconnected, MCP search only with a registry. hasDbLink is always
+  // explicit (donor hides DB tools from unconnected turns rather than
+  // offering tools that fail at connection time). Sandbox/explorer flags
+  // default open until their settings land (018/016).
+  const turnDbLink = input.dbLink ?? getDatabaseLink(input.sessionId);
+  const included = UNIFIED_DEFS.filter((def) =>
+    shouldIncludeTool(
+      def.name,
+      {
+        hasDbLink: turnDbLink != null,
+        ...(turnDbLink ? { dbProvider: turnDbLink.provider ?? null } : {}),
+        mcpSearchEnabled: input.mcpRegistry ? true : undefined,
+      },
+      options,
+      store,
+    ),
+  );
 
   const requestConsent: ConsentRequestFn = input.requestConsent ?? (async () => "decline" as const);
 
@@ -262,6 +314,12 @@ export function createTurnContext(input: TurnContextInput): TurnContext {
       const allowed = await requireAgentToolConsent({
         sessionId: input.sessionId,
         toolName,
+        // Donor card parity: description + per-tool preview + SQL metadata.
+        // Without metadata the safeSql setting is dead (auto-approve can
+        // never fire); without previews every card shows bare args.
+        toolDescription: def.description ?? null,
+        inputPreview: presentToolCall(def, args),
+        metadata: sqlMetadataForConsent(toolName, args),
         store,
         autoApproveNonSchemaSql: input.autoApproveNonSchemaSql,
         requestConsent,
