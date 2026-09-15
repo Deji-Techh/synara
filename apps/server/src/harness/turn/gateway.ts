@@ -208,7 +208,14 @@ export class TurnGateway {
       const secrets = sharedProviderSecrets();
       let validation: { ok: boolean; message: string } | undefined;
       // Empty entries (defaults-only saves) must not clobber stored keys.
-      if (entry.apiKey || entry.apiBaseUrl || entry.resourceName) {
+      if (
+        entry.apiKey ||
+        entry.apiBaseUrl ||
+        entry.resourceName ||
+        entry.serviceAccountKey ||
+        entry.projectId ||
+        entry.location
+      ) {
         if (!PROVIDERS[providerId]) {
           validation = validateProviderSettings(providerId, entry);
         } else {
@@ -217,6 +224,11 @@ export class TurnGateway {
             apiKey: entry.apiKey?.trim() ? entry.apiKey : stored.apiKey,
             apiBaseUrl: entry.apiBaseUrl?.trim() ? entry.apiBaseUrl : stored.apiBaseUrl,
             resourceName: entry.resourceName?.trim() ? entry.resourceName : stored.resourceName,
+            serviceAccountKey: entry.serviceAccountKey?.trim()
+              ? entry.serviceAccountKey
+              : stored.serviceAccountKey,
+            projectId: entry.projectId?.trim() ? entry.projectId : stored.projectId,
+            location: entry.location?.trim() ? entry.location : stored.location,
           };
           validation = validateProviderSettings(providerId, merged);
           secrets.setProvider(providerId, entry);

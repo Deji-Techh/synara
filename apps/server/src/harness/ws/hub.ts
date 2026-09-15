@@ -46,7 +46,17 @@ export interface ClientInboundMessage {
   turn?: TurnStartPayload;
   hash?: string;
   provider?: { id?: string; apiKey?: string; apiBaseUrl?: string; resourceName?: string };
-  providerEntry?: { apiKey?: string; apiBaseUrl?: string; resourceName?: string };
+  providerEntry?: {
+    apiKey?: string;
+    apiBaseUrl?: string;
+    resourceName?: string;
+    /** Vertex service-account JSON (persisted encrypted; 009 M2). */
+    serviceAccountKey?: string;
+    /** Vertex project id / linked project id. */
+    projectId?: string;
+    /** Vertex location (e.g. us-central1). */
+    location?: string;
+  };
   defaults?: {
     providerId?: string;
     modelId?: string;
@@ -118,7 +128,14 @@ export type ProviderSettingsGetHandler = (sessionId: string, requestId?: string)
 export type ProviderSettingsSetHandler = (
   sessionId: string,
   providerId: string,
-  entry: { apiKey?: string; apiBaseUrl?: string; resourceName?: string },
+  entry: {
+    apiKey?: string;
+    apiBaseUrl?: string;
+    resourceName?: string;
+    serviceAccountKey?: string;
+    projectId?: string;
+    location?: string;
+  },
   defaults?: {
     providerId?: string;
     modelId?: string;
@@ -288,6 +305,9 @@ export class HarnessHub {
           apiKey: msg.providerEntry?.apiKey,
           apiBaseUrl: msg.providerEntry?.apiBaseUrl,
           resourceName: msg.providerEntry?.resourceName,
+          serviceAccountKey: msg.providerEntry?.serviceAccountKey,
+          projectId: msg.providerEntry?.projectId,
+          location: msg.providerEntry?.location,
         },
         msg.defaults,
         msg.requestId,

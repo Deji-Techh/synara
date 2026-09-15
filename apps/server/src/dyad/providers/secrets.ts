@@ -18,6 +18,12 @@ export interface StoredProviderEntry {
   apiKey?: string;
   apiBaseUrl?: string;
   resourceName?: string;
+  /** Vertex service-account JSON key (009 M2; transport lands later). */
+  serviceAccountKey?: string;
+  /** Vertex project id (009 M2). */
+  projectId?: string;
+  /** Vertex location, e.g. us-central1 (009 M2). */
+  location?: string;
 }
 
 export interface ProviderSecretsFile {
@@ -204,6 +210,18 @@ export class ProviderSecretsStore {
       if (entry.resourceName.trim()) next.resourceName = entry.resourceName.trim();
       else delete next.resourceName;
     }
+    if (entry.serviceAccountKey !== undefined) {
+      if (entry.serviceAccountKey.trim()) next.serviceAccountKey = entry.serviceAccountKey.trim();
+      else delete next.serviceAccountKey;
+    }
+    if (entry.projectId !== undefined) {
+      if (entry.projectId.trim()) next.projectId = entry.projectId.trim();
+      else delete next.projectId;
+    }
+    if (entry.location !== undefined) {
+      if (entry.location.trim()) next.location = entry.location.trim();
+      else delete next.location;
+    }
     current.providers[providerId] = next;
     this.write(current);
     return current;
@@ -246,6 +264,9 @@ export class ProviderSecretsStore {
         ...(entry.apiKey ? { apiKey: { value: entry.apiKey } } : {}),
         ...(entry.apiBaseUrl ? { apiBaseUrl: entry.apiBaseUrl } : {}),
         ...(entry.resourceName ? { resourceName: entry.resourceName } : {}),
+        ...(entry.serviceAccountKey ? { serviceAccountKey: entry.serviceAccountKey } : {}),
+        ...(entry.projectId ? { projectId: entry.projectId } : {}),
+        ...(entry.location ? { location: entry.location } : {}),
       };
     }
     return { providerSettings };

@@ -17,6 +17,12 @@ export interface ProviderSettingsInput {
   apiBaseUrl?: string | null;
   baseUrl?: string | null;
   resourceName?: string | null;
+  /** Vertex service-account JSON (009 M2; transport lands later). */
+  serviceAccountKey?: string | null;
+  /** Vertex project id (009 M2). */
+  projectId?: string | null;
+  /** Vertex location (009 M2). */
+  location?: string | null;
 }
 
 export interface SettingsLike {
@@ -125,7 +131,10 @@ export function resolveConnection(
   const baseUrl =
     settingsBaseUrl(input) ??
     (providerId === "ollama"
-      ? process.env.OLLAMA_BASE_URL?.trim() || "http://localhost:11434/v1"
+      ? // Donor name first (V1 OLLAMA_HOST), V2 alias accepted.
+        process.env.OLLAMA_HOST?.trim() ||
+        process.env.OLLAMA_BASE_URL?.trim() ||
+        "http://localhost:11434/v1"
       : providerId === "lmstudio"
         ? `${process.env.LM_STUDIO_BASE_URL_FOR_TESTING?.trim() || "http://localhost:1234"}/v1`
         : def.baseUrl);

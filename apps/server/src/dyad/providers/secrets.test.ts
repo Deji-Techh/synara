@@ -75,6 +75,55 @@ describe("provider secrets store", () => {
     fs.writeFileSync(file, "not json{{{");
     expect(new ProviderSecretsStore(file).read().providers).toEqual({});
   });
+
+  it("round-trips Vertex service-account fields (009 M2)", () => {
+    const store = new ProviderSecretsStore(tempFile());
+    store.setProvider("vertex", {
+      projectId: " my-proj ",
+      location: "us-central1",
+      serviceAccountKey: ' {"type":"service_account"} ',
+    });
+    const file = store.read();
+    expect(file.providers.vertex).toEqual({
+      projectId: "my-proj",
+      location: "us-central1",
+      serviceAccountKey: '{"type":"service_account"}',
+    });
+    // toSettings carries the fields for turn resolution.
+    expect(store.toSettings().providerSettings?.vertex).toEqual({
+      projectId: "my-proj",
+      location: "us-central1",
+      serviceAccountKey: '{"type":"service_account"}',
+    });
+    // Empty clears per-field without touching siblings.
+    store.setProvider("vertex", { location: "  " });
+    expect(store.read().providers.vertex).toEqual({
+      projectId: "my-proj",
+      serviceAccountKey: '{"type":"service_account"}',
+    });
+    // Keys never leak into the public view.
+    expect(JSON.stringify(store.publicView())).not.toContain("service_account");
+  });
+
+  it("prefers OLLAMA_HOST with OLLAMA_BASE_URL as alias (donor naming)", async () => {
+    const { resolveConnection } = await import("./routing.ts");
+    const prevHost = process.env.OLLAMA_HOST;
+    const prevBase = process.env.OLLAMA_BASE_URL;
+    try {
+      delete process.env.OLLAMA_HOST;
+      delete process.env.OLLAMA_BASE_URL;
+      expect(resolveConnection("ollama", "m", {}).baseUrl).toBe("http://localhost:11434/v1");
+      process.env.OLLAMA_BASE_URL = "http://alias:11434/v1";
+      expect(resolveConnection("ollama", "m", {}).baseUrl).toBe("http://alias:11434/v1");
+      process.env.OLLAMA_HOST = "http://donor:11434";
+      expect(resolveConnection("ollama", "m", {}).baseUrl).toBe("http://donor:11434");
+    } finally {
+      if (prevHost === undefined) delete process.env.OLLAMA_HOST;
+      else process.env.OLLAMA_HOST = prevHost;
+      if (prevBase === undefined) delete process.env.OLLAMA_BASE_URL;
+      else process.env.OLLAMA_BASE_URL = prevBase;
+    }
+  });
 });
 
 describe("provider connection probes", () => {

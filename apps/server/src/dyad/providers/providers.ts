@@ -317,7 +317,14 @@ export interface ProviderSettingsValidation {
  */
 export function validateProviderSettings(
   providerId: string,
-  entry: { apiKey?: string; apiBaseUrl?: string; resourceName?: string },
+  entry: {
+    apiKey?: string;
+    apiBaseUrl?: string;
+    resourceName?: string;
+    serviceAccountKey?: string;
+    projectId?: string;
+    location?: string;
+  },
 ): ProviderSettingsValidation {
   const def = PROVIDERS[providerId];
   if (!def) {
