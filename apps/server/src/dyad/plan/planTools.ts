@@ -22,6 +22,7 @@ import {
   nextRequestId,
   waitForUserInput,
 } from "./userPrompt.ts";
+import { clearBlueprintMarker } from "./blueprintStore.ts";
 
 export class PlanUiNotConnectedError extends Error {
   constructor(toolName: string) {
@@ -337,19 +338,24 @@ Example usage after user says "Looks good, let's build it!":
   schema: exitPlanSchema,
   readOnly: false,
   modifiesState: true,
-  execute: async (args, ctx) => executeExitPlan(exitPlanSchema.parse(args), ctx.sessionId),
+  execute: async (args, ctx) =>
+    executeExitPlan(exitPlanSchema.parse(args), ctx.sessionId, ctx.appPath),
   presentCall: () => "Exit plan mode and start implementation",
 });
 
 export async function executeExitPlan(
   input: z.infer<typeof exitPlanSchema>,
   sessionId: string,
+  appPath?: string,
 ): Promise<string> {
   const parsed = exitPlanSchema.parse(input);
   if (!parsed.confirmation) {
     throw new PlanPreconditionError("User must confirm the plan before exiting plan mode");
   }
   requireTransport("exit_plan").sendPlanExit(sessionId);
+  // Donor parity: plan exit clears the per-app blueprint gate (V1 resets
+  // needsAppBlueprint) — an accepted plan means the app direction is set.
+  if (appPath) clearBlueprintMarker(appPath);
   // Record WHAT was accepted so the implementation turn is grounded in the
   // agreed plan (donor plan-handoff state; the continue-gate steers the
   // next turn in this session).

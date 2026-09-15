@@ -14,15 +14,30 @@ export async function scaffoldProject(
   root: string,
   appName = "CaideApp",
 ): Promise<string[]> {
+  let files: string[];
   switch (framework) {
     case "react-native":
-      return await scaffoldReactNative(root, appName);
+      files = await scaffoldReactNative(root, appName);
+      break;
     case "flutter":
-      return await scaffoldFlutter(root, appName);
+      files = await scaffoldFlutter(root, appName);
+      break;
     case "website":
-      return await scaffoldWebsite(root, appName);
+      files = await scaffoldWebsite(root, appName);
+      break;
     case "blank":
     default:
-      return await scaffoldBlank(root, appName);
+      files = await scaffoldBlank(root, appName);
+      break;
   }
+  // Donor arm-at-creation: a fresh scaffold needs its first blueprint, so
+  // the first turn on this app arms the approval gate (blueprintStore).
+  // Best-effort — a missing marker only skips the gate, never the scaffold.
+  try {
+    const { stampBlueprintMarker } = await import("../../dyad/plan/blueprintStore.ts");
+    stampBlueprintMarker(root);
+  } catch {
+    // marker stamp must never fail scaffolding
+  }
+  return files;
 }

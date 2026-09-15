@@ -6,6 +6,9 @@
 // pass so the flow can progress; everything else state-modifying blocks
 // until approval.
 
+import * as fs from "node:fs";
+import * as path from "node:path";
+
 export interface BlueprintVisual {
   type: "logo" | "photo" | "illustration" | "icon" | "background" | "other";
   description: string;
@@ -55,10 +58,10 @@ export function presentBlueprint(sessionId: string, data: AppBlueprint): void {
 }
 
 /**
- * Arm the gate for a new-app flow (called when a blueprint is drafted: from
- * that point, mutating tools block until approval). Donor arms at app
- * creation; drafting is our equivalent signal — a model that never drafts
- * never arms, which the write_app_blueprint-first prompt rule covers.
+ * Arm the gate for a new-app flow. Primary arming is the creation marker
+ * (first turn on a fresh scaffold calls setBlueprintRequired); this stays
+ * as a backstop for drafts on sessions the marker missed — from that point,
+ * mutating tools block until approval.
  */
 export function armBlueprintGate(sessionId: string): void {
   get(sessionId).required = true;
@@ -81,6 +84,55 @@ export function isBlueprintApproved(sessionId: string): boolean {
 
 export function clearBlueprint(sessionId: string): void {
   states.delete(sessionId);
+}
+
+/**
+ * Per-app arming marker (donor needsAppBlueprint parity). V1 arms the gate
+ * at app creation (DB row); V2 has no shared app DB on this layer, so our
+ * scaffolds stamp `.caide/needs-blueprint` and the first turn on a fresh
+ * app arms the session gate. Approval and plan-exit clear the marker (V1
+ * clears the app flag on both); cancel clears only the session state, so a
+ * retried new-app turn re-arms from the surviving marker. All helpers are
+ * best-effort and never throw.
+ */
+export const BLUEPRINT_MARKER = ".caide/needs-blueprint";
+
+function markerPath(appPath: string): string {
+  return path.join(appPath, BLUEPRINT_MARKER);
+}
+
+/** Stamp the marker at app creation (scaffold choke point calls this). */
+export function stampBlueprintMarker(appPath: string): boolean {
+  try {
+    if (!appPath) return false;
+    fs.mkdirSync(path.join(appPath, ".caide"), { recursive: true });
+    fs.writeFileSync(markerPath(appPath), `${Date.now()}\n`, "utf8");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Whether this app still needs its first blueprint (marker present). */
+export function hasBlueprintMarker(appPath: string): boolean {
+  try {
+    if (!appPath) return false;
+    return fs.existsSync(markerPath(appPath));
+  } catch {
+    return false;
+  }
+}
+
+/** Clear the marker (blueprint approval, plan exit). Never throws. */
+export function clearBlueprintMarker(appPath: string): boolean {
+  try {
+    if (!appPath) return false;
+    if (!fs.existsSync(markerPath(appPath))) return false;
+    fs.rmSync(markerPath(appPath), { force: true });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export class BlueprintNotApprovedError extends Error {

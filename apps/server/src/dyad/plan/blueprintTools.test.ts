@@ -10,11 +10,15 @@ import type { ToolContext } from "../../harness/tools/defineTool.ts";
 import {
   assertAppBlueprintApproved,
   approveBlueprint,
+  BLUEPRINT_MARKER,
   BlueprintNotApprovedError,
   clearBlueprint,
+  clearBlueprintMarker,
   getBlueprint,
+  hasBlueprintMarker,
   isBlueprintApproved,
   setBlueprintRequired,
+  stampBlueprintMarker,
 } from "./blueprintStore.ts";
 import {
   executeWriteAppBlueprint,
@@ -37,7 +41,9 @@ const INPUT = {
   user_prompt: "Build me a restaurant website",
   design_direction: "Warm and inviting",
   primary_color: "#E85D04",
-  visuals: [{ type: "logo" as const, description: "Header logo", prompt: "Minimalist logo, warm tones" }],
+  visuals: [
+    { type: "logo" as const, description: "Header logo", prompt: "Minimalist logo, warm tones" },
+  ],
 };
 
 describe("dyad blueprint transplant (a1)", () => {
@@ -51,7 +57,10 @@ describe("dyad blueprint transplant (a1)", () => {
     const sent: unknown[] = [];
     setBlueprintTransport({ sendBlueprintUpdate: (s, b) => sent.push({ s, b }) });
     try {
-      const out = (await writeAppBlueprintTool.execute({ ...INPUT, framework: "website" }, toolCtx(dir))) as string;
+      const out = (await writeAppBlueprintTool.execute(
+        { ...INPUT, framework: "website" },
+        toolCtx(dir),
+      )) as string;
       expect(out).toMatch(/Waiting for the user/);
       const stored = sent[0] as any;
       expect(stored.b.appName).toBe("FreshBite");
@@ -106,5 +115,17 @@ describe("dyad blueprint transplant (a1)", () => {
     } finally {
       clearBlueprint(sid);
     }
+  });
+
+  it("stamps, detects, and clears the per-app creation marker", () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "caide-bp-marker-"));
+    expect(hasBlueprintMarker(dir)).toBe(false);
+    expect(stampBlueprintMarker(dir)).toBe(true);
+    expect(hasBlueprintMarker(dir)).toBe(true);
+    expect(fs.existsSync(path.join(dir, BLUEPRINT_MARKER))).toBe(true);
+    expect(clearBlueprintMarker(dir)).toBe(true);
+    expect(hasBlueprintMarker(dir)).toBe(false);
+    // Clearing a missing marker is a no-op, never a throw.
+    expect(clearBlueprintMarker(dir)).toBe(false);
   });
 });

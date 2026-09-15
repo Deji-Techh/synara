@@ -16,6 +16,13 @@ import {
 import type { LLMAdapter } from "../loop/loop.ts";
 import { assembleCompactedMessages, CaideRunner, nextFailoverTarget } from "./runner.ts";
 import { ProviderApiError } from "../provider/apiAdapter.ts";
+import {
+  approveBlueprint,
+  clearBlueprint,
+  getBlueprint,
+  isBlueprintApproved,
+  setBlueprintRequired,
+} from "../../dyad/plan/blueprintStore.ts";
 
 function fakeLlm(chunks: Array<{ type: "token"; content: string }>): LLMAdapter {
   return {
@@ -108,6 +115,46 @@ describe("caide runner turns (m3)", () => {
     await started;
     expect(runner.getStatus()).toBe("cancelled");
     expect(events.at(-1)).toMatchObject({ type: "turn_end", status: "cancelled" });
+  });
+
+  it("drops the session blueprint on cancel (donor delete-on-cancel)", async () => {
+    const sid = `s-bpcancel-${Date.now()}`;
+    setBlueprintRequired(sid);
+    approveBlueprint(sid, {
+      appName: "X",
+      userPrompt: "u",
+      designDirection: "d",
+      primaryColor: "#fff",
+      visuals: [],
+    });
+    expect(isBlueprintApproved(sid)).toBe(true);
+    const runner = new CaideRunner();
+    const started = runner.startTurn({
+      sessionId: sid,
+      appPath: "/tmp/caide-test-app",
+      prompt: "hi",
+      settings: { providerSettings: { openai: { apiKey: "sk-test" } } },
+      llmOverride: {
+        async *stream(_messages: never, opts?: { signal?: AbortSignal }) {
+          await new Promise<void>((resolve) => {
+            const timer = setInterval(() => {
+              if (opts?.signal?.aborted) {
+                clearInterval(timer);
+                resolve();
+              }
+            }, 5);
+          });
+        },
+      } as LLMAdapter,
+      onEvent: () => {},
+    });
+    await new Promise((r) => setTimeout(r, 30));
+    runner.cancel(sid);
+    await started;
+    // Stale approval must not survive: a retried turn re-arms from the marker.
+    expect(isBlueprintApproved(sid)).toBe(false);
+    expect(getBlueprint(sid)).toBeNull();
+    clearBlueprint(sid);
   });
 
   it("fails over to the next provider after a retryable setup error", async () => {

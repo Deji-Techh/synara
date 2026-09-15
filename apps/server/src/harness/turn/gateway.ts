@@ -16,7 +16,11 @@ import {
   cancelMcpOAuthForSession,
   withdrawSessionPrompts,
 } from "../ws/uiBridge.ts";
-import { approveBlueprint, type AppBlueprint } from "../../dyad/plan/blueprintStore.ts";
+import {
+  approveBlueprint,
+  clearBlueprintMarker,
+  type AppBlueprint,
+} from "../../dyad/plan/blueprintStore.ts";
 import {
   dropIntegrationFollowUp,
   takeDueIntegrationFollowUp,
@@ -340,6 +344,14 @@ export class TurnGateway {
           sessionId,
           (blueprint ?? undefined) as AppBlueprint | undefined,
         );
+        // Donor parity: approval clears the per-app gate (V1 resets
+        // needsAppBlueprint on the app row) — later turns run ungated.
+        try {
+          const appPath = getSessionApp(sessionId);
+          if (appPath) clearBlueprintMarker(appPath);
+        } catch {
+          // marker clear best-effort
+        }
         const name = stored?.appName ?? "the app";
         // Ground the follow-up with the APPROVED CONTENT, not just its name:
         // a fresh turn otherwise sees "blueprint approved" with no idea what

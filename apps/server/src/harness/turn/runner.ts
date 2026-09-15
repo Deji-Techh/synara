@@ -37,6 +37,11 @@ import { clearPendingMcpConsentsForSession } from "../../dyad/mcp/mcpConsent.ts"
 import { clearUserInputForSession } from "../../dyad/plan/userPrompt.ts";
 import { getTodos, setTodos, clearTodos, type Todo } from "../../dyad/plan/todoStore.ts";
 import {
+  clearBlueprint,
+  hasBlueprintMarker,
+  setBlueprintRequired,
+} from "../../dyad/plan/blueprintStore.ts";
+import {
   isSubagentTerminal,
   listSubagentTasks,
   requestSubagentCancel,
@@ -285,6 +290,14 @@ export class CaideRunner {
     // instead of misreporting as buffered; the aborted loop's terminal
     // finish is a no-op against the cleared slot.
     this.flows.get(sessionId)?.cancel(cause);
+    // Donor delete-on-cancel: a cancelled turn drops its session blueprint
+    // state so a retry starts clean (no stale approval). The per-app marker
+    // survives, so a retried new-app turn re-arms below.
+    try {
+      clearBlueprint(sessionId);
+    } catch {
+      // blueprint clear best-effort
+    }
     // Cancel means stop everything: abort session-owned subagent threads so
     // a cancelled turn cannot keep running detached (their later status
     // traffic otherwise reads as a stuck turn). Non-terminal only; completed
@@ -524,6 +537,16 @@ export class CaideRunner {
           ? buildGitReminder(prevProvenance)
           : null;
       const sessionStores = getOrCreateSessionStores(input.sessionId);
+      // Donor arm-at-creation: our scaffolds stamp .caide/needs-blueprint, so
+      // the first turn on a fresh app arms the session approval gate (V1:
+      // needsAppBlueprint at app creation). No marker (imports, existing
+      // apps, later chats) → no gate, exactly like a cleared V1 app flag.
+      // (The enableAppBlueprint master toggle lands with 018 settings.)
+      try {
+        if (hasBlueprintMarker(input.appPath)) setBlueprintRequired(input.sessionId);
+      } catch {
+        // arming best-effort; never fails turn start
+      }
       const chatMode = chatModeFor(
         resolveChatModeForTurn({ requestedChatMode: input.mode ?? null }).mode,
       );
