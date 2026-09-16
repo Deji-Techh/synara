@@ -23,6 +23,30 @@ export const ProjectionThreadMessageDbRowSchema = ProjectionThreadMessage.mapFie
     dispatchMode: Schema.NullOr(TurnDispatchMode),
     dispatchOrigin: Schema.NullOr(MessageDispatchOrigin),
     sequence: Schema.NullOr(NonNegativeInt),
+    // Compat columns default null/0 so pre-migration rows and hand-built
+    // literals keep decoding.
+    approvalState: Schema.optional(Schema.NullOr(Schema.Literals(["approved", "rejected"]))).pipe(
+      Schema.withDecodingDefault(() => null),
+    ),
+    sourceCommitHash: Schema.optional(Schema.NullOr(Schema.String)).pipe(
+      Schema.withDecodingDefault(() => null),
+    ),
+    commitHash: Schema.optional(Schema.NullOr(Schema.String)).pipe(
+      Schema.withDecodingDefault(() => null),
+    ),
+    requestId: Schema.optional(Schema.NullOr(Schema.String)).pipe(
+      Schema.withDecodingDefault(() => null),
+    ),
+    maxTokensUsed: Schema.optional(Schema.NullOr(Schema.Number)).pipe(
+      Schema.withDecodingDefault(() => null),
+    ),
+    model: Schema.optional(Schema.NullOr(Schema.String)).pipe(
+      Schema.withDecodingDefault(() => null),
+    ),
+    aiMessagesJson: Schema.optional(Schema.NullOr(Schema.String)).pipe(
+      Schema.withDecodingDefault(() => null),
+    ),
+    isCompactionSummary: Schema.optional(Schema.Number).pipe(Schema.withDecodingDefault(() => 0)),
   }),
 );
 
@@ -49,6 +73,14 @@ export function projectionThreadMessageFromRow(
     ...(row.mentions !== null ? { mentions: row.mentions } : {}),
     ...(row.dispatchMode ? { dispatchMode: row.dispatchMode } : {}),
     ...(row.dispatchOrigin ? { dispatchOrigin: row.dispatchOrigin } : {}),
+    ...(row.approvalState ? { approvalState: row.approvalState } : {}),
+    ...(row.sourceCommitHash != null ? { sourceCommitHash: row.sourceCommitHash } : {}),
+    ...(row.commitHash != null ? { commitHash: row.commitHash } : {}),
+    ...(row.requestId != null ? { requestId: row.requestId } : {}),
+    ...(row.maxTokensUsed != null ? { maxTokensUsed: row.maxTokensUsed } : {}),
+    ...(row.model != null ? { model: row.model } : {}),
+    ...(row.aiMessagesJson != null ? { aiMessagesJson: row.aiMessagesJson } : {}),
+    ...(row.isCompactionSummary === 1 ? { isCompactionSummary: true } : {}),
   };
 }
 

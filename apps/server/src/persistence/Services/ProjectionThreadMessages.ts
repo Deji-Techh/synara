@@ -42,6 +42,38 @@ export const ProjectionThreadMessage = Schema.Struct({
   sequence: Schema.optional(NonNegativeInt),
   createdAt: IsoDateTime,
   updatedAt: IsoDateTime,
+  // V1 chat-compat columns (010 M2): approval/provenance/model linkage that
+  // fork, revert-prune, renderer projection, and token accounting read.
+  /** Human-gate decision for the tool call behind this message. */
+  approvalState: Schema.optional(Schema.NullOr(Schema.Literals(["approved", "rejected"]))).pipe(
+    Schema.withDecodingDefault(() => null),
+  ),
+  /** Git commit the app was at when this message was created. */
+  sourceCommitHash: Schema.optional(Schema.NullOr(Schema.String)).pipe(
+    Schema.withDecodingDefault(() => null),
+  ),
+  /** Git commit created by this message's turn (post-commit turns). */
+  commitHash: Schema.optional(Schema.NullOr(Schema.String)).pipe(
+    Schema.withDecodingDefault(() => null),
+  ),
+  /** Provider request id for the assistant turn. */
+  requestId: Schema.optional(Schema.NullOr(Schema.String)).pipe(
+    Schema.withDecodingDefault(() => null),
+  ),
+  /** Provider-reported max tokens used (assistant turns; feeds thresholds). */
+  maxTokensUsed: Schema.optional(Schema.NullOr(Schema.Number)).pipe(
+    Schema.withDecodingDefault(() => null),
+  ),
+  /** Model id that produced an assistant turn. */
+  model: Schema.optional(Schema.NullOr(Schema.String)).pipe(Schema.withDecodingDefault(() => null)),
+  /** AI-SDK message envelope for tool-history replay (never sent to UI). */
+  aiMessagesJson: Schema.optional(Schema.NullOr(Schema.String)).pipe(
+    Schema.withDecodingDefault(() => null),
+  ),
+  /** Compaction summary boundary marker (V1 isCompactionSummary). */
+  isCompactionSummary: Schema.optional(Schema.Boolean).pipe(
+    Schema.withDecodingDefault(() => false),
+  ),
 });
 export type ProjectionThreadMessage = typeof ProjectionThreadMessage.Type;
 

@@ -110,6 +110,7 @@ import Migration0091 from "./Migrations/091_Artifacts.ts";
 import Migration0092 from "./Migrations/092_ProjectionThreadsEngineChatId.ts";
 import Migration0093 from "./Migrations/093_ProjectionProjectsFramework.ts";
 import Migration0094 from "./Migrations/094_McpServers.ts";
+import Migration0095 from "./Migrations/095_ChatCompatColumns.ts";
 
 /**
  * Migration loader with all migrations defined inline.
@@ -219,6 +220,7 @@ export const migrationEntries = [
   [92, "ProjectionThreadsEngineChatId", Migration0092],
   [93, "ProjectionProjectsFramework", Migration0093],
   [94, "McpServers", Migration0094],
+  [95, "ChatCompatColumns", Migration0095],
 ] as const;
 
 export const makeMigrationLoader = (throughId?: number) =>

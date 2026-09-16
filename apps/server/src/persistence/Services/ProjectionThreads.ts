@@ -37,6 +37,14 @@ export const ProjectionThread = Schema.Struct({
   engineChatId: Schema.optional(Schema.NullOr(Schema.Number)).pipe(
     Schema.withDecodingDefault(() => null),
   ),
+  /** Git commit the app was at when the thread was created (V1 chats.initialCommitHash). */
+  initialCommitHash: Schema.optional(Schema.NullOr(Schema.String)).pipe(
+    Schema.withDecodingDefault(() => null),
+  ),
+  /** Chat mode for the thread (V1 chats.chatMode: build/ask/agent/plan + legacy local-agent). */
+  chatMode: Schema.optional(Schema.NullOr(Schema.String)).pipe(
+    Schema.withDecodingDefault(() => null),
+  ),
   runtimeMode: RuntimeMode,
   interactionMode: ProviderInteractionMode,
   envMode: ThreadEnvironmentMode,

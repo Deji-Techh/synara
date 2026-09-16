@@ -45,6 +45,14 @@ const makeProjectionThreadMessageRepository = Effect.gen(function* () {
           is_streaming,
           source,
           sequence,
+          approval_state,
+          source_commit_hash,
+          commit_hash,
+          request_id,
+          max_tokens_used,
+          model,
+          ai_messages_json,
+          is_compaction_summary,
           created_at,
           updated_at
         )
@@ -62,6 +70,14 @@ const makeProjectionThreadMessageRepository = Effect.gen(function* () {
           ${row.isStreaming ? 1 : 0},
           ${row.source},
           ${row.sequence ?? null},
+          ${row.approvalState ?? null},
+          ${row.sourceCommitHash ?? null},
+          ${row.commitHash ?? null},
+          ${row.requestId ?? null},
+          ${row.maxTokensUsed ?? null},
+          ${row.model ?? null},
+          ${row.aiMessagesJson ?? null},
+          ${row.isCompactionSummary ? 1 : 0},
           ${row.createdAt},
           ${row.updatedAt}
         )
@@ -93,6 +109,14 @@ const makeProjectionThreadMessageRepository = Effect.gen(function* () {
           is_streaming = excluded.is_streaming,
           source = excluded.source,
           sequence = COALESCE(projection_thread_messages.sequence, excluded.sequence),
+          approval_state = excluded.approval_state,
+          source_commit_hash = excluded.source_commit_hash,
+          commit_hash = excluded.commit_hash,
+          request_id = excluded.request_id,
+          max_tokens_used = excluded.max_tokens_used,
+          model = excluded.model,
+          ai_messages_json = excluded.ai_messages_json,
+          is_compaction_summary = excluded.is_compaction_summary,
           created_at = excluded.created_at,
           updated_at = excluded.updated_at
       `;
@@ -118,6 +142,14 @@ const makeProjectionThreadMessageRepository = Effect.gen(function* () {
           is_streaming AS "isStreaming",
           source,
           sequence,
+          approval_state AS "approvalState",
+          source_commit_hash AS "sourceCommitHash",
+          commit_hash AS "commitHash",
+          request_id AS "requestId",
+          max_tokens_used AS "maxTokensUsed",
+          model,
+          ai_messages_json AS "aiMessagesJson",
+          is_compaction_summary AS "isCompactionSummary",
           created_at AS "createdAt",
           updated_at AS "updatedAt"
         FROM projection_thread_messages
@@ -168,6 +200,14 @@ const makeProjectionThreadMessageRepository = Effect.gen(function* () {
           is_streaming AS "isStreaming",
           source,
           sequence,
+          approval_state AS "approvalState",
+          source_commit_hash AS "sourceCommitHash",
+          commit_hash AS "commitHash",
+          request_id AS "requestId",
+          max_tokens_used AS "maxTokensUsed",
+          model,
+          ai_messages_json AS "aiMessagesJson",
+          is_compaction_summary AS "isCompactionSummary",
           created_at AS "createdAt",
           updated_at AS "updatedAt"
         FROM projection_thread_messages
