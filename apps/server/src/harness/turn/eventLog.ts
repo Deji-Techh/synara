@@ -61,6 +61,22 @@ export async function flushTurnTokens(sessionId: string): Promise<void> {
   }
 }
 
+/**
+ * Drop a session's log entirely: buffered tokens, queued/in-flight writes,
+ * and the JSONL file. Thread delete calls this after cancelling the turn so
+ * no remnant resurrects the conversation (roster + search read these
+ * files). Best-effort; a straggler terminal append may recreate a stub file
+ * — the roster stays clean regardless.
+ */
+export async function dropSessionLog(sessionId: string): Promise<void> {
+  try {
+    tokenBuffers.delete(sessionId);
+    await activeStorage().deleteSession(sessionId);
+  } catch {
+    // ignore
+  }
+}
+
 /** Read back the tail of a session's event log for replay. */
 export async function readHarnessEvents(
   sessionId: string,

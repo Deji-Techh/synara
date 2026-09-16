@@ -135,6 +135,31 @@ export class SessionStorage {
     await Promise.all(sessionIds.map((id) => this.flush(id)));
   }
 
+  /**
+   * Delete a session entirely: drop queued + in-flight writes, clear timers
+   * and seq state, remove the JSONL file. Used by thread delete so no
+   * in-memory or on-disk remnant resurrects the conversation. Never throws.
+   */
+  async deleteSession(sessionId: string): Promise<void> {
+    try {
+      // Drain any in-flight file write first — otherwise it lands after the
+      // unlink and resurrects a partial log.
+      const pending = this.activeWrites.get(sessionId);
+      if (pending) await pending.catch(() => undefined);
+      const timer = this.flushTimers.get(sessionId);
+      if (timer) {
+        clearTimeout(timer);
+        this.flushTimers.delete(sessionId);
+      }
+      this.writeQueues.delete(sessionId);
+      this.activeWrites.delete(sessionId);
+      this.nextSeqMap.delete(sessionId);
+      await fs.promises.unlink(this.getSessionFilePath(sessionId)).catch(() => undefined);
+    } catch {
+      // deletion best-effort
+    }
+  }
+
   async readEntries(sessionId: string): Promise<SessionLogEntry[]> {
     const filePath = this.getSessionFilePath(sessionId);
     const persisted: SessionLogEntry[] = [];

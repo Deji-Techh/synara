@@ -10,6 +10,7 @@ import type { HarnessEvent } from "@caide/contracts";
 import { SessionStorage } from "../session/storage.ts";
 import {
   appendHarnessEvent,
+  dropSessionLog,
   EVENT_REPLAY_LIMIT,
   flushTurnTokens,
   readHarnessEvents,
@@ -120,6 +121,36 @@ describe("harness event log + replay (e15)", () => {
       ]);
     } finally {
       delete process.env.CAIDE_SESSIONS_DIR;
+      setEventLogStorage(null);
+    }
+  });
+
+  it("drops sessions entirely: buffers, queues, and files", async () => {
+    const storage = isolated();
+    const sid = "s-drop";
+    try {
+      await appendHarnessEvent({ type: "token", sessionId: sid, content: "half" });
+      await appendHarnessEvent({
+        type: "turn_start",
+        sessionId: sid,
+        turnId: "t1",
+        prompt: "hi",
+      });
+      await storage.flush(sid);
+      // Buffered tokens are dropped with the session, never flushed later.
+      await dropSessionLog(sid);
+      await expect(readHarnessEvents(sid)).resolves.toEqual([]);
+      // Re-append after delete starts clean.
+      await appendHarnessEvent({
+        type: "turn_start",
+        sessionId: sid,
+        turnId: "t2",
+        prompt: "again",
+      });
+      await storage.flush(sid);
+      const events = await readHarnessEvents(sid);
+      expect(events.map((e) => e.type)).toEqual(["turn_start"]);
+    } finally {
       setEventLogStorage(null);
     }
   });

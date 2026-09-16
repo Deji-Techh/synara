@@ -9,6 +9,8 @@ import { isPhantomInitialThreadId } from "@caide/shared/chatThreads";
 import { resolveAttachmentPathById } from "./attachmentStore.ts";
 import { applyDispatchSystemPromptOverride } from "./harness/prompts/dispatchSystemPrompt.ts";
 import { setTranscriptMirror, sharedTurnGateway } from "./harness/turn/gateway.ts";
+import { clearSessionStores } from "./harness/turn/sessionStores.ts";
+import { dropSessionLog } from "./harness/turn/eventLog.ts";
 import {
   HARNESS_ASSISTANT_MSG_PREFIX,
   createTranscriptMirror,
@@ -18,6 +20,7 @@ import {
   type ResolvedChatImage,
 } from "./harness/provider/chatMessageImages.ts";
 import { sharedProviderSecrets } from "./dyad/providers/secrets.ts";
+import { readHeadCommitSync } from "./dyad/vcs/gitTools.ts";
 
 export class AutomationService extends ServiceMap.Service<AutomationService, any>()(
   "caide/AutomationService",
@@ -1221,6 +1224,21 @@ function threadMetaUpdatedPayload(
   };
 }
 
+// Resolve a thread command's workspace directory (explicit worktree first,
+// then the owning project's directory). Used for repo-sensitive defaults
+// like the creation commit hash.
+function resolveThreadWorkspaceDir(command: any, sourceThread?: any): string | null {
+  const direct =
+    command?.worktreePath ?? command?.workingDirectory ?? sourceThread?.worktreePath ?? null;
+  if (typeof direct === "string" && direct.length > 0) return direct;
+  if (command?.projectId) {
+    const project = inMemoryProjects.find((p) => p.id === command.projectId);
+    const dir = project?.cwd || project?.workspaceRoot;
+    if (typeof dir === "string" && dir.length > 0) return dir;
+  }
+  return null;
+}
+
 // Build a schema-valid `thread.created` payload.
 function threadCreatedPayload(thread: any): any {
   return {
@@ -1558,6 +1576,11 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               associatedWorktreePath: command.associatedWorktreePath ?? null,
               associatedWorktreeBranch: command.associatedWorktreeBranch ?? null,
               associatedWorktreeRef: command.associatedWorktreeRef ?? null,
+              // Donor createChat parity: record HEAD at creation (best
+              // effort; null outside repos) and the chat mode slot (stamped
+              // by the turn flow; null until the first turn runs).
+              initialCommitHash: readHeadCommitSync(resolveThreadWorkspaceDir(command)),
+              chatMode: null,
               createdAt: command.createdAt ?? now,
               updatedAt: command.createdAt ?? now,
               lastVisitedAt: command.createdAt ?? now,
@@ -1608,6 +1631,13 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               // thread loses its link to the source thread (close-flow
               // bookkeeping, sidechat identification).
               sidechatSourceThreadId: (command as any).sidechatSourceThreadId ?? null,
+              // Donor fork parity: record the source lineage (was nulled).
+              forkSourceThreadId: command.sourceThreadId ?? null,
+              // Same app ⇒ same creation commit; fall back to a fresh read.
+              initialCommitHash:
+                sourceThread?.initialCommitHash ??
+                readHeadCommitSync(resolveThreadWorkspaceDir(command, sourceThread)),
+              chatMode: null,
               title:
                 command.title ?? (command.type === "thread.handoff.create" ? "Handoff" : "Fork"),
               modelSelection: command.modelSelection ?? {
@@ -1639,9 +1669,28 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               lastVisitedAt: command.createdAt ?? now,
               archivedAt: null,
               turns: [],
-              messages: Array.isArray(command.importedMessages)
-                ? [...command.importedMessages]
-                : [],
+              // Donor fork parity: a same-context fork carries the source
+              // transcript. Prefer an explicitly seeded client array (sidechat
+              // openers seed focused context that must not be overwritten);
+              // otherwise copy server-side with full fields and original
+              // createdAt. Handoffs always keep client messages
+              // (cross-provider transforms live there).
+              messages: (() => {
+                if (
+                  Array.isArray(command.importedMessages) &&
+                  command.importedMessages.length > 0
+                ) {
+                  return [...command.importedMessages];
+                }
+                if (
+                  command.type === "thread.fork.create" &&
+                  Array.isArray(sourceThread?.messages) &&
+                  sourceThread.messages.length > 0
+                ) {
+                  return sourceThread.messages.map((m: any) => ({ ...m }));
+                }
+                return [];
+              })(),
               activities: [],
               pinnedMessages: [],
               threadMarkers: [],
@@ -1755,6 +1804,25 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               payload: { threadId: command.threadId, deletedAt: now },
               createdAt: now,
             });
+            // Donor deleteChat parity (cascade): a deleted conversation must
+            // leave nothing behind that reloads or matches searches — stop
+            // any running turn, drop session stores, and purge the session
+            // log. All best-effort; the roster delete above never fails.
+            // (A straggler terminal append may recreate a stub log file;
+            // the roster stays clean regardless.)
+            try {
+              const gateway = sharedTurnGateway();
+              gateway.cancelTurn(command.threadId, "thread deleted");
+              gateway.dropSession(command.threadId);
+            } catch {
+              // turn teardown best-effort
+            }
+            try {
+              clearSessionStores(command.threadId);
+            } catch {
+              // store clear best-effort
+            }
+            void dropSessionLog(command.threadId).catch(() => undefined);
           }
         } else if (command?.type === "thread.pinned-message.add") {
           const thread = inMemoryThreads.find((t) => t.id === command.threadId);

@@ -5,7 +5,7 @@
 // (spawn, no Electron git_utils wrapper). Consent gating happens at the loop
 // layer via dyad/tools permissions (M3 wiring), not inside execute.
 
-import { execFile } from "node:child_process";
+import { execFile, execFileSync } from "node:child_process";
 import { promisify } from "node:util";
 import { z } from "zod";
 import { defineTool, type ToolDef } from "../../harness/tools/defineTool.ts";
@@ -288,6 +288,41 @@ export async function executeGitCommit(
   const rev = await runGit(["rev-parse", "HEAD"], appPath, signal);
   const hash = rev.stdout.trim();
   return `Created commit ${hash}: ${parsed.message}`;
+}
+
+/**
+ * Current HEAD hash, or null when unavailable (not a repo, no commits, no
+ * git binary). Never throws — thread creation records it best-effort
+ * (donor createChat initialCommitHash).
+ */
+export async function getCurrentCommitHash(appPath: string): Promise<string | null> {
+  try {
+    const rev = await runGit(["rev-parse", "HEAD"], appPath);
+    const hash = rev.stdout.trim();
+    return rev.exitCode === 0 && /^[0-9a-f]{40}$/i.test(hash) ? hash : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Synchronous HEAD hash for sync-only call sites (orchestration dispatch
+ * runs inside Effect.sync). Same contract as getCurrentCommitHash.
+ */
+export function readHeadCommitSync(dir: string | null | undefined): string | null {
+  if (!dir) return null;
+  try {
+    const out = execFileSync("git", ["rev-parse", "HEAD"], {
+      cwd: dir,
+      timeout: 5000,
+      stdio: ["ignore", "pipe", "ignore"],
+    })
+      .toString()
+      .trim();
+    return /^[0-9a-f]{40}$/i.test(out) ? out : null;
+  } catch {
+    return null;
+  }
 }
 
 export const ALL_GIT_TOOLS: ToolDef[] = [gitStatusTool, gitDiffTool, gitLogTool, gitCommitTool];

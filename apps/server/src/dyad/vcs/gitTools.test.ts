@@ -14,6 +14,8 @@ import {
   executeGitDiff,
   executeGitLog,
   executeGitStatus,
+  getCurrentCommitHash,
+  readHeadCommitSync,
   gitCommitTool,
   gitDiffTool,
   GitToolError,
@@ -95,5 +97,21 @@ describe("dyad git tools transplant (m2b)", () => {
     await expect(executeGitCommit({ message: "empty" }, dir)).rejects.toThrow(
       /Nothing to commit/,
     );
+  });
+
+  it("resolves the current commit hash, null outside repos", async () => {
+    const dir = initRepo();
+    const hash = await getCurrentCommitHash(dir);
+    expect(hash).toMatch(/^[0-9a-f]{40}$/i);
+    // Sync twin for sync-only call sites (orchestration dispatch).
+    expect(readHeadCommitSync(dir)).toBe(hash);
+    const plain = fs.mkdtempSync(path.join(os.tmpdir(), "caide-plain-"));
+    await expect(getCurrentCommitHash(plain)).resolves.toBeNull();
+    expect(readHeadCommitSync(plain)).toBeNull();
+    await expect(
+      getCurrentCommitHash(path.join(os.tmpdir(), "caide-nope-missing")),
+    ).resolves.toBeNull();
+    expect(readHeadCommitSync(path.join(os.tmpdir(), "caide-nope-missing"))).toBeNull();
+    expect(readHeadCommitSync(null)).toBeNull();
   });
 });
