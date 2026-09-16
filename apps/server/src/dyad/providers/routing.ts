@@ -87,7 +87,14 @@ export function resolveConnection(
     // Account OAuth (donor get_model_client chatgpt branch): the session
     // access token is the key. Freshness is enforced at turn start (runner
     // refreshes proactively and fails fast with a reconnect message); here
-    // fail loudly when no session exists at all.
+    // fail loudly when no session exists at all. The model is always the
+    // user's explicit selection (donor uses model.name; `__connect_chatgpt__`
+    // placeholder when logged out) — never a fabricated default.
+    if (!modelName || modelName === "auto" || modelName === "default") {
+      throw new Error(
+        "Select a ChatGPT model in Settings before starting a turn (models are discovered after login).",
+      );
+    }
     const session = readChatGPTSession();
     if (!session) {
       throw new Error("Connect a ChatGPT account in Settings before using this model.");

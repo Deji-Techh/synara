@@ -25,6 +25,7 @@ export interface ClientInboundMessage {
     | "provider_settings_test"
     | "provider_custom_save"
     | "provider_custom_delete"
+    | "local_models_list"
     | "versions_list"
     | "versions_restore"
     | "compact_now"
@@ -74,6 +75,8 @@ export interface ClientInboundMessage {
     maxOutputTokens?: number;
     temperature?: number;
   }>;
+  /** Provider filter for local_models_list (009 M6): omit for both. */
+  localModelsProvider?: string;
   defaults?: {
     providerId?: string;
     modelId?: string;
@@ -191,6 +194,11 @@ export type ProviderCustomDeleteHandler = (
   providerId: string,
   requestId?: string,
 ) => void;
+export type LocalModelsListHandler = (
+  sessionId: string,
+  provider: "ollama" | "lmstudio" | undefined,
+  requestId?: string,
+) => void;
 
 /** Outbound sender for one connected client (any transport). */
 export interface HarnessClientSender {
@@ -233,6 +241,7 @@ export class HarnessHub {
   private onProviderSettingsTestHandler?: ProviderSettingsTestHandler;
   private onProviderCustomSaveHandler?: ProviderCustomSaveHandler;
   private onProviderCustomDeleteHandler?: ProviderCustomDeleteHandler;
+  private onLocalModelsListHandler?: LocalModelsListHandler;
 
   /** Diagnostic snapshot of fan-out health. */
   getBroadcastStats(): HubBroadcastStats {
@@ -387,6 +396,14 @@ export class HarnessHub {
       this.onProviderCustomDeleteHandler?.(msg.sessionId, msg.provider.id, msg.requestId);
       return;
     }
+    if (msg.type === "local_models_list" && msg.sessionId) {
+      const provider =
+        msg.localModelsProvider === "ollama" || msg.localModelsProvider === "lmstudio"
+          ? msg.localModelsProvider
+          : undefined;
+      this.onLocalModelsListHandler?.(msg.sessionId, provider, msg.requestId);
+      return;
+    }
     if (msg.type === "mcp_oauth_start" && msg.sessionId && msg.serverId && msg.serverUrl) {
       this.onMcpOAuthStartHandler?.(msg.sessionId, {
         serverId: msg.serverId,
@@ -539,6 +556,10 @@ export class HarnessHub {
 
   onProviderCustomDelete(handler: ProviderCustomDeleteHandler): void {
     this.onProviderCustomDeleteHandler = handler;
+  }
+
+  onLocalModelsList(handler: LocalModelsListHandler): void {
+    this.onLocalModelsListHandler = handler;
   }
 
   onMcpOAuthStart(handler: McpOAuthStartHandler): void {

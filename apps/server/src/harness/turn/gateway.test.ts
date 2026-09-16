@@ -374,6 +374,9 @@ describe("turn gateway (m3h)", () => {
       onProviderCustomDelete: (h: (...args: never[]) => void) => {
         handlers.customDelete = h;
       },
+      onLocalModelsList: (h: (...args: never[]) => void) => {
+        handlers.localModels = h;
+      },
       onVersionsList: (h: (...args: never[]) => void) => {
         handlers.versionsList = h;
       },
@@ -427,6 +430,7 @@ describe("turn gateway (m3h)", () => {
       "onProviderSettingsTest",
       "onProviderCustomSave",
       "onProviderCustomDelete",
+      "onLocalModelsList",
       "onVersionsList",
       "onVersionsRestore",
     ]) {
@@ -511,6 +515,7 @@ describe("turn gateway (m3h)", () => {
       "onProviderSettingsGet",
       "onProviderSettingsSet",
       "onProviderSettingsTest",
+      "onLocalModelsList",
       "onVersionsList",
       "onVersionsRestore",
     ]) {
@@ -591,6 +596,69 @@ describe("turn gateway (m3h)", () => {
     }
   });
 
+  it("lists local models over the socket handlers (009 M6)", async () => {
+    const prevOllama = process.env.OLLAMA_HOST;
+    const prevLm = process.env.LM_STUDIO_BASE_URL_FOR_TESTING;
+    process.env.OLLAMA_HOST = "http://127.0.0.1:1";
+    process.env.LM_STUDIO_BASE_URL_FOR_TESTING = "http://127.0.0.1:2";
+    const gateway = new TurnGateway();
+    const sent: HarnessEvent[] = [];
+    const handlers: Record<string, (...args: never[]) => void> = {};
+    const server = {
+      broadcastToSession: (sessionId: string, event: HarnessEvent) => {
+        void sessionId;
+        sent.push(event);
+      },
+      onLocalModelsList: (h: (...args: never[]) => void) => {
+        handlers.localModels = h;
+      },
+    } as unknown as HarnessHub;
+    for (const name of [
+      "onPromptAnswer",
+      "onConsentAnswer",
+      "onSettingsSync",
+      "onSteer",
+      "onCancel",
+      "onBlueprintResponse",
+      "onCheckpointResponse",
+      "onMcpOAuthStart",
+      "onTurnStart",
+      "onCompactNow",
+      "onProviderSettingsGet",
+      "onProviderSettingsSet",
+      "onProviderSettingsTest",
+      "onProviderCustomSave",
+      "onProviderCustomDelete",
+      "onVersionsList",
+      "onVersionsRestore",
+    ]) {
+      (server as unknown as Record<string, unknown>)[name] = (h: (...args: never[]) => void) => {
+        handlers[name] = h;
+      };
+    }
+    gateway.attachWs(server);
+    try {
+      const list = handlers.localModels as (
+        sid: string,
+        provider: "ollama" | "lmstudio" | undefined,
+        requestId?: string,
+      ) => void;
+      list("s-lm", undefined, "r-lm");
+      await new Promise((r) => setTimeout(r, 200));
+      const state = sent.find(
+        (e) => e.type === "local_models_state" && (e as { requestId?: string }).requestId === "r-lm",
+      );
+      // Dead runtimes contribute nothing, but the state still broadcasts.
+      expect(state).toMatchObject({ sessionId: "s-lm", models: [] });
+    } finally {
+      gateway.detachWs();
+      if (prevOllama === undefined) delete process.env.OLLAMA_HOST;
+      else process.env.OLLAMA_HOST = prevOllama;
+      if (prevLm === undefined) delete process.env.LM_STUDIO_BASE_URL_FOR_TESTING;
+      else process.env.LM_STUDIO_BASE_URL_FOR_TESTING = prevLm;
+    }
+  });
+
   it("lists and restores app versions over the socket handlers", async () => {
     const fs = await import("node:fs");
     const os = await import("node:os");
@@ -631,6 +699,7 @@ describe("turn gateway (m3h)", () => {
       "onProviderSettingsTest",
       "onProviderCustomSave",
       "onProviderCustomDelete",
+      "onLocalModelsList",
       "onVersionsList",
       "onVersionsRestore",
     ]) {

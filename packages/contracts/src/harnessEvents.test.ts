@@ -157,8 +157,26 @@ describe("Harness Contracts", () => {
       providers: [{ id: "openai", configured: true, hasBaseUrl: false, keyless: false }],
       defaultProviderId: "openai",
       tests: { openai: { ok: true, message: "Connected." } },
+      customProviders: [
+        {
+          id: "custom::proxy",
+          displayName: "Proxy",
+          baseUrl: "https://p/v1",
+          models: [{ name: "m1", displayName: "M1" }],
+        },
+      ],
     };
     expect(Schema.decodeUnknownSync(HarnessEvent)(event).type).toBe("provider_settings_state");
+  });
+
+  it("validates local_models_state harness event", () => {
+    const event: HarnessEventType = {
+      type: "local_models_state",
+      sessionId: "s-123",
+      requestId: "r-1",
+      models: [{ provider: "ollama", modelName: "qwen2.5-coder:32b", displayName: "Qwen 2.5 Coder" }],
+    };
+    expect(Schema.decodeUnknownSync(HarnessEvent)(event).type).toBe("local_models_state");
   });
 
   it("validates turn_end with optional usage and versions_state", () => {

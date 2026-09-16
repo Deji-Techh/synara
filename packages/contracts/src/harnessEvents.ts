@@ -284,6 +284,21 @@ export const BlueprintUpdateHarnessEvent = Schema.Struct({
 });
 export type BlueprintUpdateHarnessEvent = typeof BlueprintUpdateHarnessEvent.Type;
 
+/** Live local-model inventory (009 M6; donor list-ollama/lmstudio). */
+export const LocalModelsStateHarnessEvent = Schema.Struct({
+  type: Schema.Literal("local_models_state"),
+  sessionId: Schema.String,
+  requestId: Schema.optional(Schema.String),
+  models: Schema.Array(
+    Schema.Struct({
+      provider: Schema.Union([Schema.Literal("ollama"), Schema.Literal("lmstudio")]),
+      modelName: Schema.String,
+      displayName: Schema.String,
+    }),
+  ),
+});
+export type LocalModelsStateHarnessEvent = typeof LocalModelsStateHarnessEvent.Type;
+
 export const HarnessEvent = Schema.Union([
   TokenHarnessEvent,
   ToolCallHarnessEvent,
@@ -306,5 +321,6 @@ export const HarnessEvent = Schema.Union([
   VersionsStateHarnessEvent,
   BlueprintUpdateHarnessEvent,
   ProviderSettingsStateHarnessEvent,
+  LocalModelsStateHarnessEvent,
 ]);
 export type HarnessEvent = typeof HarnessEvent.Type;

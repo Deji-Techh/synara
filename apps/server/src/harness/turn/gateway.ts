@@ -32,6 +32,7 @@ import {
   validateCustomProviderDef,
   type CustomModelDef,
 } from "../../dyad/providers/customProviders.ts";
+import { fetchLMStudioModels, fetchOllamaModels } from "../../dyad/providers/localModels.ts";
 import { testProviderConnection } from "../../dyad/providers/testConnection.ts";
 import type { SettingsLike } from "../../dyad/providers/index.ts";
 import type { ConsentRequestFn } from "../../dyad/tools/permissions.ts";
@@ -353,6 +354,38 @@ export class TurnGateway {
           },
         });
       }
+    });
+    server.onLocalModelsList((sessionId, provider, requestId) => {
+      // Live local inventory (009 M6, donor list-ollama/lmstudio): runtimes
+      // that are down contribute nothing — the state still broadcasts (the
+      // panel shows reachability separately via Test).
+      void (async () => {
+        const models: Array<{ provider: "ollama" | "lmstudio"; modelName: string; displayName: string }> = [];
+        if (!provider || provider === "ollama") {
+          try {
+            models.push(...(await fetchOllamaModels()).models);
+          } catch {
+            // down runtime contributes nothing
+          }
+        }
+        if (!provider || provider === "lmstudio") {
+          try {
+            models.push(...(await fetchLMStudioModels()).models);
+          } catch {
+            // down runtime contributes nothing
+          }
+        }
+        try {
+          server.broadcastToSession(sessionId, {
+            type: "local_models_state",
+            sessionId,
+            ...(requestId ? { requestId } : {}),
+            models,
+          });
+        } catch {
+          // socket dead; nothing to settle
+        }
+      })();
     });
     server.onCancel((sessionId, reason) => {
       // Single cancel path: cancelTurn withdraws parked cards, cancels the
