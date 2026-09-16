@@ -72,6 +72,7 @@ import {
   type RoutingStepKind,
 } from "../../dyad/providers/agentRouting.ts";
 import { hasProviderKey, resolveConnection } from "../../dyad/providers/routing.ts";
+import { getFreshChatGPTSession } from "../../dyad/providers/chatgptAuth.ts";
 import type { SettingsLike } from "../../dyad/providers/index.ts";
 import type { ConsentRequestFn } from "../../dyad/tools/index.ts";
 import { createTurnContext } from "./turnContext.ts";
@@ -554,6 +555,13 @@ export class CaideRunner {
       const chatMode = chatModeFor(
         resolveChatModeForTurn({ requestedChatMode: input.mode ?? null }).mode,
       );
+      // ChatGPT account auth (donor get_model_client chatgpt branch): the
+      // session access token is the key, so refresh it proactively — the
+      // sync turn-context read below then sees fresh tokens. Throws the
+      // reconnect message when no session exists or refresh is impossible,
+      // failing the turn fast instead of 401ing mid-stream. Only explicit
+      // chatgpt turns need this (auto never resolves to chatgpt).
+      if (input.providerId === "chatgpt") await getFreshChatGPTSession();
       const ctx = createTurnContext({
         sessionId: input.sessionId,
         appPath: input.appPath,

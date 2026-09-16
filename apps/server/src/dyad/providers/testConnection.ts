@@ -247,6 +247,23 @@ export async function testProviderConnection(input: {
       if (status === 400 || status === 403) return { ok: false, message: "Key rejected. Check the key." };
       return { ok: false, message: `HTTP ${status}. Check the base URL.` };
     }
+    case "chatgpt": {
+      // Account OAuth (009 M4): no key to check — probe the session with an
+      // authenticated models listing (real Codex call, same as discovery).
+      const { readChatGPTSession, listChatGPTModels } = await import("./chatgptAuth.ts");
+      if (!readChatGPTSession()) {
+        return { ok: false, message: "Connect a ChatGPT account in Settings before using this model." };
+      }
+      try {
+        const models = await listChatGPTModels();
+        return { ok: true, message: `Connected — ${models.length} ChatGPT model(s) available.` };
+      } catch (error) {
+        return {
+          ok: false,
+          message: `ChatGPT session failed: ${error instanceof Error ? error.message : String(error)}`,
+        };
+      }
+    }
     case "azure":
     case "minimax":
     case "vertex":

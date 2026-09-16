@@ -12,6 +12,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import * as crypto from "node:crypto";
 import type { SettingsLike } from "./routing.ts";
+import type { ChatGPTTokens } from "./chatgptAuth.ts";
 import { PROVIDERS } from "./providers.ts";
 
 export interface StoredProviderEntry {
@@ -24,6 +25,11 @@ export interface StoredProviderEntry {
   projectId?: string;
   /** Vertex location, e.g. us-central1 (009 M2). */
   location?: string;
+  /**
+   * ChatGPT OAuth session (009 M4). Opaque to this store — encrypted at
+   * rest with everything else, never surfaced to turns or public views.
+   */
+  session?: ChatGPTTokens;
 }
 
 export interface ProviderSecretsFile {
@@ -222,8 +228,22 @@ export class ProviderSecretsStore {
       if (entry.location.trim()) next.location = entry.location.trim();
       else delete next.location;
     }
+    if (entry.session !== undefined) next.session = entry.session;
     current.providers[providerId] = next;
     this.write(current);
+    return current;
+  }
+
+  /** Drop an opaque session object (ChatGPT logout) without touching keys. */
+  clearProviderSession(providerId: string): ProviderSecretsFile {
+    const current = readFile(this.filePath);
+    const prev = current.providers[providerId];
+    if (prev && "session" in prev) {
+      const next = { ...prev };
+      delete next.session;
+      current.providers[providerId] = next;
+      this.write(current);
+    }
     return current;
   }
 

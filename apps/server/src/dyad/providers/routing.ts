@@ -10,6 +10,7 @@
 import { endpointForModel } from "../../harness/provider/apiAdapter.ts";
 import { getDefaultModel, type ProviderKind } from "@caide/shared/model";
 import { resolveApiKeyOrThrow } from "./apiKey.ts";
+import { readChatGPTSession } from "./chatgptAuth.ts";
 import { PROVIDERS } from "./providers.ts";
 
 export interface ProviderSettingsInput {
@@ -79,6 +80,24 @@ export function resolveConnection(
   }
   const input = settings.providerSettings?.[providerId];
   const displayName = def.displayName;
+
+  if (providerId === "chatgpt") {
+    // Account OAuth (donor get_model_client chatgpt branch): the session
+    // access token is the key. Freshness is enforced at turn start (runner
+    // refreshes proactively and fails fast with a reconnect message); here
+    // fail loudly when no session exists at all.
+    const session = readChatGPTSession();
+    if (!session) {
+      throw new Error("Connect a ChatGPT account in Settings before using this model.");
+    }
+    return {
+      providerId,
+      displayName,
+      baseUrl: "https://chatgpt.com/backend-api/codex",
+      apiKey: session.accessToken,
+      endpoint: endpointForModel(modelName, "https://chatgpt.com/backend-api/codex"),
+    };
+  }
 
   if (providerId === "azure") {
     const testBase = process.env.TEST_AZURE_BASE_URL?.trim();
@@ -194,6 +213,8 @@ export function hasProviderKey(
   const def = PROVIDERS[providerId];
   if (!def) return false;
   if (def.local === true) return true;
+  // ChatGPT is session-authed (device flow), never key-authed.
+  if (providerId === "chatgpt") return readChatGPTSession() !== undefined;
   const fromSettings = (settingsApiKey(settings.providerSettings?.[providerId]) ?? "").trim();
   if (fromSettings) return true;
   return Boolean(def.envVarName && env(def.envVarName));

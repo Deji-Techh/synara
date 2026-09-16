@@ -148,6 +148,15 @@ export const PROVIDERS: Record<string, ProviderDef> = {
     secondary: true,
     transport: "streamable",
   },
+  chatgpt: {
+    id: "chatgpt",
+    displayName: "ChatGPT",
+    websiteUrl: "https://chatgpt.com",
+    // Account OAuth (device flow), not a key: auth lives in the encrypted
+    // session, refreshed per turn. No env var by design.
+    baseUrl: "https://chatgpt.com/backend-api/codex",
+    transport: "streamable",
+  },
   "opencode-zen": {
     id: "opencode-zen",
     displayName: "OpenCode Zen",
