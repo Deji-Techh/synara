@@ -9,6 +9,7 @@
 // `dollarSigns` are informational cost hints for the user's own keys).
 
 import { MODEL_OPTIONS, type ModelOption } from "@caide/shared/languageModelCatalog";
+import { sharedCustomProviders } from "./customProviders.ts";
 
 export { MODEL_OPTIONS, type ModelOption };
 
@@ -31,7 +32,26 @@ export const FREE_OPENROUTER_MODEL_NAMES = MODEL_OPTIONS.openrouter
 
 /** Find a model's catalog entry (limits, temperature) by provider + name. */
 export function findModelOption(providerId: string, modelName: string): ModelOption | undefined {
-  return MODEL_OPTIONS[providerId]?.find((m) => m.name === modelName);
+  const builtin = MODEL_OPTIONS[providerId]?.find((m) => m.name === modelName);
+  if (builtin) return builtin;
+  // Stored custom models (009 M5): user-defined ids resolve with their
+  // declared limits, falling back to engine defaults downstream.
+  try {
+    const custom = sharedCustomProviders()
+      .getCustomModels(providerId)
+      .find((m) => m.name === modelName);
+    if (!custom) return undefined;
+    return {
+      name: custom.name,
+      displayName: custom.displayName ?? custom.name,
+      description: "Custom model on a user-configured provider.",
+      ...(custom.contextWindow !== undefined ? { contextWindow: custom.contextWindow } : {}),
+      ...(custom.maxOutputTokens !== undefined ? { maxOutputTokens: custom.maxOutputTokens } : {}),
+      ...(custom.temperature !== undefined ? { temperature: custom.temperature } : {}),
+    };
+  } catch {
+    return undefined;
+  }
 }
 
 /**

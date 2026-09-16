@@ -11,7 +11,7 @@ import { endpointForModel } from "../../harness/provider/apiAdapter.ts";
 import { getDefaultModel, type ProviderKind } from "@caide/shared/model";
 import { resolveApiKeyOrThrow } from "./apiKey.ts";
 import { readChatGPTSession } from "./chatgptAuth.ts";
-import { PROVIDERS } from "./providers.ts";
+import { resolveProviderDef } from "./customProviders.ts";
 
 export interface ProviderSettingsInput {
   apiKey?: { value?: string | null } | string | null;
@@ -71,7 +71,9 @@ export function resolveConnection(
   modelName: string,
   settings: SettingsLike = {},
 ): ResolvedConnection {
-  const def = PROVIDERS[providerId];
+  // Static registry first, stored customs second (009 M5) — custom
+  // `custom::*` providers resolve exactly like built-ins.
+  const def = resolveProviderDef(providerId);
   if (!def) throw new Error(`Unsupported model provider: ${providerId}`);
   if (def.transport === "needs-work") {
     throw new Error(
@@ -210,7 +212,7 @@ export function hasProviderKey(
   providerId: string,
   settings: SettingsLike = {},
 ): boolean {
-  const def = PROVIDERS[providerId];
+  const def = resolveProviderDef(providerId);
   if (!def) return false;
   if (def.local === true) return true;
   // ChatGPT is session-authed (device flow), never key-authed.

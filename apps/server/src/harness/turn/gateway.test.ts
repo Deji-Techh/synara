@@ -368,6 +368,12 @@ describe("turn gateway (m3h)", () => {
       onProviderSettingsTest: (h: (...args: never[]) => void) => {
         handlers.psTest = h;
       },
+      onProviderCustomSave: (h: (...args: never[]) => void) => {
+        handlers.customSave = h;
+      },
+      onProviderCustomDelete: (h: (...args: never[]) => void) => {
+        handlers.customDelete = h;
+      },
       onVersionsList: (h: (...args: never[]) => void) => {
         handlers.versionsList = h;
       },
@@ -419,6 +425,8 @@ describe("turn gateway (m3h)", () => {
       "onProviderSettingsGet",
       "onProviderSettingsSet",
       "onProviderSettingsTest",
+      "onProviderCustomSave",
+      "onProviderCustomDelete",
       "onVersionsList",
       "onVersionsRestore",
     ]) {
@@ -462,6 +470,127 @@ describe("turn gateway (m3h)", () => {
     }
   });
 
+  it("saves, lists, and deletes custom providers over the socket handlers", async () => {
+    const fs = await import("node:fs");
+    const os = await import("node:os");
+    const path = await import("node:path");
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), "caide-home-"));
+    process.env.CAIDE_HOME = home;
+    const { resetSharedProviderSecrets } = await import("../../dyad/providers/secrets.ts");
+    const { resetSharedCustomProviders, sharedCustomProviders } =
+      await import("../../dyad/providers/customProviders.ts");
+    resetSharedProviderSecrets();
+    resetSharedCustomProviders();
+    const gateway = new TurnGateway();
+    const sent: HarnessEvent[] = [];
+    const handlers: Record<string, (...args: never[]) => void> = {};
+    const server = {
+      broadcastToSession: (sessionId: string, event: HarnessEvent) => {
+        void sessionId;
+        sent.push(event);
+      },
+      onProviderCustomSave: (h: (...args: never[]) => void) => {
+        handlers.customSave = h;
+      },
+      onProviderCustomDelete: (h: (...args: never[]) => void) => {
+        handlers.customDelete = h;
+      },
+    } as unknown as HarnessHub;
+    // Reuse the shared fake-hub surface for the remaining handlers.
+    for (const name of [
+      "onPromptAnswer",
+      "onConsentAnswer",
+      "onSettingsSync",
+      "onSteer",
+      "onCancel",
+      "onBlueprintResponse",
+      "onCheckpointResponse",
+      "onMcpOAuthStart",
+      "onTurnStart",
+      "onCompactNow",
+      "onProviderSettingsGet",
+      "onProviderSettingsSet",
+      "onProviderSettingsTest",
+      "onVersionsList",
+      "onVersionsRestore",
+    ]) {
+      if (!(server as unknown as Record<string, unknown>)[name]) {
+        (server as unknown as Record<string, unknown>)[name] = (h: (...args: never[]) => void) => {
+          handlers[name] = h;
+        };
+      }
+    }
+    gateway.attachWs(server);
+    try {
+      type SaveFn = (
+        sid: string,
+        provider:
+          | { id?: string; displayName?: string; baseUrl?: string; envVarName?: string }
+          | undefined,
+        models: Array<{ name?: string }> | undefined,
+        requestId?: string,
+      ) => void;
+      type DeleteFn = (sid: string, providerId: string, requestId?: string) => void;
+      const save = handlers.customSave as SaveFn;
+      const del = handlers.customDelete as DeleteFn;
+      // Invalid definition rejected with feedback, nothing persisted.
+      save(
+        "s-cp",
+        { id: "nope", displayName: "Nope", baseUrl: "https://x/v1" },
+        undefined,
+        "r-bad",
+      );
+      const badState = sent.find(
+        (e) =>
+          e.type === "provider_settings_state" &&
+          (e as { requestId?: string }).requestId === "r-bad",
+      ) as unknown as { tests?: Record<string, { ok: boolean; message: string }> };
+      expect(badState?.tests?.["nope"]?.ok).toBe(false);
+      expect(sharedCustomProviders().getProvider("nope")).toBeUndefined();
+      // Valid save persists and rides the state broadcast.
+      save(
+        "s-cp",
+        { id: "custom::proxy", displayName: "Proxy", baseUrl: "https://p/v1" },
+        [{ name: "m1" }],
+        "r-save",
+      );
+      const saveState = sent.find(
+        (e) =>
+          e.type === "provider_settings_state" &&
+          (e as { requestId?: string }).requestId === "r-save",
+      ) as unknown as {
+        tests?: Record<string, { ok: boolean; message: string }>;
+        customProviders?: Array<{ id: string; models: Array<{ name: string }> }>;
+      };
+      expect(saveState?.tests?.["custom::proxy"]?.ok).toBe(true);
+      expect(saveState?.customProviders).toMatchObject([
+        { id: "custom::proxy", models: [{ name: "m1" }] },
+      ]);
+      expect(sharedCustomProviders().getProvider("custom::proxy")?.baseUrl).toBe("https://p/v1");
+      // Delete removes it and refreshes state.
+      del("s-cp", "custom::proxy", "r-del");
+      const delState = sent.find(
+        (e) =>
+          e.type === "provider_settings_state" &&
+          (e as { requestId?: string }).requestId === "r-del",
+      ) as unknown as { tests?: Record<string, { ok: boolean; message: string }> };
+      expect(delState?.tests?.["custom::proxy"]?.ok).toBe(true);
+      expect(sharedCustomProviders().getProvider("custom::proxy")).toBeUndefined();
+      del("s-cp", "custom::missing", "r-del2");
+      const del2State = sent.find(
+        (e) =>
+          e.type === "provider_settings_state" &&
+          (e as { requestId?: string }).requestId === "r-del2",
+      ) as unknown as { tests?: Record<string, { ok: boolean; message: string }> };
+      expect(del2State?.tests?.["custom::missing"]?.ok).toBe(false);
+    } finally {
+      gateway.detachWs();
+      resetSharedProviderSecrets();
+      resetSharedCustomProviders();
+      delete process.env.CAIDE_HOME;
+    }
+  });
+
   it("lists and restores app versions over the socket handlers", async () => {
     const fs = await import("node:fs");
     const os = await import("node:os");
@@ -500,6 +629,8 @@ describe("turn gateway (m3h)", () => {
       "onProviderSettingsGet",
       "onProviderSettingsSet",
       "onProviderSettingsTest",
+      "onProviderCustomSave",
+      "onProviderCustomDelete",
       "onVersionsList",
       "onVersionsRestore",
     ]) {

@@ -233,6 +233,26 @@ export const ProviderSettingsStateHarnessEvent = Schema.Struct({
   tests: Schema.optional(
     Schema.Record(Schema.String, Schema.Struct({ ok: Schema.Boolean, message: Schema.String })),
   ),
+  /** Stored custom providers + their models (009 M5; keys never included). */
+  customProviders: Schema.optional(
+    Schema.Array(
+      Schema.Struct({
+        id: Schema.String,
+        displayName: Schema.String,
+        baseUrl: Schema.String,
+        envVarName: Schema.optional(Schema.String),
+        models: Schema.Array(
+          Schema.Struct({
+            name: Schema.String,
+            displayName: Schema.optional(Schema.String),
+            contextWindow: Schema.optional(Schema.Number),
+            maxOutputTokens: Schema.optional(Schema.Number),
+            temperature: Schema.optional(Schema.Number),
+          }),
+        ),
+      }),
+    ),
+  ),
 });
 export type ProviderSettingsStateHarnessEvent = typeof ProviderSettingsStateHarnessEvent.Type;
 

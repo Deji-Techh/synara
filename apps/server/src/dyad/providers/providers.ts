@@ -6,6 +6,8 @@
 // (deepseek, opencode-zen, custom). `gatewayPrefix` (Dyad Pro routing) is
 // dropped; the `auto` entry no longer points at a subscription page.
 
+import { sharedCustomProviders } from "./customProviders.ts";
+
 export const OPENCODE_ZEN_API_BASE_URL = "https://opencode.ai/zen/v1";
 
 export interface ProviderDef {
@@ -336,8 +338,15 @@ export function validateProviderSettings(
   },
 ): ProviderSettingsValidation {
   const def = PROVIDERS[providerId];
-  if (!def) {
+  // Stored customs validate like the ad-hoc custom endpoint (009 M5):
+  // definition (with base URL) must exist; the key itself is optional only
+  // in the sense that turns fail loudly without one.
+  const customDef = !def ? sharedCustomProviders().getProvider(providerId) : undefined;
+  if (!def && !customDef) {
     return { ok: false, message: `Unknown provider "${providerId}" — settings not saved.` };
+  }
+  if (customDef) {
+    return { ok: true, message: `${customDef.displayName} settings saved.` };
   }
   if (def.local === true) {
     return { ok: true, message: `${def.displayName} needs no key (local runtime).` };

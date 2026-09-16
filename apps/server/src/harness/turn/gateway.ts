@@ -27,6 +27,11 @@ import {
 } from "../../dyad/db/integrationFollowUp.ts";
 import { sharedProviderSecrets } from "../../dyad/providers/secrets.ts";
 import { PROVIDERS, validateProviderSettings } from "../../dyad/providers/providers.ts";
+import {
+  sharedCustomProviders,
+  validateCustomProviderDef,
+  type CustomModelDef,
+} from "../../dyad/providers/customProviders.ts";
 import { testProviderConnection } from "../../dyad/providers/testConnection.ts";
 import type { SettingsLike } from "../../dyad/providers/index.ts";
 import type { ConsentRequestFn } from "../../dyad/tools/permissions.ts";
@@ -273,6 +278,82 @@ export class TurnGateway {
         this.sendProviderState(server, sessionId, requestId, { [providerId]: result });
       })();
     });
+    server.onProviderCustomSave((sessionId, provider, models, requestId) => {
+      // Stored custom provider CRUD (009 M5): validate definition + models,
+      // persist, then rebroadcast state (defs ride provider_settings_state).
+      const id = provider?.id?.trim() ?? "";
+      const displayName = provider?.displayName?.trim() ?? "";
+      const baseUrl = provider?.baseUrl?.trim() ?? "";
+      const envVarName = provider?.envVarName?.trim() || undefined;
+      const defCheck = validateCustomProviderDef({
+        id,
+        displayName,
+        baseUrl,
+        envVarName,
+        isBuiltin: (candidate) => candidate in PROVIDERS,
+      });
+      if (!defCheck.ok) {
+        this.sendProviderState(server, sessionId, requestId, {
+          [id || "custom"]: { ok: false, message: defCheck.message },
+        });
+        return;
+      }
+      const cleanModels: CustomModelDef[] = Array.isArray(models)
+        ? models
+            .filter(
+              (m): m is { name: string } & Omit<CustomModelDef, "name"> =>
+                !!m && typeof m.name === "string" && m.name.trim().length > 0,
+            )
+            .map((m) => ({
+              name: m.name.trim(),
+              ...(m.displayName?.trim() ? { displayName: m.displayName.trim() } : {}),
+              ...(typeof m.contextWindow === "number" && m.contextWindow > 0
+                ? { contextWindow: Math.floor(m.contextWindow) }
+                : {}),
+              ...(typeof m.maxOutputTokens === "number" && m.maxOutputTokens > 0
+                ? { maxOutputTokens: Math.floor(m.maxOutputTokens) }
+                : {}),
+              ...(typeof m.temperature === "number" ? { temperature: m.temperature } : {}),
+            }))
+        : [];
+      try {
+        const store = sharedCustomProviders();
+        store.saveProvider({
+          id,
+          displayName,
+          baseUrl,
+          ...(envVarName ? { envVarName } : {}),
+        });
+        store.setCustomModels(id, cleanModels);
+        this.sendProviderState(server, sessionId, requestId, {
+          [id]: { ok: true, message: "Custom provider saved." },
+        });
+      } catch (error) {
+        this.sendProviderState(server, sessionId, requestId, {
+          [id]: {
+            ok: false,
+            message: error instanceof Error ? error.message : String(error),
+          },
+        });
+      }
+    });
+    server.onProviderCustomDelete((sessionId, providerId, requestId) => {
+      try {
+        const deleted = sharedCustomProviders().deleteProvider(providerId);
+        this.sendProviderState(server, sessionId, requestId, {
+          [providerId]: deleted
+            ? { ok: true, message: "Custom provider deleted." }
+            : { ok: false, message: `Unknown custom provider "${providerId}".` },
+        });
+      } catch (error) {
+        this.sendProviderState(server, sessionId, requestId, {
+          [providerId]: {
+            ok: false,
+            message: error instanceof Error ? error.message : String(error),
+          },
+        });
+      }
+    });
     server.onCancel((sessionId, reason) => {
       // Single cancel path: cancelTurn withdraws parked cards, cancels the
       // turn (incl. owned subagents), and broadcasts the synthetic
@@ -487,6 +568,38 @@ export class TurnGateway {
     tests?: Record<string, { ok: boolean; message: string }>,
   ): void {
     const view = sharedProviderSecrets().publicView();
+    // Stored customs ride the state broadcast (009 M5) so settings UIs see
+    // definitions + models, not just configured flags. Keys never included.
+    let customProviders:
+      | Array<{
+          id: string;
+          displayName: string;
+          baseUrl: string;
+          envVarName?: string;
+          models: Array<{
+            name: string;
+            displayName?: string;
+            contextWindow?: number;
+            maxOutputTokens?: number;
+            temperature?: number;
+          }>;
+        }>
+      | undefined;
+    try {
+      const store = sharedCustomProviders();
+      const defs = store.listProviders();
+      if (defs.length > 0) {
+        customProviders = defs.map((def) => ({
+          id: def.id,
+          displayName: def.displayName,
+          baseUrl: def.baseUrl,
+          ...(def.envVarName ? { envVarName: def.envVarName } : {}),
+          models: store.getCustomModels(def.id),
+        }));
+      }
+    } catch {
+      // custom listing best-effort; flags above still go out
+    }
     server.broadcastToSession(sessionId, {
       type: "provider_settings_state",
       sessionId,
@@ -499,6 +612,7 @@ export class TurnGateway {
         : {}),
       ...(view.defaultImageModelId ? { defaultImageModelId: view.defaultImageModelId } : {}),
       ...(tests ? { tests } : {}),
+      ...(customProviders ? { customProviders } : {}),
     });
   }
 

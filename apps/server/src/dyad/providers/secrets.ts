@@ -14,6 +14,7 @@ import * as crypto from "node:crypto";
 import type { SettingsLike } from "./routing.ts";
 import type { ChatGPTTokens } from "./chatgptAuth.ts";
 import { PROVIDERS } from "./providers.ts";
+import { sharedCustomProviders } from "./customProviders.ts";
 
 export interface StoredProviderEntry {
   apiKey?: string;
@@ -301,12 +302,15 @@ export class ProviderSecretsStore {
     defaultImageModelId?: string;
   } {
     const file = readFile(this.filePath);
-    return {
-      // Every registry provider is listed (not just stored ones), and a
-      // provider counts as configured when a stored key OR its env var is
-      // present — mirroring hasProviderKey, which is what turns actually
-      // resolve. Otherwise env-keyed providers look dead while working.
-      providers: Object.values(PROVIDERS).map((def) => {
+    const customDefs = (() => {
+      try {
+        return sharedCustomProviders().listProviders();
+      } catch {
+        return [];
+      }
+    })();
+    const rows = [
+      ...Object.values(PROVIDERS).map((def) => {
         const entry = file.providers[def.id];
         const stored = Boolean(entry?.apiKey?.trim());
         const envKey = Boolean(def.envVarName && process.env[def.envVarName]?.trim());
@@ -317,6 +321,21 @@ export class ProviderSecretsStore {
           keyless: def.local === true,
         };
       }),
+      // Stored customs ride the same listing so settings UIs (018) see one
+      // provider list; credentials never leave the encrypted file.
+      ...customDefs.map((def) => {
+        const entry = file.providers[def.id];
+        const stored = Boolean(entry?.apiKey?.trim());
+        const envKey = Boolean(def.envVarName && process.env[def.envVarName]?.trim());
+        return { id: def.id, configured: stored || envKey, hasBaseUrl: true, keyless: false };
+      }),
+    ];
+    return {
+      // Every registry provider is listed (not just stored ones), and a
+      // provider counts as configured when a stored key OR its env var is
+      // present — mirroring hasProviderKey, which is what turns actually
+      // resolve. Otherwise env-keyed providers look dead while working.
+      providers: rows,
       ...(file.defaultProviderId ? { defaultProviderId: file.defaultProviderId } : {}),
       ...(file.defaultModelId ? { defaultModelId: file.defaultModelId } : {}),
       ...(file.defaultImageProviderId ? { defaultImageProviderId: file.defaultImageProviderId } : {}),

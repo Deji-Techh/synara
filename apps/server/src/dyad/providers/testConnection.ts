@@ -264,17 +264,63 @@ export async function testProviderConnection(input: {
         };
       }
     }
+    case "custom": {
+      // Ad-hoc single endpoint: probe the listing when a base URL is
+      // provided, otherwise the honest saved-only message (keys stay
+      // optional here, as before).
+      if (!base) {
+        return { ok: true, message: "Key saved — no live check for this provider yet." };
+      }
+      try {
+        const headers: Record<string, string> = {};
+        if (key) headers.authorization = `Bearer ${key}`;
+        const { status, json } = await get(`${base}/models`, headers, signal);
+        if (status === 200) {
+          const names = modelNames(json);
+          return { ok: true, message: `Connected — ${names.length} model(s) listed.` };
+        }
+        if (status === 401 || status === 403) {
+          return { ok: false, message: "Key rejected (401/403). Check the key." };
+        }
+        return { ok: false, message: `HTTP ${status}. Check the base URL.` };
+      } catch {
+        return { ok: false, message: "Custom provider is unreachable. Check the base URL." };
+      }
+    }
     case "azure":
     case "minimax":
     case "vertex":
     case "bedrock":
-    case "custom":
     case "auto":
-    default: {
-      if ((providerId === "azure" || providerId === "minimax" || providerId === "custom") && !key && providerId !== "custom") {
+    default:
+      if ((providerId === "azure" || providerId === "minimax") && !key) {
         return { ok: false, message: "API key is required." };
       }
+      // Stored `custom::*` providers probe their OpenAI-compatible
+      // `/models` listing (009 M5) — real check, no model id needed.
+      if (providerId.startsWith("custom::")) {
+        const { resolveProviderDef } = await import("./customProviders.ts");
+        const def = resolveProviderDef(providerId);
+        const probeBase = (base || def?.baseUrl || "").replace(/\/+$/, "");
+        if (!probeBase) {
+          return { ok: false, message: "Custom provider needs an API Base URL." };
+        }
+        try {
+          const headers: Record<string, string> = {};
+          if (key) headers.authorization = `Bearer ${key}`;
+          const { status, json } = await get(`${probeBase}/models`, headers, signal);
+          if (status === 200) {
+            const names = modelNames(json);
+            return { ok: true, message: `Connected — ${names.length} model(s) listed.` };
+          }
+          if (status === 401 || status === 403) {
+            return { ok: false, message: "Key rejected (401/403). Check the key." };
+          }
+          return { ok: false, message: `HTTP ${status}. Check the base URL.` };
+        } catch {
+          return { ok: false, message: "Custom provider is unreachable. Check the base URL." };
+        }
+      }
       return { ok: true, message: "Key saved — no live check for this provider yet." };
-    }
   }
 }

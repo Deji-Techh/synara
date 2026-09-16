@@ -23,6 +23,8 @@ export interface ClientInboundMessage {
     | "provider_settings_get"
     | "provider_settings_set"
     | "provider_settings_test"
+    | "provider_custom_save"
+    | "provider_custom_delete"
     | "versions_list"
     | "versions_restore"
     | "compact_now"
@@ -57,6 +59,21 @@ export interface ClientInboundMessage {
     /** Vertex location (e.g. us-central1). */
     location?: string;
   };
+  /** Custom provider definition for provider_custom_save (009 M5). */
+  customProvider?: {
+    id?: string;
+    displayName?: string;
+    baseUrl?: string;
+    envVarName?: string;
+  };
+  /** Custom models for provider_custom_save (009 M5). */
+  customModels?: Array<{
+    name?: string;
+    displayName?: string;
+    contextWindow?: number;
+    maxOutputTokens?: number;
+    temperature?: number;
+  }>;
   defaults?: {
     providerId?: string;
     modelId?: string;
@@ -150,6 +167,30 @@ export type ProviderSettingsTestHandler = (
   requestId?: string,
   candidate?: { apiKey?: string; apiBaseUrl?: string; baseUrl?: string },
 ) => void;
+export type CustomProviderDefinition = {
+  id?: string;
+  displayName?: string;
+  baseUrl?: string;
+  envVarName?: string;
+};
+export type CustomModelDefinition = {
+  name?: string;
+  displayName?: string;
+  contextWindow?: number;
+  maxOutputTokens?: number;
+  temperature?: number;
+};
+export type ProviderCustomSaveHandler = (
+  sessionId: string,
+  provider: CustomProviderDefinition | undefined,
+  models: CustomModelDefinition[] | undefined,
+  requestId?: string,
+) => void;
+export type ProviderCustomDeleteHandler = (
+  sessionId: string,
+  providerId: string,
+  requestId?: string,
+) => void;
 
 /** Outbound sender for one connected client (any transport). */
 export interface HarnessClientSender {
@@ -190,6 +231,8 @@ export class HarnessHub {
   private onProviderSettingsSetHandler?: ProviderSettingsSetHandler;
   private onMcpOAuthStartHandler?: McpOAuthStartHandler;
   private onProviderSettingsTestHandler?: ProviderSettingsTestHandler;
+  private onProviderCustomSaveHandler?: ProviderCustomSaveHandler;
+  private onProviderCustomDeleteHandler?: ProviderCustomDeleteHandler;
 
   /** Diagnostic snapshot of fan-out health. */
   getBroadcastStats(): HubBroadcastStats {
@@ -329,6 +372,19 @@ export class HarnessHub {
         msg.requestId,
         candidate,
       );
+      return;
+    }
+    if (msg.type === "provider_custom_save" && msg.sessionId) {
+      this.onProviderCustomSaveHandler?.(
+        msg.sessionId,
+        msg.customProvider,
+        msg.customModels,
+        msg.requestId,
+      );
+      return;
+    }
+    if (msg.type === "provider_custom_delete" && msg.sessionId && msg.provider?.id) {
+      this.onProviderCustomDeleteHandler?.(msg.sessionId, msg.provider.id, msg.requestId);
       return;
     }
     if (msg.type === "mcp_oauth_start" && msg.sessionId && msg.serverId && msg.serverUrl) {
@@ -475,6 +531,14 @@ export class HarnessHub {
 
   onProviderSettingsTest(handler: ProviderSettingsTestHandler): void {
     this.onProviderSettingsTestHandler = handler;
+  }
+
+  onProviderCustomSave(handler: ProviderCustomSaveHandler): void {
+    this.onProviderCustomSaveHandler = handler;
+  }
+
+  onProviderCustomDelete(handler: ProviderCustomDeleteHandler): void {
+    this.onProviderCustomDeleteHandler = handler;
   }
 
   onMcpOAuthStart(handler: McpOAuthStartHandler): void {
