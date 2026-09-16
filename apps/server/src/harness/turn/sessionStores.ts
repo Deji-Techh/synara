@@ -38,6 +38,8 @@ export interface SettingsSyncPayload {
   toolConsents?: Record<string, ToolConsent>;
   safeSql?: boolean;
   compactionThresholdTokens?: number;
+  /** Master compaction kill-switch (donor enableContextCompaction; default on). */
+  compactionEnabled?: boolean;
   mcpConsents?: Array<{ serverId: string | number; toolName: string; consent: McpConsent }>;
   mcpAutoApproveSafe?: boolean;
   dbLinks?: Array<DbLink & { scope?: { type: "global" | "project"; workspaceRoot?: string } }>;
@@ -65,6 +67,8 @@ export interface SessionStores {
   mcpAutoApproveSafe: boolean;
   /** User-configured compaction threshold in tokens (default 256k). */
   compactionThresholdTokens: number;
+  /** Master compaction kill-switch (donor enableContextCompaction; default on). */
+  compactionEnabled: boolean;
   routing: AgentRoutingConfig;
   /** Per-tool execution counts (post-consent). Powers fork-skill/subagent
    * telemetry (item 31) and fixer-retry signals for the run log. */
@@ -122,6 +126,7 @@ export function getOrCreateSessionStores(sessionId: string): SessionStores {
       safeSql: true,
       mcpAutoApproveSafe: true,
       compactionThresholdTokens: DEFAULT_COMPACTION_THRESHOLD_TOKENS,
+      compactionEnabled: true,
       routing: {
         mode: DEFAULT_AGENT_ROUTING.mode,
         steps: {

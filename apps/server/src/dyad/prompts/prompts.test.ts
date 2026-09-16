@@ -128,9 +128,11 @@ describe("dyad prompt transplant (m1)", () => {
   });
 
   it("ships donor-verbatim utility prompts (compaction/summarize/security)", () => {
-    expect(COMPACTION_SYSTEM_PROMPT).toContain("## Key Decisions Made");
-    expect(COMPACTION_SYSTEM_PROMPT).toContain("## Standing Preferences & Constraints");
-    expect(COMPACTION_SYSTEM_PROMPT).toContain("Skip empty sections");
+    expect(COMPACTION_SYSTEM_PROMPT).toContain("## Objective");
+    expect(COMPACTION_SYSTEM_PROMPT).toContain("## Work State");
+    expect(COMPACTION_SYSTEM_PROMPT).toContain("## Next Move");
+    expect(COMPACTION_SYSTEM_PROMPT).toContain("## Relevant Files");
+    expect(COMPACTION_SYSTEM_PROMPT).toContain("Always emit all five top-level sections");
     expect(SUMMARIZE_CHAT_SYSTEM_PROMPT).toContain("YOU MUST CALL `set_chat_summary` EXACTLY ONCE");
     expect(SECURITY_REVIEW_SYSTEM_PROMPT).toContain("<dyad-security-finding");
     expect(SECURITY_REVIEW_SYSTEM_PROMPT).toContain("Begin your security review.");

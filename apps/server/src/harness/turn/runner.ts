@@ -18,7 +18,13 @@ import {
   type LoopOptions,
 } from "../loop/loop.ts";
 import { resetPreCommitCount } from "../../dyad/vcs/preCommitTools.ts";
-import { writeCompactionBackup } from "./compactionBackup.ts";
+import {
+  clearCompactionPending,
+  isCompactionPending,
+  lastTurnStartSeq,
+  performCompaction,
+  setCompactionPending,
+} from "../../dyad/compaction/performCompaction.ts";
 import { captureTurnEnd, captureTurnStart, isGitRepo } from "../../dyad/vcs/gitProvenance.ts";
 import { buildGitReminder } from "../../dyad/prompts/gitContextPrompt.ts";
 import { formatMemoryForPrompt, readAppMemory } from "../../dyad/memory/memory.ts";
@@ -51,7 +57,6 @@ import { buildConversationChain, buildMessages, type ChatMessage } from "../sess
 import { resolveDispatchSystemPromptOverride } from "../prompts/dispatchSystemPrompt.ts";
 import { SessionStorage } from "../session/storage.ts";
 import {
-  COMPACTION_SYSTEM_PROMPT,
   constructSystemPrompt,
   detectFrameworkType,
   detectNextJsMajorVersion,
@@ -62,7 +67,6 @@ import {
   highestTasteModel,
   MODEL_OPTIONS,
 } from "../../dyad/providers/catalog.ts";
-import { getContextSummarizer } from "../../dyad/misc/index.ts";
 import type { CaideFramework } from "../../dyad/prompts/index.ts";
 import { shouldRevealDatabasePanel } from "../../dyad/db/dbPanel.ts";
 import { getDatabaseLink } from "../../dyad/db/index.ts";
@@ -210,26 +214,18 @@ export async function runManualCompaction(
   const chain = await buildConversationChain(sessionId, undefined, storage).catch(() => null);
   if (!chain || chain.length === 0) return null;
   const history = buildMessages(chain, { role: "builder", includeSystem: false });
-  const text = history
-    .map(
-      (m) =>
-        `${m.role.toUpperCase()}: ${typeof m.content === "string" ? m.content : JSON.stringify(m.content)}`,
-    )
-    .join("\n")
-    .slice(0, 30000);
-  if (text.trim().length < 1000) return null;
-  const summarize = getContextSummarizer();
-  const summary = (
-    summarize
-      ? await summarize({ system: COMPACTION_SYSTEM_PROMPT, prompt: text })
-      : `[COMPRESSED CONTEXT — extractive fallback]\n${text.slice(0, 3000)}\n…\n${text.slice(-3000)}`
-  ).slice(0, 6000);
   const coveredThroughSeq = chain.reduce((max, e) => Math.max(max, e.seq), -1);
-  await storage
-    .append(sessionId, "compaction/summary", { summary, coveredThroughSeq })
-    .catch(() => undefined);
-  await writeCompactionBackup(sessionId, appPath, history).catch(() => undefined);
-  return summary.length;
+  const result = await performCompaction({
+    sessionId,
+    ...(appPath ? { appPath } : {}),
+    storage,
+    history: history as Array<{ role: "system" | "user" | "assistant"; content: unknown }>,
+    coveredThroughSeq,
+  }).catch(() => null);
+  // Donor clears the flag on empty too (short history → null).
+  await clearCompactionPending(sessionId, storage);
+  if (!result) return null;
+  return result.summary.length;
 }
 
 export class CaideRunner {
@@ -359,10 +355,23 @@ export class CaideRunner {
     // From here a real turn runs: mark live so mid-turn settings saves
     // defer instead of mutating the running turn's posture.
     setTurnLive(input.sessionId, true);
+    // Session log store: created up front (no I/O in the constructor) so
+    // the forward() delivery path below can use it on every terminal path,
+    // including failures that never reach the main setup.
+    const storage = new SessionStorage();
     // Per-turn token accounting (provider-reported usage only). Declared
     // up front so every failure path (even before provider setup) can
     // attach partial usage instead of hitting a TDZ error.
     const turnUsage = { inputTokens: 0, outputTokens: 0 };
+    // Pending-compaction threshold slot: assigned once the threshold is
+    // computed below; the forward() turn_end hook reads only this slot so
+    // early-failure terminals (which never reach the computation) stay safe.
+    let compactionThresholdForPending = 0;
+    // Whether this turn persisted a compaction summary (pre-turn or
+    // mid-turn). The turn-end hook below only arms the pending flag when no
+    // summary landed — otherwise every over-threshold turn would force the
+    // next turn to re-compact the same content.
+    let summaryPersistedThisTurn = false;
     // Pre-turn todos snapshot for cancel rollback (set below in cancel()).
     try {
       this.todosSnapshots.set(input.sessionId, getTodos(input.sessionId));
@@ -431,6 +440,19 @@ export class CaideRunner {
       } else if (event.type === "stage")
         this.emit({ type: "stage", from: event.from, to: event.to });
       else if (event.type === "compaction") void maybeCompactTurn().catch(() => {});
+      else if (event.type === "turn_end") {
+        // Donor pending flag: a turn that ends over threshold without a
+        // persisted summary arms next turn's pre-turn compaction. Reads only
+        // early-declared slots — terminal paths that fail before provider
+        // setup never reach the threshold computation below.
+        if (
+          !summaryPersistedThisTurn &&
+          compactionThresholdForPending > 0 &&
+          turnUsage.inputTokens + turnUsage.outputTokens >= compactionThresholdForPending
+        ) {
+          void setCompactionPending(input.sessionId, storage).catch(() => undefined);
+        }
+      }
       else if (event.type === "checkpoint")
         this.emit({ type: "checkpoint", requiresResponse: event.requiresResponse });
       if (event.type === "tool_call" && event.status !== "started") sawToolComplete = true;
@@ -524,7 +546,6 @@ export class CaideRunner {
     input.signal?.addEventListener("abort", onAbort, { once: true });
 
     try {
-      const storage = new SessionStorage();
       await restoreSessionState(input.sessionId, storage).catch(() => {});
       resetPreCommitCount(input.sessionId);
       // Re-push the persisted todo list so the TodoList header survives
@@ -590,17 +611,17 @@ export class CaideRunner {
       });
       failedAttemptKey = `${ctx.provider.providerId}:${ctx.provider.modelId}`;
       // Compaction budget: user setting clamped by provider cap + real
-      // window (a 256k setting never overruns a small model).
+      // window (a 256k setting never overruns a small model). Mirrored into
+      // the pending slot for the forward() turn_end hook.
       const compactionThreshold = resolveEffectiveCompactionThreshold({
         userSettingTokens: sessionStores.compactionThresholdTokens,
         providerId: ctx.provider.providerId,
         contextWindow: getContextWindow(ctx.provider.providerId, ctx.provider.modelId),
       });
-      // Mid-turn compaction consumer: summarize history once via the cheap
-      // model, then serve [summary + recent tail]. Single-flight, gated by
-      // the session kill-switch, silent on failure. Mirrors donor
-      // performCompaction (summary row + post-boundary messages) without a
-      // DB: the summary lives in turn scope, originals stay in the log.
+      compactionThresholdForPending = compactionThreshold;
+      // Mid-turn compaction consumer: summarize completed history once via
+      // the shared service, then serve [summary + recent tail]. Single-flight,
+      // gated by the session kill-switch, silent on failure.
       let compactedSummary: string | null = null;
       let compactionRunning = false;
       async function maybeCompactTurn(): Promise<void> {
@@ -611,43 +632,42 @@ export class CaideRunner {
           const chain = await buildConversationChain(input.sessionId, undefined, storage).catch(
             () => null,
           );
-          if (!chain) return;
-          const history = buildMessages(chain, { role: "builder", includeSystem: false });
-          const text = history
-            .map(
-              (m) =>
-                `${m.role.toUpperCase()}: ${typeof m.content === "string" ? m.content : JSON.stringify(m.content)}`,
-            )
-            .join("\n")
-            .slice(0, 30000);
-          if (text.trim().length < 1000) return;
-          const summarize = getContextSummarizer();
-          if (summarize) {
-            compactedSummary = (
-              await summarize({ system: COMPACTION_SYSTEM_PROMPT, prompt: text })
-            ).slice(0, 6000);
-          } else {
-            compactedSummary = `[COMPRESSED CONTEXT — extractive fallback]\n${text.slice(0, 3000)}\n…\n${text.slice(-3000)}`;
-          }
-          // Durable boundary: persist the summary + covered seq so FUTURE
-          // turns (and restarts) honor it — previously the summary died with
-          // the turn and context kept growing until provider 400s.
-          const coveredThroughSeq = chain.reduce((max, e) => Math.max(max, e.seq), -1);
-          if (compactedSummary && coveredThroughSeq >= 0) {
-            await storage
-              .append(input.sessionId, "compaction/summary", {
-                summary: compactedSummary,
-                coveredThroughSeq,
-              })
-              .catch(() => undefined);
-            // Backup transcript (donor parity): full pre-compaction text
-            // under the app dir, gitignored, keep-last-5.
-            void writeCompactionBackup(input.sessionId, input.appPath, history).catch(
-              () => undefined,
-            );
-          }
+          if (!chain || chain.length === 0) return;
+          // Pre-turn slice only (donor boundary rule): the summary must cover
+          // completed history — never the live tail — so the persisted
+          // boundary can never swallow the in-flight prompt. The live tail
+          // keeps flowing through history below.
+          const liveStart = lastTurnStartSeq(chain);
+          const completed = liveStart == null ? chain : chain.filter((e) => e.seq < liveStart);
+          if (completed.length === 0) return;
+          const history = buildMessages(completed, { role: "builder", includeSystem: false });
+          const boundary = completed.reduce((max, e) => Math.max(max, e.seq), -1);
+          const result = await performCompaction({
+            sessionId: input.sessionId,
+            appPath: input.appPath,
+            storage,
+            history: history as Array<{
+              role: "system" | "user" | "assistant";
+              content: unknown;
+            }>,
+            coveredThroughSeq: boundary,
+          }).catch(() => null);
+          // Donor clears the flag on empty too.
+          await clearCompactionPending(input.sessionId, storage);
+          if (!result) return;
+          compactedSummary = result.summary;
+          summaryPersistedThisTurn = true;
+          forward({
+            type: "compaction",
+            sessionId: input.sessionId,
+            reason: "complete",
+            summaryLength: result.summary.length,
+            ...(result.backupPath ? { backupPath: result.backupPath } : {}),
+          });
         } catch {
-          // keep full history for this turn
+          // A failed mid-turn attempt retries once pre-next-turn (pending);
+          // keep full history for this turn.
+          void setCompactionPending(input.sessionId, storage).catch(() => undefined);
         } finally {
           compactionRunning = false;
         }
@@ -930,6 +950,58 @@ export class CaideRunner {
           void event;
         }
       };
+      // Donor pre-turn compaction (maybePerformPendingCompaction): a pending
+      // flag from a previous over-threshold turn compacts completed history
+      // BEFORE the first loop step, so the turn opens compact. The live
+      // turn_start is excluded by the boundary rule; the prompt flows
+      // explicitly, so nothing in-flight is ever summarized away.
+      try {
+        if (
+          getOrCreateSessionStores(input.sessionId).compactionEnabled &&
+          (await isCompactionPending(input.sessionId, storage).catch(() => false))
+        ) {
+          const preChain = await buildConversationChain(input.sessionId, undefined, storage).catch(
+            () => null,
+          );
+          if (preChain && preChain.length > 0) {
+            const liveStart = lastTurnStartSeq(preChain);
+            const completed =
+              liveStart == null ? preChain : preChain.filter((e) => e.seq < liveStart);
+            if (completed.length > 0) {
+              const preHistory = buildMessages(completed, {
+                role: "builder",
+                includeSystem: false,
+              });
+              const boundary = completed.reduce((max, e) => Math.max(max, e.seq), -1);
+              const result = await performCompaction({
+                sessionId: input.sessionId,
+                appPath: input.appPath,
+                storage,
+                history: preHistory as Array<{
+                  role: "system" | "user" | "assistant";
+                  content: unknown;
+                }>,
+                coveredThroughSeq: boundary,
+              }).catch(() => null);
+              if (result) {
+                compactedSummary = result.summary;
+                summaryPersistedThisTurn = true;
+                forward({
+                  type: "compaction",
+                  sessionId: input.sessionId,
+                  reason: "complete",
+                  summaryLength: result.summary.length,
+                  ...(result.backupPath ? { backupPath: result.backupPath } : {}),
+                });
+              }
+            }
+          }
+          // Donor clears the flag on success, empty, and failure alike.
+          await clearCompactionPending(input.sessionId, storage);
+        }
+      } catch {
+        // pre-turn compaction never fails turn start
+      }
       await runLoopOnce();
 
       // ---- Turn-closing pipeline (donor parity, scoped) ----

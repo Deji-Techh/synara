@@ -100,6 +100,8 @@ export const CompactionHarnessEvent = Schema.Struct({
   sessionId: Schema.String,
   reason: Schema.String,
   summaryLength: Schema.Number,
+  /** Pre-compaction backup transcript path (set on reason "complete"). */
+  backupPath: Schema.optional(Schema.String),
 });
 export type CompactionHarnessEvent = typeof CompactionHarnessEvent.Type;
 

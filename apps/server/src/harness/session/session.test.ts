@@ -307,5 +307,10 @@ describe("Milestone M2 — JSONL Session Storage & parentUuid Chain", () => {
     expect(texts.some((t) => t.includes("did stuff"))).toBe(false);
     expect(texts.some((t) => t.includes("Beta work is done."))).toBe(true);
     expect(texts.some((t) => t.includes("gamma task"))).toBe(true);
+    // Donor parity: the summary boundary maps as an assistant message.
+    const summaryMsg = messages.find((m) =>
+      JSON.stringify(m.content).includes("Beta work is done."),
+    );
+    expect(summaryMsg?.role).toBe("assistant");
   });
 });

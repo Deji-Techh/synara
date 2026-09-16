@@ -455,7 +455,8 @@ describe("Milestone M3 — Stateless Loop, Retry, Events, and Inbox", () => {
   it("derives compaction thresholds from model windows", async () => {
     const { getCompactionThreshold } = await import("./loop.ts");
     expect(getCompactionThreshold(200_000)).toBe(175_000);
-    expect(getCompactionThreshold(1_000_000)).toBe(250_000);
+    // Donor large-window branch: 85% of window, not a 250k clamp.
+    expect(getCompactionThreshold(1_000_000)).toBe(850_000);
     expect(getCompactionThreshold(0)).toBe(100_000);
     expect(getCompactionThreshold(NaN)).toBe(100_000);
   });
@@ -907,14 +908,14 @@ describe("Milestone M3 — Stateless Loop, Retry, Events, and Inbox", () => {
 
   it("clamps the compaction threshold by provider cap and model window", async () => {
     const { resolveEffectiveCompactionThreshold } = await import("./loop.ts");
-    // User setting wins when the model is huge.
+    // User setting wins when the model is huge (large-window branch).
     expect(
       resolveEffectiveCompactionThreshold({
         userSettingTokens: 256000,
         providerId: "openrouter",
         contextWindow: 1000000,
       }),
-    ).toBe(250000);
+    ).toBe(256000);
     // Small models clamp below the setting (25k headroom).
     expect(
       resolveEffectiveCompactionThreshold({
@@ -923,17 +924,28 @@ describe("Milestone M3 — Stateless Loop, Retry, Events, and Inbox", () => {
         contextWindow: 128000,
       }),
     ).toBe(103000);
-    // Provider caps: google 190k.
+    // Provider caps: google 190k at/below 250k windows. Above 250k the
+    // donor large-window branch applies before any provider cap.
+    // Provider caps: google 190k at/below 250k windows, minus headroom:
+    // 200k window → min(190k cap, 175k headroom) = 175k.
+    expect(
+      resolveEffectiveCompactionThreshold({
+        userSettingTokens: 500000,
+        providerId: "google",
+        contextWindow: 200000,
+      }),
+    ).toBe(175000);
     expect(
       resolveEffectiveCompactionThreshold({
         userSettingTokens: 500000,
         providerId: "google",
         contextWindow: 1000000,
       }),
-    ).toBe(190000);
+    ).toBe(500000);
     // Invalid settings fall back to the 256k default (then clamped).
+    // 1M window → large-window branch (850k), so the 256k default wins.
     expect(resolveEffectiveCompactionThreshold({ providerId: "x", contextWindow: 1000000 })).toBe(
-      250000,
+      256000,
     );
   });
 });

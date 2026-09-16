@@ -3,6 +3,7 @@ import type { ChatMessage, HarnessRole } from "../session/buildChain.ts";
 import { Inbox } from "../inbox/index.ts";
 import { safeEmitLive } from "./events.ts";
 import { recoverTextToolCalls } from "./textToolCallRecovery.ts";
+import { getCompactionThreshold as getDonorCompactionThreshold } from "../../dyad/compaction/thresholds.ts";
 import { resolveDonorAliasTarget } from "../../dyad/tools/toolCatalog.ts";
 import type { ConsentRequestFn, ConsentStore } from "../../dyad/tools/permissions.ts";
 
@@ -122,20 +123,18 @@ export interface LoopOptions {
 export const DEFAULT_MAX_TOOL_CALL_STEPS = 100;
 
 /**
- * Compaction threshold from a model's context window (donor
- * getCompactionThreshold parity): reserve 25k for output, cap at 250k so
- * huge-window models still compact before transcripts get unwieldy.
+ * Compaction threshold from a model's context window. Donor math lives in
+ * `dyad/compaction/thresholds.ts` (verbatim token_utils.ts, including the
+ * large-window 85% branch); this export stays as the loop's seam.
  */
-export function getCompactionThreshold(contextWindow: number): number {
-  if (!Number.isFinite(contextWindow) || contextWindow <= 0) return 100_000;
-  return Math.min(250_000, Math.max(0, contextWindow - 25_000));
+export function getCompactionThreshold(contextWindow: number, providerId?: string): number {
+  return getDonorCompactionThreshold(contextWindow, providerId);
 }
 
 /**
  * Effective compaction threshold: the user's configured ceiling, clamped by
- * per-provider caps (donor: google 190k, openai 220k, else 250k) and the
- * turn model's real window minus output headroom. A huge user setting can
- * never overrun a small model.
+ * the donor threshold for the turn model's real window. A huge user setting
+ * can never overrun a small model.
  */
 export function resolveEffectiveCompactionThreshold(input: {
   userSettingTokens?: number;
@@ -149,20 +148,13 @@ export function resolveEffectiveCompactionThreshold(input: {
     input.userSettingTokens > 0
       ? Math.floor(input.userSettingTokens)
       : FALLBACK;
-  const provider = (input.providerId ?? "").toLowerCase();
-  const cap =
-    provider.includes("google") || provider.includes("gemini")
-      ? 190_000
-      : provider === "openai" || provider.startsWith("openai-")
-        ? 220_000
-        : 250_000;
   const window =
     typeof input.contextWindow === "number" &&
     Number.isFinite(input.contextWindow) &&
     input.contextWindow > 0
       ? input.contextWindow
       : 128_000;
-  return Math.min(user, cap, Math.max(0, window - 25_000));
+  return Math.min(user, getDonorCompactionThreshold(window, input.providerId));
 }
 
 export function formatStructuredToolError(toolName: string, error: unknown): StructuredToolError {

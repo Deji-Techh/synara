@@ -1,3 +1,10 @@
+// QUARANTINED (010 M1): RollingCompactor/shouldCompact operate on the legacy
+// ContextMemory abstraction with a different keep-shape (system + summary +
+// last-6, summary as role:"user") and contradict the harness turn path,
+// which compacts via dyad/compaction/performCompaction + seq boundaries in
+// harness/session/buildChain.ts. Kept for its unit tests and the e2e harness
+// only — do NOT wire it into turns. New compaction work goes through the
+// harness path.
 import type { ContextMemory, ContextMessage } from "../context/memory.ts";
 import type { SpecDoc } from "../planner/specValidator.ts";
 import {
