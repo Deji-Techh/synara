@@ -3,6 +3,7 @@ import type { ChatMessage, HarnessRole } from "../session/buildChain.ts";
 import { Inbox } from "../inbox/index.ts";
 import { safeEmitLive } from "./events.ts";
 import { recoverTextToolCalls } from "./textToolCallRecovery.ts";
+import { buildQuestionnaireReflectionMessage } from "./prepareStep.ts";
 import { getCompactionThreshold as getDonorCompactionThreshold } from "../../dyad/compaction/thresholds.ts";
 import { resolveDonorAliasTarget } from "../../dyad/tools/toolCatalog.ts";
 import type { ConsentRequestFn, ConsentStore } from "../../dyad/tools/permissions.ts";
@@ -83,6 +84,19 @@ export interface LoopOptions {
     role: HarnessRole;
     messages: ChatMessage[];
   }) => ChatMessage[] | Promise<ChatMessage[]>;
+  /**
+   * Plan-mode flag for the questionnaire reflection text (donor
+   * buildPlanningQuestionnaireReflectionMessage planModeOnly branch).
+   */
+  planModeOnly?: boolean;
+  /**
+   * Questionnaire format-error hook (donor onStepFinish reflection seam):
+   * given a failed tool name + raw error, return the error detail to
+   * reflect as a synthetic next-step user message, or null when this
+   * failure deserves no reflection. The runner closure owns the
+   * once-per-turn budget; the loop only renders and appends the text.
+   */
+  reflectQuestionnaireError?: (toolName: string, error: unknown) => string | null;
   /**
    * Semantic stop tools (donor stopWhen seam): when a step executes any of
    * these tools, the turn ends after the step's remaining calls complete
@@ -517,6 +531,10 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
         // consumed by the finally that feeds later steps).
         let transcriptResult: unknown = null;
         let transcriptFailed = false;
+        // Donor questionnaire reflection text, rendered in the catch below
+        // and appended AFTER the failed call's feedback (the model must see
+        // the error first, then the recovery instruction).
+        let deferredReflection: string | null = null;
         const pushTranscriptFeedback = (): void => {
           // Feed this call back into the in-turn transcript so every executed
           // call (including failures) is visible to later steps.
@@ -646,6 +664,22 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
           const failureMessage = err instanceof Error ? err.message : String(err);
           const failureCount = recordFailureSignature(resolvedName, failureMessage);
 
+          // Donor questionnaire reflection (008-m8, V1 onStepFinish): a
+          // malformed planning_questionnaire call earns one synthetic
+          // next-step user message so the model fixes its schema (plan mode)
+          // or skips ahead (other modes) instead of retrying blind. Consent
+          // declines never reflect (the predicate returns null); aborts skip
+          // here — a cancelled turn needs no recovery nudge.
+          if (!signal?.aborted && options.reflectQuestionnaireError) {
+            const detail = options.reflectQuestionnaireError(resolvedName, err);
+            if (detail !== null) {
+              deferredReflection = buildQuestionnaireReflectionMessage(
+                detail,
+                options.planModeOnly ?? false,
+              );
+            }
+          }
+
           yield emit({
             type: "tool_call",
             sessionId,
@@ -670,6 +704,12 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
           }
         } finally {
           pushTranscriptFeedback();
+          // Questionnaire reflection lands after the failed call's own
+          // feedback: model-only (in-turn transcript, never persisted), so
+          // the next step sees error first, recovery instruction second.
+          if (deferredReflection !== null && !signal?.aborted) {
+            stepTranscript.push({ role: "user", content: deferredReflection });
+          }
         }
       }
 

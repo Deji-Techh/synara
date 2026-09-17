@@ -17,6 +17,7 @@ import {
   type LLMAdapter,
   type LoopOptions,
 } from "../loop/loop.ts";
+import { ensureToolResultOrdering, isQuestionnaireFormatError } from "../loop/prepareStep.ts";
 import { resetPreCommitCount } from "../../dyad/vcs/preCommitTools.ts";
 import {
   clearCompactionPending,
@@ -402,6 +403,10 @@ export class CaideRunner {
     // most once each per turn.
     const synthesizedExplorerIds = new Set<string>();
     let todoFollowUpDone = false;
+    // Donor questionnaire reflection budget (008-m8, V1
+    // hasInjectedPlanningQuestionnaireReflection): one synthetic recovery
+    // message per turn, owned here so every pass shares the flag.
+    let questionnaireReflectionUsed = false;
     const recordUsage = (usage: { inputTokens: number; outputTokens: number }) => {
       turnUsage.inputTokens += usage.inputTokens;
       turnUsage.outputTokens += usage.outputTokens;
@@ -973,10 +978,23 @@ export class CaideRunner {
         })),
         onEvent: forward,
         role: "builder",
-        // Donor prepareStep parity: drop orphaned tool_use/tool_result
+        // Donor prepareStep parity (008-m8): drop orphaned tool_use/tool_result
         // blocks (aborted turns leave tool_use without results; providers
-        // reject orphans). Identity for clean histories.
-        prepareStep: ({ messages }) => repairToolPairing(messages),
+        // reject orphans), then relocate any user message stranded between a
+        // tool_use and its tool_result (stale steer positions after
+        // compaction). Identity for clean histories.
+        prepareStep: ({ messages }) => ensureToolResultOrdering(repairToolPairing(messages)),
+        // Donor questionnaire reflection (008-m8, V1 onStepFinish): the loop
+        // renders the recovery text; this closure owns the once-per-turn
+        // budget and the format-error predicate (declines never reflect).
+        planModeOnly: chatMode === "plan",
+        reflectQuestionnaireError: (toolName, error) => {
+          if (questionnaireReflectionUsed) return null;
+          const detail = isQuestionnaireFormatError(toolName, error);
+          if (detail === null) return null;
+          questionnaireReflectionUsed = true;
+          return detail;
+        },
         requestConsent: input.requestConsent ?? undefined,
         consentStore: sessionStores.consent,
         // Semantic stop (donor stopWhen): handoff tools end the turn so the

@@ -981,4 +981,50 @@ describe("Milestone M3 — Stateless Loop, Retry, Events, and Inbox", () => {
       256000,
     );
   });
+
+  it("reflects malformed questionnaire failures into the next step (donor onStepFinish)", async () => {
+    const { isQuestionnaireFormatError } = await import("./prepareStep.ts");
+    const failingTool: ToolDefinition = {
+      name: "planning_questionnaire",
+      description: "asks",
+      execute: async () => {
+        throw new Error("questions array must have at most 3 questions");
+      },
+    };
+    const fakeLlm: LLMAdapter = {
+      async *stream() {
+        yield {
+          type: "tool_call",
+          toolCall: { id: `q-${Math.random()}`, name: "planning_questionnaire", args: {} },
+        };
+      },
+    };
+    const prepared: unknown[][] = [];
+    const loop = runLoop({
+      sessionId: "session-q-reflect",
+      maxSteps: 2,
+      llm: fakeLlm,
+      tools: [failingTool],
+      buildMessages: () => [{ role: "user", content: "go" }],
+      prepareStep: ({ messages }) => {
+        prepared.push(messages);
+        return messages;
+      },
+      planModeOnly: true,
+      reflectQuestionnaireError: (name, err) => isQuestionnaireFormatError(name, err),
+    });
+    for await (const _ of loop) {
+      // drain
+    }
+    expect(prepared.length).toBe(2);
+    const second = (prepared[1] ?? []) as Array<{ role: string; content: unknown }>;
+    const reflection = second.find(
+      (m) =>
+        m.role === "user" &&
+        typeof m.content === "string" &&
+        m.content.includes("Your planning_questionnaire tool call had a format error."),
+    );
+    expect(reflection).toBeDefined();
+    expect((reflection as { content: string }).content).toContain("re-call planning_questionnaire");
+  });
 });
