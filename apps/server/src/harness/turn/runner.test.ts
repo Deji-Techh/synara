@@ -178,6 +178,84 @@ describe("caide runner turns (m3)", () => {
     });
   });
 
+  describe("008 post-turn agent checkpoint chain", () => {
+    type ScriptChunk =
+      | { type: "token"; content: string }
+      | { type: "tool_call"; toolCall: { id: string; name: string; args: unknown } };
+
+    /** Stateful scripted adapter counting its stream calls. */
+    function scriptedLlm(chunks: ScriptChunk[], counter: { count: number }): LLMAdapter {
+      const queue = [...chunks];
+      return {
+        async *stream() {
+          counter.count++;
+          const chunk = queue.shift();
+          if (chunk) yield chunk as never;
+          else yield { type: "token", content: "pass complete, no changes needed." } as never;
+        },
+      };
+    }
+
+    const writeCall = (
+      id: string,
+      filePath: string,
+    ): Extract<ScriptChunk, { type: "tool_call" }> => ({
+      type: "tool_call",
+      toolCall: { id, name: "write_file", args: { path: filePath, content: "x" } },
+    });
+
+    it("runs design passes with retry-once after a substantive agent turn", async () => {
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), "caide-agentchain-"));
+      const events: HarnessEvent[] = [];
+      const counter = { count: 0 };
+      const runner = new CaideRunner();
+      await runner.startTurn({
+        sessionId: `s-agentchain-${Date.now()}`,
+        appPath: dir,
+        prompt: "build the screens",
+        mode: "agent",
+        framework: "website",
+        settings: { providerSettings: { openai: { apiKey: "sk-test" } } },
+        llmOverride: scriptedLlm(
+          [writeCall("c1", "a.ts"), writeCall("c2", "b.ts"), { type: "token", content: "done" }],
+          counter,
+        ),
+        onEvent: (e) => events.push(e),
+      });
+      expect(runner.getStatus()).toBe("completed");
+      // Main (2 writes + text) + 5 core passes × (attempt + retry) — every
+      // pass adds no files, so each retries exactly once (donor contract).
+      expect(counter.count).toBe(3 + 5 * 2);
+      expect(fs.existsSync(path.join(dir, "a.ts"))).toBe(true);
+      expect(fs.existsSync(path.join(dir, "b.ts"))).toBe(true);
+      expect(events.at(-1)).toMatchObject({
+        type: "turn_end",
+        status: "completed",
+        updatedFiles: ["a.ts", "b.ts"],
+      });
+    });
+
+    it("skips the chain for insubstantial agent turns", async () => {
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), "caide-agentchain-"));
+      const counter = { count: 0 };
+      const runner = new CaideRunner();
+      await runner.startTurn({
+        sessionId: `s-agentchain1-${Date.now()}`,
+        appPath: dir,
+        prompt: "build the screens",
+        mode: "agent",
+        framework: "website",
+        settings: { providerSettings: { openai: { apiKey: "sk-test" } } },
+        llmOverride: scriptedLlm([writeCall("c1", "solo.ts")], counter),
+        onEvent: () => {},
+      });
+      expect(runner.getStatus()).toBe("completed");
+      // Write step + text tail only: 1 edited file < 2, no chain.
+      expect(counter.count).toBe(2);
+      expect(fs.existsSync(path.join(dir, "solo.ts"))).toBe(true);
+    });
+  });
+
   it("appends a project run log per turn (self-improve telemetry)", async () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "caide-runlog-"));
     const runner = new CaideRunner();

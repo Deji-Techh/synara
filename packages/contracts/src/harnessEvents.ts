@@ -88,7 +88,7 @@ export const TurnEndHarnessEvent = Schema.Struct({
   totalTokens: Schema.optional(Schema.Number),
   /** Resolved context window of the turn model. */
   contextWindow: Schema.optional(Schema.Number),
-  /** Files created/edited this turn (artifact paths observed in-turn). */
+  /** Files changed this turn (tool target paths + artifact events). */
   updatedFiles: Schema.optional(Schema.Array(Schema.String)),
   /** Step budget exhausted (V1 <dyad-step-limit>): client pauses the prompt queue. */
   pausePromptQueue: Schema.optional(Schema.Boolean),

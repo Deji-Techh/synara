@@ -413,12 +413,32 @@ export class CaideRunner {
     };
     const usageField = () =>
       turnUsage.inputTokens > 0 || turnUsage.outputTokens > 0 ? { usage: { ...turnUsage } } : {};
+    // Donor passEndedWithText parity: provider-reported usage is zero under
+    // test doubles (llmOverride bypasses the adapter) and can lag on some
+    // providers — forwarded token volume is the direct "said something"
+    // signal and gates the agent chain below.
+    let turnTokenChars = 0;
     // Donor end-envelope state (008-m7, 010 §6): step-limit pause flag,
     // in-turn artifact paths, and the resolved context window for turn_end
     // fidelity (wasCancelled/totalTokens/contextWindow/updatedFiles/
     // pausePromptQueue). UI ignores unknown fields until 017 maps them.
     let hitStepLimit = false;
     const updatedFilePaths: string[] = [];
+    const recordChangedFile = (relPath: unknown): void => {
+      if (typeof relPath !== "string" || relPath.length === 0) return;
+      if (!updatedFilePaths.includes(relPath)) updatedFilePaths.push(relPath);
+    };
+    // Donor fileEditTracker parity (008 post-turn): completed mutating
+    // file-tool calls report their target paths (arg keys differ per tool).
+    // Feeds the agent checkpoint-chain gate + the updatedFiles envelope.
+    const FILE_PATH_ARG_KEYS: Record<string, Array<"path" | "file_path" | "to">> = {
+      write_file: ["path"],
+      search_replace: ["file_path"],
+      multi_replace: ["file_path"],
+      copy_file: ["to"],
+      delete_file: ["path"],
+      rename_file: ["to"],
+    };
     let turnContextWindow = 0;
     const envelopeExtras = (
       status: "completed" | "failed" | "cancelled",
@@ -463,6 +483,7 @@ export class CaideRunner {
         // persistence is best-effort
       }
       if (event.type === "token") this.emit({ type: "token", content: event.content });
+      if (event.type === "token") turnTokenChars += event.content.length;
       else if (event.type === "tool_call") {
         this.emit({
           type: "tool_call",
@@ -525,6 +546,18 @@ export class CaideRunner {
         if (event.name === "execute_fork_skill") {
           const skillId = (event.args as { skill_id?: unknown } | null | undefined)?.skill_id;
           if (typeof skillId === "string" && skillId) forkSkills.add(skillId);
+        }
+        // Completed file-tool calls report their target paths (donor
+        // fileEditTracker): powers the agent chain gate + updatedFiles.
+        if (event.status === "completed") {
+          const keys = FILE_PATH_ARG_KEYS[event.name];
+          if (keys) {
+            const args =
+              typeof event.args === "object" && event.args !== null
+                ? (event.args as Record<string, unknown>)
+                : null;
+            for (const key of keys) recordChangedFile(args?.[key]);
+          }
         }
         // Screenshot completions feed the reviewer's evidence gate (item 1).
         if (event.name === "screenshot" && event.status === "completed") {
@@ -1140,7 +1173,51 @@ export class CaideRunner {
           ]);
         }
       }
-      // 2. Todo follow-up (max 1): incomplete todos + turn said something.
+      // 2. Checkpoint chain, agent mode (donor parity with the local-agent
+      // chain): substantive mutating turns run deterministic design-audit
+      // passes via the shared chain module; zero-change passes retry once.
+      // Plan-mode chain (target:"plan") and the mobile UI-quality static
+      // pass are recorded follow-ups (planStore integration; 851-line
+      // analyzer port — the review barrier covers the intent meanwhile).
+      if (
+        !controller.signal.aborted &&
+        !useBuildTextPath &&
+        chatMode !== "ask" &&
+        chatMode !== "plan" &&
+        turnTokenChars > 0 &&
+        updatedFilePaths.length >= 2
+      ) {
+        const {
+          advanceChain,
+          buildPassPrompt,
+          createChain,
+          isBackendCodePath,
+          isOnboardingScreenPath,
+        } = await import("../../dyad/prompts/checkpointChain.ts");
+        const chain = createChain({
+          isNewApp: isNewAppBuild,
+          hasOnboardingScreens: updatedFilePaths.some(isOnboardingScreenPath),
+          hasBackendCode: updatedFilePaths.some(isBackendCodePath),
+          // De-Pro: no quota tiers exist, so every turn runs the full chain.
+          freeModelMode: false,
+          isWebApp: input.framework === "website",
+        });
+        let chainEditsAtPassStart = updatedFilePaths.length;
+        for (;;) {
+          if (controller.signal.aborted) break;
+          const madeEdits = updatedFilePaths.length > chainEditsAtPassStart;
+          const { pass, step } = advanceChain(chain, madeEdits);
+          if (!pass) break;
+          chainEditsAtPassStart = updatedFilePaths.length;
+          await runLoopOnce([
+            {
+              role: "user" as const,
+              content: buildPassPrompt(pass, { retry: step === "retry" }),
+            } as ChatMessage,
+          ]);
+        }
+      }
+      // 3. Todo follow-up (max 1): incomplete todos + turn said something.
       // Skipped on the build text path (same checkpoint-chain reasoning).
       if (
         !controller.signal.aborted &&
@@ -1163,7 +1240,7 @@ export class CaideRunner {
           ]);
         }
       }
-      // 3. Subagent seal: wait for owned non-terminal tasks (bounded), then
+      // 4. Subagent seal: wait for owned non-terminal tasks (bounded), then
       // end even if stragglers remain (named, visible — never silent).
       if (!controller.signal.aborted) {
         const deadline = Date.now() + 90_000;
