@@ -82,6 +82,16 @@ export const TurnEndHarnessEvent = Schema.Struct({
   turnId: Schema.String,
   status: TurnStatus,
   usage: Schema.optional(TurnUsageSchema),
+  /** Donor end-envelope fidelity (V1 wasCancelled): true on cancelled turns. */
+  wasCancelled: Schema.optional(Schema.Boolean),
+  /** Measured provider tokens this turn (input + output). */
+  totalTokens: Schema.optional(Schema.Number),
+  /** Resolved context window of the turn model. */
+  contextWindow: Schema.optional(Schema.Number),
+  /** Files created/edited this turn (artifact paths observed in-turn). */
+  updatedFiles: Schema.optional(Schema.Array(Schema.String)),
+  /** Step budget exhausted (V1 <dyad-step-limit>): client pauses the prompt queue. */
+  pausePromptQueue: Schema.optional(Schema.Boolean),
 });
 export type TurnEndHarnessEvent = typeof TurnEndHarnessEvent.Type;
 

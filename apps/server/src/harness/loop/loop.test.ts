@@ -906,6 +906,39 @@ describe("Milestone M3 — Stateless Loop, Retry, Events, and Inbox", () => {
     expect(events.some((e) => e.type === "error" && (e as any).code === "STEP_LIMIT")).toBe(true);
   });
 
+  it("emits a <dyad-step-limit> notice token on maxSteps exhaustion (donor parity)", async () => {
+    const fakeLlm: LLMAdapter = {
+      async *stream() {
+        yield {
+          type: "tool_call",
+          toolCall: { id: `c-${Math.random()}`, name: "read_file", args: { path: "a.ts" } },
+        };
+      },
+    };
+    const readTool: ToolDefinition = {
+      name: "read_file",
+      description: "reads",
+      execute: async () => "contents",
+    };
+    const events: HarnessEvent[] = [];
+    const loop = runLoop({
+      sessionId: "session-step-limit-xml",
+      maxSteps: 2,
+      llm: fakeLlm,
+      tools: [readTool],
+      buildMessages: () => [{ role: "user", content: "go" }],
+      onEvent: (ev) => events.push(ev),
+    });
+    for await (const _ of loop) {
+      // drain
+    }
+    const notice = events.find(
+      (e) => e.type === "token" && (e as { content: string }).content.includes("<dyad-step-limit"),
+    ) as { content: string } | undefined;
+    expect(notice).toBeDefined();
+    expect(notice?.content).toContain('steps="2" limit="2"');
+  });
+
   it("clamps the compaction threshold by provider cap and model window", async () => {
     const { resolveEffectiveCompactionThreshold } = await import("./loop.ts");
     // User setting wins when the model is huge (large-window branch).

@@ -174,7 +174,9 @@ describe("Harness Contracts", () => {
       type: "local_models_state",
       sessionId: "s-123",
       requestId: "r-1",
-      models: [{ provider: "ollama", modelName: "qwen2.5-coder:32b", displayName: "Qwen 2.5 Coder" }],
+      models: [
+        { provider: "ollama", modelName: "qwen2.5-coder:32b", displayName: "Qwen 2.5 Coder" },
+      ],
     };
     expect(Schema.decodeUnknownSync(HarnessEvent)(event).type).toBe("local_models_state");
   });
@@ -195,6 +197,26 @@ describe("Harness Contracts", () => {
       usage: { inputTokens: 10, outputTokens: 20 },
     };
     expect(Schema.decodeUnknownSync(HarnessEvent)(withUsage).type).toBe("turn_end");
+    const withEnvelope: HarnessEventType = {
+      type: "turn_end",
+      sessionId: "s-123",
+      turnId: "t-1",
+      status: "completed",
+      usage: { inputTokens: 10, outputTokens: 20 },
+      totalTokens: 30,
+      contextWindow: 128000,
+      updatedFiles: ["src/app.ts"],
+      pausePromptQueue: true,
+    };
+    expect(Schema.decodeUnknownSync(HarnessEvent)(withEnvelope).type).toBe("turn_end");
+    const cancelled: HarnessEventType = {
+      type: "turn_end",
+      sessionId: "s-123",
+      turnId: "t-2",
+      status: "cancelled",
+      wasCancelled: true,
+    };
+    expect(Schema.decodeUnknownSync(HarnessEvent)(cancelled).type).toBe("turn_end");
     const versions: HarnessEventType = {
       type: "versions_state",
       sessionId: "s-123",

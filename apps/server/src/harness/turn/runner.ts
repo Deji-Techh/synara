@@ -139,6 +139,26 @@ function normalizeMaxSteps(value: number | undefined): number {
 }
 
 /**
+ * Donor step budget (008 §2): V1's build path hardcodes `stepCountIs(20)`
+ * while the agent path uses `settings.maxToolCallSteps ?? 100`. An explicit
+ * per-turn maxSteps always wins (tests, failover); otherwise build gets 20
+ * and every other mode gets the settings budget (default 100).
+ */
+export const BUILD_MODE_STEP_BUDGET = 20;
+
+export function resolveModeBudget(
+  chatMode: ChatMode | "local-agent",
+  maxSteps: number | undefined,
+  settingsMaxSteps: number | undefined,
+): number {
+  if (typeof maxSteps === "number" && Number.isFinite(maxSteps) && maxSteps >= 1) {
+    return Math.floor(maxSteps);
+  }
+  if (chatMode === "build") return BUILD_MODE_STEP_BUDGET;
+  return normalizeMaxSteps(settingsMaxSteps);
+}
+
+/**
  * Pick the next failover target after a retryable provider failure.
  * Returns null when failover does not apply (non-provider error,
  * non-retryable status, no fallbacks configured, or all consumed).
@@ -388,6 +408,39 @@ export class CaideRunner {
     };
     const usageField = () =>
       turnUsage.inputTokens > 0 || turnUsage.outputTokens > 0 ? { usage: { ...turnUsage } } : {};
+    // Donor end-envelope state (008-m7, 010 §6): step-limit pause flag,
+    // in-turn artifact paths, and the resolved context window for turn_end
+    // fidelity (wasCancelled/totalTokens/contextWindow/updatedFiles/
+    // pausePromptQueue). UI ignores unknown fields until 017 maps them.
+    let hitStepLimit = false;
+    const updatedFilePaths: string[] = [];
+    let turnContextWindow = 0;
+    const envelopeExtras = (
+      status: "completed" | "failed" | "cancelled",
+    ): {
+      wasCancelled?: boolean;
+      totalTokens?: number;
+      contextWindow?: number;
+      updatedFiles?: string[];
+      pausePromptQueue?: boolean;
+    } => {
+      const extras: {
+        wasCancelled?: boolean;
+        totalTokens?: number;
+        contextWindow?: number;
+        updatedFiles?: string[];
+        pausePromptQueue?: boolean;
+      } = {};
+      const totalTokens = turnUsage.inputTokens + turnUsage.outputTokens;
+      if (totalTokens > 0) extras.totalTokens = totalTokens;
+      if (turnContextWindow > 0) extras.contextWindow = turnContextWindow;
+      if (status === "cancelled") extras.wasCancelled = true;
+      if (status === "completed") {
+        if (updatedFilePaths.length > 0) extras.updatedFiles = [...updatedFilePaths];
+        if (hitStepLimit) extras.pausePromptQueue = true;
+      }
+      return extras;
+    };
     this.status = "running";
     // forward must never throw: a failing listener (dead socket, broken
     // subscriber) must fail only event delivery, never the turn — a throw
@@ -452,12 +505,16 @@ export class CaideRunner {
         ) {
           void setCompactionPending(input.sessionId, storage).catch(() => undefined);
         }
-      }
-      else if (event.type === "checkpoint")
+      } else if (event.type === "checkpoint")
         this.emit({ type: "checkpoint", requiresResponse: event.requiresResponse });
       if (event.type === "tool_call" && event.status !== "started") sawToolComplete = true;
-      else if (event.type === "artifact_updated")
+      else if (event.type === "artifact_updated") {
         this.emit({ type: "artifact_updated", path: event.path });
+        if (!updatedFilePaths.includes(event.path)) updatedFilePaths.push(event.path);
+      }
+      // Donor step-limit pause (008-m7): the loop's STEP_LIMIT error arms
+      // pausePromptQueue on the completed turn_end below.
+      if (event.type === "error" && event.code === "STEP_LIMIT") hitStepLimit = true;
       if (event.type === "tool_call") {
         if (event.status === "failed") failedToolCalls++;
         if (event.name === "execute_fork_skill") {
@@ -619,6 +676,7 @@ export class CaideRunner {
         contextWindow: getContextWindow(ctx.provider.providerId, ctx.provider.modelId),
       });
       compactionThresholdForPending = compactionThreshold;
+      turnContextWindow = getContextWindow(ctx.provider.providerId, ctx.provider.modelId);
       // Mid-turn compaction consumer: summarize completed history once via
       // the shared service, then serve [summary + recent tail]. Single-flight,
       // gated by the session kill-switch, silent on failure.
@@ -862,7 +920,8 @@ export class CaideRunner {
       const buildLoopOptions = (extraUserMessages: ChatMessage[] = []): LoopOptions => ({
         sessionId: input.sessionId,
         turnId,
-        maxSteps: normalizeMaxSteps(input.maxSteps ?? input.settings?.maxToolCallSteps),
+        // Donor budgets (008-m7): build 20, agent/ask/plan settings ?? 100.
+        maxSteps: resolveModeBudget(chatMode, input.maxSteps, input.settings?.maxToolCallSteps),
         signal: controller.signal,
         inbox: input.inbox,
         llm,
@@ -1093,6 +1152,7 @@ export class CaideRunner {
           turnId,
           status: "cancelled",
           ...usageField(),
+          ...envelopeExtras("cancelled"),
         });
         setTurnLive(input.sessionId, false);
         flow.finish(turnId);
@@ -1148,6 +1208,7 @@ export class CaideRunner {
                   turnId,
                   status: "failed",
                   ...usageField(),
+                  ...envelopeExtras("failed"),
                 });
                 logProjectRun("failed", "missing visual evidence (2nd consecutive turn)");
                 setTurnLive(input.sessionId, false);
@@ -1183,6 +1244,7 @@ export class CaideRunner {
           turnId,
           status: "completed",
           ...usageField(),
+          ...envelopeExtras("completed"),
         });
         setTurnLive(input.sessionId, false);
         flow.finish(turnId);
@@ -1238,6 +1300,7 @@ export class CaideRunner {
         turnId,
         status: "failed",
         ...usageField(),
+        ...envelopeExtras("failed"),
       });
       setTurnLive(input.sessionId, false);
       flow.finish(turnId);

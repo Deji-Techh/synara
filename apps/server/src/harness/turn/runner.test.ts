@@ -14,7 +14,13 @@ import {
   clearTurnProvenance,
 } from "../../dyad/vcs/gitProvenance.ts";
 import type { LLMAdapter } from "../loop/loop.ts";
-import { assembleCompactedMessages, CaideRunner, nextFailoverTarget } from "./runner.ts";
+import {
+  assembleCompactedMessages,
+  BUILD_MODE_STEP_BUDGET,
+  CaideRunner,
+  nextFailoverTarget,
+  resolveModeBudget,
+} from "./runner.ts";
 import { ProviderApiError } from "../provider/apiAdapter.ts";
 import {
   approveBlueprint,
@@ -51,6 +57,69 @@ describe("caide runner turns (m3)", () => {
     expect(events[0]).toMatchObject({ type: "turn_start", prompt: "hi" });
     expect(events).toContainEqual(expect.objectContaining({ type: "token", content: "hello" }));
     expect(events.at(-1)).toMatchObject({ type: "turn_end", status: "completed" });
+  });
+
+  describe("008-m7 donor budgets + end-envelope fidelity", () => {
+    it("resolves donor step budgets: build 20, agent settings ?? 100, explicit wins", () => {
+      expect(BUILD_MODE_STEP_BUDGET).toBe(20);
+      expect(resolveModeBudget("build", undefined, undefined)).toBe(20);
+      expect(resolveModeBudget("build", 5, undefined)).toBe(5);
+      expect(resolveModeBudget("agent", undefined, undefined)).toBe(100);
+      expect(resolveModeBudget("agent", undefined, 50)).toBe(50);
+      expect(resolveModeBudget("ask", undefined, undefined)).toBe(100);
+      expect(resolveModeBudget("plan", undefined, 200)).toBe(200);
+      expect(resolveModeBudget("local-agent", 7, 50)).toBe(7);
+    });
+
+    it("completed turn_end carries contextWindow without inventing usage/files", async () => {
+      const events: HarnessEvent[] = [];
+      const runner = new CaideRunner();
+      await runner.startTurn({
+        sessionId: `s-envelope-${Date.now()}`,
+        appPath: "/tmp/caide-test-app",
+        prompt: "hi",
+        mode: "ask",
+        framework: "website",
+        settings: { providerSettings: { openai: { apiKey: "sk-test" } } },
+        llmOverride: fakeLlm([{ type: "token", content: "hello" }]),
+        onEvent: (e) => events.push(e),
+      });
+      const end = events.at(-1);
+      expect(end).toMatchObject({ type: "turn_end", status: "completed" });
+      expect((end as { contextWindow?: unknown }).contextWindow).toEqual(expect.any(Number));
+      expect(end).not.toHaveProperty("wasCancelled");
+      expect(end).not.toHaveProperty("pausePromptQueue");
+      expect(end).not.toHaveProperty("updatedFiles");
+    });
+
+    it("step-limit exhaustion pauses the prompt queue on turn_end (donor parity)", async () => {
+      const events: HarnessEvent[] = [];
+      const runner = new CaideRunner();
+      await runner.startTurn({
+        sessionId: `s-steplimit-${Date.now()}`,
+        appPath: "/tmp/caide-test-app",
+        prompt: "hi",
+        mode: "ask",
+        framework: "website",
+        maxSteps: 1,
+        settings: { providerSettings: { openai: { apiKey: "sk-test" } } },
+        llmOverride: {
+          async *stream() {
+            yield {
+              type: "tool_call",
+              toolCall: { id: "c-x", name: "definitely_not_a_real_tool_xyz", args: {} },
+            } as never;
+          },
+        } as LLMAdapter,
+        onEvent: (e) => events.push(e),
+      });
+      expect(events).toContainEqual(expect.objectContaining({ type: "error", code: "STEP_LIMIT" }));
+      expect(events.at(-1)).toMatchObject({
+        type: "turn_end",
+        status: "completed",
+        pausePromptQueue: true,
+      });
+    });
   });
 
   it("appends a project run log per turn (self-improve telemetry)", async () => {
@@ -114,7 +183,11 @@ describe("caide runner turns (m3)", () => {
     runner.cancel("s-cancel");
     await started;
     expect(runner.getStatus()).toBe("cancelled");
-    expect(events.at(-1)).toMatchObject({ type: "turn_end", status: "cancelled" });
+    expect(events.at(-1)).toMatchObject({
+      type: "turn_end",
+      status: "cancelled",
+      wasCancelled: true,
+    });
   });
 
   it("drops the session blueprint on cancel (donor delete-on-cancel)", async () => {

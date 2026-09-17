@@ -702,8 +702,15 @@ export async function* runLoop(options: LoopOptions): AsyncGenerator<HarnessEven
       }
     }
     // maxSteps exhaustion is not a success: say so loudly instead of landing
-    // on turn_end completed with work half-done.
+    // on turn_end completed with work half-done. Donor parity: the
+    // <dyad-step-limit> notice is part of the response text (persisted into
+    // aiMessagesJson downstream) and the turn_end carries pausePromptQueue.
     if (step >= maxSteps && !signal?.aborted) {
+      yield emit({
+        type: "token",
+        sessionId,
+        content: `\n\n<dyad-step-limit steps="${step}" limit="${maxSteps}">Automatically paused after ${step} tool calls.</dyad-step-limit>`,
+      });
       yield emit({
         type: "error",
         sessionId,
