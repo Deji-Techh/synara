@@ -1777,6 +1777,43 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               createdAt: now,
             });
           }
+        } else if (command?.type === "thread.conversation.clear") {
+          const thread = inMemoryThreads.find((t) => t.id === command.threadId);
+          if (thread) {
+            thread.messages = [];
+            thread.turns = [];
+            thread.activities = [];
+            thread.proposedPlans = [];
+            thread.turnDiffSummaries = [];
+            thread.latestTurn = null;
+            thread.latestUserMessageAt = null;
+            thread.updatedAt = now;
+            globalSnapshotSequence += 1;
+            savePersistedState();
+            publishDomainEvent({
+              sequence: globalSnapshotSequence,
+              aggregateKind: "thread",
+              aggregateId: command.threadId,
+              type: "thread.conversation-cleared",
+              payload: { threadId: command.threadId, clearedAt: now },
+              createdAt: now,
+            });
+            // Donor deleteMessages parity: keep the thread, drop the transcript and
+            // any turn state that could resurrect it. Mirrors thread.delete cleanup.
+            try {
+              clearSessionStores(command.threadId);
+            } catch {}
+            void dropSessionLog(command.threadId).catch(() => undefined);
+            // Best-effort session marker so a future chain starts clean;
+            // fire-and-forget because the dispatch path is sync (Effect.sync).
+            void import("./harness/session/storage.ts")
+              .then(async (m) => {
+                const storage = new m.SessionStorage();
+                await storage.append(command.threadId, "session/cleared", { clearedAt: now });
+                await storage.flush(command.threadId);
+              })
+              .catch(() => undefined);
+          }
         } else if (
           command?.type === "thread.task.stop" ||
           command?.type === "thread.task.background" ||
