@@ -155,7 +155,7 @@ describe("caide runner turns (m3)", () => {
       });
     });
 
-    it("build without the flag keeps the native tool loop (recovered tool calls)", async () => {
+    it("build without the flag parks a proposal (headless: dismissed, nothing applied)", async () => {
       const dir = fs.mkdtempSync(path.join(os.tmpdir(), "caide-buildgate-"));
       const events: HarnessEvent[] = [];
       const runner = new CaideRunner();
@@ -170,12 +170,10 @@ describe("caide runner turns (m3)", () => {
         onEvent: (e) => events.push(e),
       });
       expect(runner.getStatus()).toBe("completed");
-      // Native path: the tag executes as a recovered write_file tool call
-      // (write_file defaults to always-allow); the text path emits none.
-      expect(events).toContainEqual(
-        expect.objectContaining({ type: "tool_call", name: "write_file", status: "started" }),
-      );
-      expect(fs.existsSync(path.join(dir, "built.ts"))).toBe(true);
+      // Proposal path: zero native tool calls; no transport in tests, so the
+      // card dismisses immediately instead of parking the turn.
+      expect(events.some((e) => e.type === "tool_call")).toBe(false);
+      expect(fs.existsSync(path.join(dir, "built.ts"))).toBe(false);
       expect(events.at(-1)).toMatchObject({ type: "turn_end", status: "completed" });
     });
   });

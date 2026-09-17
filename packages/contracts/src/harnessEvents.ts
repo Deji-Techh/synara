@@ -130,6 +130,7 @@ export const UiPromptKind = Schema.Literals([
   "integration",
   "tool-consent",
   "mcp-consent",
+  "proposal",
 ]);
 export type UiPromptKind = typeof UiPromptKind.Type;
 

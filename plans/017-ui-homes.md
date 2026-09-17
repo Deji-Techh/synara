@@ -37,19 +37,26 @@ hasDeviceSupport` pattern), tab overrides, meta test.
 
 ### Placement map (extend, don't fork)
 
-| Capability                                          | Home                                                                                  |
-| --------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| Versions history                                    | New `History` section in `git` pane (`GitPanel.tsx:312-358`); per-file viewport reuse |
-| Security findings                                   | New `security` pane; interim 4th `Checks` tab on PR panel                             |
-| Release/toolchain/signing                           | New rows in `publish` + `PreviewStage` release branch; toolchain card by Publish rows |
-| Collaboration roster / live agents                  | `publish` GitHub row / `goals` SubagentsTab                                           |
-| Sharing links/QR/preview URLs                       | `publish` pane (link mirror); stage QR feeds URLs back                                |
-| MCP servers                                         | Extend `project` `McpSection` (bulk enable, per-tool consent)                         |
-| Skills                                              | Extend `project` `SkillsSection` (reserved slot)                                      |
-| Env/configure                                       | Promote `project` `EnvironmentSection` read-only → editor                             |
-| Console/build logs                                  | New agent-output tab in `terminal` pane (keep-mounted) + stage terminal branch        |
-| Visual editing                                      | New `visual-edit` pane + `PreviewStage` select branch                                 |
-| Database additions (branches/logs/social-auth/Auth) | New `<section>`s in `database` pane after `ProjectConnectionSection`                  |
+| Capability                                          | Home                                                                                                                                                                                                                                                                                        |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Versions history                                    | New `History` section in `git` pane (`GitPanel.tsx:312-358`); per-file viewport reuse                                                                                                                                                                                                       |
+| Security findings                                   | New `security` pane; interim 4th `Checks` tab on PR panel                                                                                                                                                                                                                                   |
+| Release/toolchain/signing                           | New rows in `publish` + `PreviewStage` release branch; toolchain card by Publish rows                                                                                                                                                                                                       |
+| Collaboration roster / live agents                  | `publish` GitHub row / `goals` SubagentsTab                                                                                                                                                                                                                                                 |
+| Sharing links/QR/preview URLs                       | `publish` pane (link mirror); stage QR feeds URLs back                                                                                                                                                                                                                                      |
+| MCP servers                                         | Extend `project` `McpSection` (bulk enable, per-tool consent)                                                                                                                                                                                                                               |
+| Skills                                              | Extend `project` `SkillsSection` (reserved slot)                                                                                                                                                                                                                                            |
+| Env/configure                                       | Promote `project` `EnvironmentSection` read-only → editor                                                                                                                                                                                                                                   |
+| Console/build logs                                  | New agent-output tab in `terminal` pane (keep-mounted) + stage terminal branch                                                                                                                                                                                                              |
+| Visual editing                                      | New `visual-edit` pane + `PreviewStage` select branch                                                                                                                                                                                                                                       |
+| Database additions (branches/logs/social-auth/Auth) | New `<section>`s in `database` pane after `ProjectConnectionSection`                                                                                                                                                                                                                        |
+| Build proposal (approve/reject file changes)        | `ProposalCard` in `HarnessPrompts` (transcript prompt queue via `ChatHarnessConsentStrip`); `ui_prompt` kind `proposal`, answers `{approved:"true"/"false"}` (checkpoint precedent); shell/badge/accent per §4 (`CaideCard`, `DisclosureChevron`, `size="xs"` buttons, double-submit guard) |
+
+### Amendment log
+
+- **m9b-2 (008):** build-proposal row above. First 017 amendment: the V1
+  `code-proposal` approve/reject flow needs a transcript card, and no mapped
+  home fits (consent cards answer `consent_answer`, not `prompt_answer`).
 
 ## 2. Composer Context card (`EnvironmentPanel`, title `Context`)
 

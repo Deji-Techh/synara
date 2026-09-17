@@ -15,6 +15,16 @@ export {
   type BuildTagIssue,
 } from "./buildPipeline.ts";
 export {
+  buildProposalPayload,
+  getProposalTransport,
+  requestBuildProposalApproval,
+  setProposalTransport,
+  type BuildProposal,
+  type ProposalDecision,
+  type ProposalFileChange,
+  type ProposalTransport,
+} from "./proposal.ts";
+export {
   ALL_FILE_EDIT_TOOLS,
   searchReplaceTool,
   multiReplaceTool,

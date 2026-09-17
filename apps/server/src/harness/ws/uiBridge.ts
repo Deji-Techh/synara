@@ -24,6 +24,7 @@ import {
 } from "../../dyad/mcp/mcpConsent.ts";
 import { setPlanTransport } from "../../dyad/plan/planTools.ts";
 import { setBlueprintTransport } from "../../dyad/plan/blueprintTools.ts";
+import { setProposalTransport } from "../../dyad/editing/proposal.ts";
 import {
   clearUserInputForSession,
   dismissUserInput,
@@ -200,6 +201,19 @@ export function attachUiBridge(server: HarnessHub): {
         reason: prompt.reason,
         requiresResponse: true,
         ...(prompt.diff ? { diff: prompt.diff } : {}),
+      }),
+    sendPromptWithdraw: (sessionId, requestId) =>
+      void send(server, sessionId, { type: "ui_prompt_withdraw", sessionId, requestId }),
+  });
+
+  setProposalTransport({
+    sendProposal: (sessionId, requestId, proposal) =>
+      void send(server, sessionId, {
+        type: "ui_prompt",
+        sessionId,
+        requestId,
+        kind: "proposal",
+        payload: proposal,
       }),
     sendPromptWithdraw: (sessionId, requestId) =>
       void send(server, sessionId, { type: "ui_prompt_withdraw", sessionId, requestId }),

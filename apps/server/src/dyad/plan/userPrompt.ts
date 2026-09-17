@@ -1,6 +1,6 @@
 // FILE: userPrompt.ts
 // Purpose: Shared waiter for tools that pause the turn for human input
-// (planning_questionnaire, ask_env_vars). Mirrors donor userInputResolvers:
+// (planning_questionnaire, ask_env_vars, build proposal). Mirrors donor userInputResolvers:
 // the WS layer delivers answers via resolve/dismiss; cancellation clears a
 // session's waiters; abort signals settle as dismissal.
 // Donor: dyad x caide local_agent/userInputResolvers + questionnaireResolver
@@ -11,7 +11,7 @@ import { randomUUID } from "node:crypto";
 export interface PendingPrompt {
   requestId: string;
   sessionId: string;
-  kind: "questionnaire" | "env-vars" | "integration" | "checkpoint";
+  kind: "questionnaire" | "env-vars" | "integration" | "checkpoint" | "proposal";
   resolve: (value: Record<string, string> | null) => void;
   /** Abort listener handle (removed on settle to avoid listener leaks). */
   onAbort?: () => void;
@@ -29,6 +29,9 @@ const WAIT_DEADLINES_MS: Record<PendingPrompt["kind"], number> = {
   "env-vars": 30 * 60_000,
   integration: 30 * 60_000,
   checkpoint: 30 * 60_000,
+  // Build proposal (008-m9b2): V1 waited forever; 007 §6.4 mandates a
+  // deadline on every human wait. 30min matches the review-class prompts.
+  proposal: 30 * 60_000,
 };
 
 export function nextRequestId(kind: PendingPrompt["kind"]): string {

@@ -11,6 +11,8 @@ import type { HarnessEvent } from "@caide/contracts";
 import type { ChatMessage } from "../session/buildChain.ts";
 import type { LLMAdapter } from "../loop/loop.ts";
 import { runBuildTextTurn } from "./buildTextTurn.ts";
+import { resolveUserInput, dismissUserInput } from "../../dyad/plan/userPrompt.ts";
+import { setProposalTransport, type BuildProposal } from "../../dyad/editing/proposal.ts";
 
 function workspace(): string {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "caide-buildtext-"));
@@ -52,6 +54,7 @@ describe("runBuildTextTurn (donor build path)", () => {
       turnId: "t-1",
       appPath: dir,
       framework: "website",
+      autoApprove: true,
       llm: scriptedLlm([
         'Intro text\n<dyad-write path="src/a.ts">export const a = 1;</dyad-write>\nDone',
       ]),
@@ -74,6 +77,7 @@ describe("runBuildTextTurn (donor build path)", () => {
       sessionId: "s-bt-repair",
       turnId: "t-2",
       appPath: dir,
+      autoApprove: true,
       llm: scriptedLlm(
         [
           '<dyad-search-replace path="app.ts"><<<<<<< SEARCH\nabsent line\n=======\ny\n>>>>>>> REPLACE</dyad-search-replace>',
@@ -102,6 +106,7 @@ describe("runBuildTextTurn (donor build path)", () => {
       sessionId: "s-bt-cont",
       turnId: "t-3",
       appPath: dir,
+      autoApprove: true,
       llm: scriptedLlm(
         ['<dyad-write path="half.ts">const half = 1;', "\nconst done = 2;</dyad-write>"],
         seen,
@@ -122,6 +127,7 @@ describe("runBuildTextTurn (donor build path)", () => {
       sessionId: "s-bt-empty",
       turnId: "t-4",
       appPath: dir,
+      autoApprove: true,
       llm: scriptedLlm([""]),
       buildMessages: baseMessages,
       onEvent,
@@ -142,11 +148,105 @@ describe("runBuildTextTurn (donor build path)", () => {
       turnId: "t-5",
       appPath: dir,
       signal: controller.signal,
+      autoApprove: true,
       llm: scriptedLlm(['<dyad-write path="x.ts">x</dyad-write>']),
       buildMessages: baseMessages,
       onEvent,
     });
     expect(result.applied).toBeNull();
     expect(fs.existsSync(path.join(dir, "x.ts"))).toBe(false);
+  });
+});
+
+describe("runBuildTextTurn proposal gate (donor shouldAutoApply)", () => {
+  const tagText = '<dyad-write path="p.ts">export const p = 1;</dyad-write>';
+
+  /** Stub transport capturing the card, answering on the next tick. */
+  function stubTransport(answer: Record<string, string> | null): {
+    proposals: Array<{ sessionId: string; requestId: string; proposal: BuildProposal }>;
+  } {
+    const proposals: Array<{ sessionId: string; requestId: string; proposal: BuildProposal }> = [];
+    setProposalTransport({
+      sendProposal: (sessionId, requestId, proposal) => {
+        proposals.push({ sessionId, requestId, proposal });
+        setImmediate(() => {
+          if (answer) resolveUserInput(requestId, answer);
+          else dismissUserInput(requestId);
+        });
+      },
+      sendPromptWithdraw: () => {},
+    });
+    return { proposals };
+  }
+
+  it("applies tags on approval with the file list on the card", async () => {
+    const dir = workspace();
+    const { events, onEvent } = harness();
+    const { proposals } = stubTransport({ approved: "true" });
+    try {
+      const result = await runBuildTextTurn({
+        sessionId: "s-bt-prop-ok",
+        turnId: "t-6",
+        appPath: dir,
+        autoApprove: false,
+        llm: scriptedLlm([tagText]),
+        buildMessages: baseMessages,
+        onEvent,
+      });
+      expect(proposals).toHaveLength(1);
+      expect(proposals[0]?.proposal.title).toBe("Proposed File Changes");
+      expect(proposals[0]?.proposal.filesChanged).toMatchObject([{ path: "p.ts", type: "write" }]);
+      expect(result.applied?.writtenFiles).toContain("p.ts");
+      expect(fs.readFileSync(path.join(dir, "p.ts"), "utf8")).toBe("export const p = 1;");
+      expect(events).toContainEqual(
+        expect.objectContaining({ type: "artifact_updated", path: "p.ts" }),
+      );
+    } finally {
+      setProposalTransport(null);
+    }
+  });
+
+  it("discards tags on rejection with a transcript note", async () => {
+    const dir = workspace();
+    const { events, onEvent } = harness();
+    stubTransport({ approved: "false" });
+    try {
+      const result = await runBuildTextTurn({
+        sessionId: "s-bt-prop-no",
+        turnId: "t-7",
+        appPath: dir,
+        autoApprove: false,
+        llm: scriptedLlm([tagText]),
+        buildMessages: baseMessages,
+        onEvent,
+      });
+      expect(result.applied).toBeNull();
+      expect(fs.existsSync(path.join(dir, "p.ts"))).toBe(false);
+      expect(
+        events.some(
+          (e) =>
+            e.type === "token" && (e as { content: string }).content.includes("Proposal rejected"),
+        ),
+      ).toBe(true);
+    } finally {
+      setProposalTransport(null);
+    }
+  });
+
+  it("dismisses headless turns instead of parking them", async () => {
+    const dir = workspace();
+    setProposalTransport(null);
+    const { onEvent } = harness();
+    const result = await runBuildTextTurn({
+      sessionId: "s-bt-prop-headless",
+      turnId: "t-8",
+      appPath: dir,
+      autoApprove: false,
+      llm: scriptedLlm([tagText]),
+      buildMessages: baseMessages,
+      onEvent,
+    });
+    expect(result.applied).toBeNull();
+    expect(fs.existsSync(path.join(dir, "p.ts"))).toBe(false);
   });
 });

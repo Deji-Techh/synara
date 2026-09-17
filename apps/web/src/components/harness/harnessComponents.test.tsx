@@ -52,6 +52,19 @@ function seedPrompts() {
     kind: "integration",
     payload: { provider: null },
   });
+  harnessStore.handleEvent({
+    type: "ui_prompt",
+    sessionId: "s-hc",
+    requestId: "r-p",
+    kind: "proposal",
+    payload: {
+      title: "Proposed File Changes",
+      filesChanged: [
+        { name: "a.ts", path: "src/a.ts", summary: "Add widget", type: "write" },
+        { name: "old.ts", path: "old.ts", summary: "Delete file", type: "delete" },
+      ],
+    },
+  });
 }
 
 describe("harness components (m3)", () => {
@@ -65,6 +78,9 @@ describe("harness components (m3)", () => {
     expect(markup).toContain("STRIPE_SECRET_KEY");
     expect(markup).toContain("Connect a database provider");
     expect(markup).toContain("Always allow");
+    expect(markup).toContain("Proposed File Changes");
+    expect(markup).toContain("src/a.ts");
+    expect(markup).toContain("Approve &amp; apply");
     harnessStore.clearSession("s-hc");
   });
 

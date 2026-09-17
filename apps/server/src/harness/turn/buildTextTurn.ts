@@ -30,6 +30,11 @@ export interface BuildTextTurnInput {
   /** History builder shared with the native loop (system + history + prompt). */
   buildMessages: (extra: ChatMessage[]) => Promise<ChatMessage[]>;
   onEvent: (event: HarnessEvent) => void;
+  /**
+   * Donor autoApproveChanges: true applies file tags directly; false parks
+   * a proposal card and applies only on approval (V1 default).
+   */
+  autoApprove: boolean;
 }
 
 export interface BuildTextTurnResult {
@@ -178,6 +183,34 @@ export async function runBuildTextTurn(input: BuildTextTurnInput): Promise<Build
       recoverable: true,
     });
     return { fullText, applied: null };
+  }
+
+  // Proposal gate (donor shouldAutoApply): without auto-approve the turn
+  // parks on an approve/reject card and applies only on approval. Dismissed,
+  // timed-out, and tag-free responses apply nothing (V1 parity) with a short
+  // transcript note so the turn never ends mysteriously empty-handed.
+  if (!input.autoApprove) {
+    const { requestBuildProposalApproval } = await import("../../dyad/editing/proposal.ts");
+    const { decision } = await requestBuildProposalApproval({
+      sessionId,
+      fullText,
+      ...(signal ? { signal } : {}),
+    });
+    if (decision !== "approved") {
+      const note =
+        decision === "rejected"
+          ? "Proposal rejected — no files were changed."
+          : decision === "timed-out"
+            ? "Proposal expired unanswered — no files were changed."
+            : decision === "empty"
+              ? null
+              : "Proposal dismissed — no files were changed.";
+      if (note !== null) {
+        fullText += `\n\n${note}`;
+        input.onEvent({ type: "token", sessionId, content: `\n\n${note}` });
+      }
+      return { fullText, applied: null };
+    }
   }
 
   // Direct apply (autoApproveChanges gate was checked by the caller).

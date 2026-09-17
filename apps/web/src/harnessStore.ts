@@ -25,7 +25,7 @@ export interface ArtifactEntry {
 
 export interface UiPromptEntry {
   requestId: string;
-  kind: "questionnaire" | "env-vars" | "integration" | "tool-consent" | "mcp-consent";
+  kind: "questionnaire" | "env-vars" | "integration" | "tool-consent" | "mcp-consent" | "proposal";
   payload: unknown;
 }
 

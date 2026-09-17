@@ -1,7 +1,8 @@
 // FILE: HarnessPrompts.tsx
 // Purpose: Render the harness UI-prompt queue (questionnaire, env vars,
-// integration setup, tool + MCP consent) from harnessStore and answer over
-// the harness socket. Caide settings primitives + themed tool-card language.
+// integration setup, build proposal, tool + MCP consent) from harnessStore
+// and answer over the harness socket. Caide settings primitives + themed
+// tool-card language.
 
 import { useRef, useState } from "react";
 import { Button } from "~/components/ui/button";
@@ -342,6 +343,78 @@ function IntegrationCard(props: { sessionId: string; entry: UiPromptEntry; send:
   );
 }
 
+function ProposalCard(props: { sessionId: string; entry: UiPromptEntry; send: SendFn }) {
+  const proposal = (props.entry.payload ?? {}) as {
+    title?: string;
+    filesChanged?: Array<{
+      name?: string;
+      path?: string;
+      summary?: string;
+      type?: string;
+    }>;
+  };
+  const files = Array.isArray(proposal.filesChanged) ? proposal.filesChanged : [];
+  const [done, setDone] = useState(false);
+  const decided = useRef(false);
+  if (done) return null;
+
+  // Answers ride prompt_answer ({approved}, checkpoint precedent); the
+  // server withdraws the card on every settlement path.
+  const decide = (approved: boolean) => {
+    if (decided.current) return;
+    decided.current = true;
+    answerUiPrompt(props.send, props.entry.requestId, { approved: approved ? "true" : "false" });
+    harnessStore.resolvePrompt(props.sessionId, props.entry.requestId);
+    setDone(true);
+  };
+  const dismiss = () => {
+    if (decided.current) return;
+    decided.current = true;
+    answerUiPrompt(props.send, props.entry.requestId, null);
+    harnessStore.resolvePrompt(props.sessionId, props.entry.requestId);
+    setDone(true);
+  };
+
+  return (
+    <Shell badge="Proposal" accent="info" title={proposal.title || "Proposed File Changes"}>
+      <div className="flex flex-col gap-2">
+        <span className="text-[11px] text-muted-foreground">
+          {`${files.length} file${files.length === 1 ? "" : "s"} — review, then approve to apply.`}
+        </span>
+        <ul className="flex max-h-48 flex-col gap-1 overflow-auto">
+          {files.map((f, i) => (
+            <li
+              key={`${f.path ?? i}`}
+              className="flex items-baseline gap-2 rounded-md bg-muted/40 px-2 py-1"
+            >
+              <CaideBadge accent="info">{f.type ?? "write"}</CaideBadge>
+              <span className="min-w-0 flex-1 truncate font-mono text-[11px]">
+                {f.path ?? f.name ?? `file ${i + 1}`}
+              </span>
+              {f.summary ? (
+                <span className="max-w-[55%] truncate text-[10.5px] text-muted-foreground">
+                  {f.summary}
+                </span>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+        <div className="flex items-center justify-end gap-2">
+          <Button size="xs" variant="ghost" onClick={dismiss}>
+            Dismiss
+          </Button>
+          <Button size="xs" variant="outline" onClick={() => decide(false)}>
+            Reject
+          </Button>
+          <Button size="xs" onClick={() => decide(true)}>
+            Approve &amp; apply
+          </Button>
+        </div>
+      </div>
+    </Shell>
+  );
+}
+
 function ConsentCard(props: {
   sessionId: string;
   entry: UiPromptEntry;
@@ -482,6 +555,15 @@ export function HarnessPrompts(props: { sessionId: string; send: SendFn }) {
                 entry={entry}
                 send={props.send}
                 mcp={false}
+              />
+            );
+          case "proposal":
+            return (
+              <ProposalCard
+                key={entry.requestId}
+                sessionId={props.sessionId}
+                entry={entry}
+                send={props.send}
               />
             );
           default:

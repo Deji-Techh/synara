@@ -1084,12 +1084,11 @@ export class CaideRunner {
       } catch {
         // pre-turn compaction never fails turn start
       }
-      // Donor build path (008-m9b): build turns that opt into
-      // autoApproveChanges stream model text with ZERO native tools, repair
-      // it (dry-run + continuation), and apply the file tags directly.
-      // Default (setting off/unset) keeps the native tool loop: the proposal
-      // card that V1 shows instead lands with the 017 surface (m9b-2).
-      const useBuildTextPath = chatMode === "build" && input.settings?.autoApproveChanges === true;
+      // Donor build path (008-m9b): build turns stream model text with ZERO
+      // native tools, repair it, then apply on auto-approve or park a
+      // proposal card otherwise (V1 shouldAutoApply parity). The native loop
+      // no longer serves build mode.
+      const useBuildTextPath = chatMode === "build";
       if (useBuildTextPath) {
         const { runBuildTextTurn } = await import("./buildTextTurn.ts");
         await runBuildTextTurn({
@@ -1101,11 +1100,11 @@ export class CaideRunner {
           llm,
           buildMessages: (extra) => buildTurnMessages(extra),
           onEvent: forward,
+          autoApprove: input.settings?.autoApproveChanges === true,
         });
       } else {
         await runLoopOnce();
       }
-
       // ---- Turn-closing pipeline (donor parity, scoped) ----
       // 1. Explorer synthesis: completed explorer subagents report into one
       // more pass (in-memory only — never persisted as history). Skipped on
