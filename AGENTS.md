@@ -18,12 +18,17 @@
 - Task completion: `bun fmt`, `bun lint`, `bun typecheck` must pass — run as ONE final
   bundled pass per task, not repeatedly during iteration.
 - NEVER run `bun test`. Always `bun run test` (Vitest).
-- Commit after EVERY major change (milestone per plan). Never commit secrets.
+- Commit after EVERY major change/wiring up (milestone per plan). Never commit secrets.
   Before committing: `git status`, `git diff`, `git log --oneline -5`; stage only intended files.
 - Never add AI co-authorship to commit messages.
 - Full-disk environment: packaging requires `CAIDE_DESKTOP_TMPDIR=/tmp/caide-stage`.
 - `effect@4.0.0-beta.25` fork: `Effect.catchAll`/`catchAllCause` are absent at runtime —
   use `orElseSucceed`.
+- **STRICT ENFORCEMENT:** Never under-engineer or assume a feature is working (even features you aren't touching). Make sure it's working.
+- **STRICT ENFORCEMENT:** Always verify any change twice.
+- **STRICT ENFORCEMENT:** At a T-junction, reason which would work best and choose that.
+- **STRICT ENFORCEMENT:** Do not skip something to go to another thing. Process sequentially according to the bulletin.
+- **STRICT ENFORCEMENT:** Everything must be perfect like V1. Never duplicate anything. Strip what's not wanted in V2; always recheck the entire V2 to ensure we are not keeping what's unnecessary.
 
 ## Architecture law
 

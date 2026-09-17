@@ -4,7 +4,7 @@
 // tools, and the M3 send path can trigger them after runs. Pure transitions,
 // best-effort git revision, structured reports.
 // Donor: ipc/goal/goal_scheduler.ts handleCompletedRun/verifyGoalNow
-// semantics (failure counting omitted — no run ledger yet; M4).
+// semantics (includes failure counting / M4 run ledger implementation).
 
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -36,12 +36,46 @@ async function persist(appPath: string, state: GoalState): Promise<void> {
 
 /** Pending tasks whose dependencies are all verified, in order. */
 export function nextActionableTasks(state: GoalState) {
-  const verified = new Set(
-    state.tasks.filter((t) => t.status === "verified").map((t) => t.id),
-  );
+  const verified = new Set(state.tasks.filter((t) => t.status === "verified").map((t) => t.id));
   return state.tasks
     .filter((t) => t.status === "pending" && t.dependencies.every((d) => verified.has(d)))
     .sort((a, b) => a.order - b.order);
+}
+
+/**
+ * Record a run result (M4 run ledger). Evaluates failure count to potentially
+ * block tasks that fail too many times without progress.
+ */
+export async function recordRunResult(
+  appPath: string,
+  goalId: string,
+  taskId: string,
+  status: "completed" | "failed" | "cancelled",
+  error?: string,
+): Promise<void> {
+  const state = await readGoal(appPath, goalId);
+  const task = state.tasks.find((t) => t.id === taskId);
+  if (!task) return;
+
+  task.runLedger.push({
+    status,
+    error,
+    timestamp: Date.now(),
+  });
+
+  const recentFailures = task.runLedger.filter((r) => r.status === "failed").length;
+  if (status === "failed" && recentFailures >= 3) {
+    task.status = "blocked";
+    state.blocker = {
+      reason: `Task "${task.title}" failed ${recentFailures} times consecutively. Error: ${error || "Unknown"}`,
+      userAction: "Review task requirements or provide manual steering.",
+      retryable: true,
+      detectedAt: Date.now(),
+    };
+    state.status = "blocked";
+  }
+
+  await persist(appPath, state);
 }
 
 /**
@@ -89,7 +123,8 @@ export async function verifyGoal(appPath: string, goalId: string): Promise<strin
   let verifiedCount = 0;
   for (const task of state.tasks) {
     if (!task.required || task.status === "verified") continue;
-    if (task.status !== "verifying" && task.status !== "repairing" && task.status !== "running") continue;
+    if (task.status !== "verifying" && task.status !== "repairing" && task.status !== "running")
+      continue;
     const linked = state.evidence.filter((e) => e.taskId === task.id && e.passed);
     const atRevision = revision ? linked.filter((e) => e.revision === revision) : linked;
     if (atRevision.length > 0) {
@@ -103,7 +138,12 @@ export async function verifyGoal(appPath: string, goalId: string): Promise<strin
       const ids = state.evidence.filter((e) => e.taskId === t.id && e.passed).map((e) => e.id);
       return { criterion: t.title, passed: ids.length > 0, evidence: ids };
     });
-  state.verification = { passed: criteria.length > 0 && criteria.every((c) => c.passed), checkedAt: Date.now(), revision, criteria };
+  state.verification = {
+    passed: criteria.length > 0 && criteria.every((c) => c.passed),
+    checkedAt: Date.now(),
+    revision,
+    criteria,
+  };
   if (isGoalComplete({ ...state, status: "completed" })) {
     state.status = "completed";
     await persist(appPath, state);

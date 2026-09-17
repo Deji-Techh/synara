@@ -107,7 +107,7 @@ export const MODEL_OPTIONS: Record<string, ModelOption[]> = {
       name: "gpt-5",
       displayName: "GPT 5",
       description: "OpenAI's flagship model",
-      maxOutputTokens: undefined,
+      maxOutputTokens: 8192,
       contextWindow: 400_000,
       temperature: 1,
       dollarSigns: 3,
@@ -116,7 +116,7 @@ export const MODEL_OPTIONS: Record<string, ModelOption[]> = {
       name: "gpt-5-codex",
       displayName: "GPT 5 Codex",
       description: "OpenAI's flagship model optimized for coding",
-      maxOutputTokens: undefined,
+      maxOutputTokens: 8192,
       contextWindow: 400_000,
       temperature: 1,
       dollarSigns: 3,
@@ -125,7 +125,7 @@ export const MODEL_OPTIONS: Record<string, ModelOption[]> = {
       name: "gpt-5-mini",
       displayName: "GPT 5 Mini",
       description: "OpenAI's lightweight, but intelligent model",
-      maxOutputTokens: undefined,
+      maxOutputTokens: 8192,
       contextWindow: 400_000,
       temperature: 1,
       dollarSigns: 2,
@@ -1328,7 +1328,7 @@ export function parseRemoteCatalogResponse(raw: unknown): {
         id: p.id,
         name: asOptionalString(p.displayName) ?? p.id,
         ...(typeof p.hasFreeTier === "boolean" ? { hasFreeTier: p.hasFreeTier } : {}),
-        ...(asOptionalString(p.websiteUrl) ? { websiteUrl: asOptionalString(p.websiteUrl) } : {}),
+        ...(asOptionalString(p.websiteUrl) ? { websiteUrl: asOptionalString(p.websiteUrl) as string } : {}),
       };
     });
     const modelsByProvider: Record<string, ModelOption[]> = {};

@@ -1,14 +1,12 @@
-// FILE: goalTools.ts
-// Purpose: Goal agent tools: update_goal_state (atomic, schema-enforced) +
-// goal_status reader. Donor update_goal_state.ts kept (state dir moved to
-// .caide/goals). Goals are durable project objectives with verified tasks —
-// the scheduler/UI center lands in M3b; state + tools + predicate land here.
-
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { z } from "zod";
 import { defineTool, type ToolDef } from "../../harness/tools/defineTool.ts";
 import { GoalStateSchema, isGoalComplete } from "./goalState.ts";
+
+const execFileAsync = promisify(execFile);
 
 export class GoalValidationError extends Error {
   constructor(message: string) {
@@ -78,7 +76,10 @@ export const goalStatusTool = defineTool({
       ...state.tasks.map((t) => `- [${t.status}] ${t.title} (${t.id})`),
     ];
     if (state.blocker) {
-      lines.push("", `Blocked: ${state.blocker.reason}${state.blocker.userAction ? ` — user action: ${state.blocker.userAction}` : ""}`);
+      lines.push(
+        "",
+        `Blocked: ${state.blocker.reason}${state.blocker.userAction ? ` — user action: ${state.blocker.userAction}` : ""}`,
+      );
     }
     if (state.steering.length > 0) {
       lines.push("", "Steering:", ...state.steering.map((s) => `- ${s.instruction}`));
@@ -106,4 +107,132 @@ export const verifyGoalTool = defineTool({
   presentCall: (args: any) => `Verify goal: ${args.goalId}`,
 });
 
-export const ALL_GOAL_TOOLS: ToolDef[] = [updateGoalStateTool, goalStatusTool, verifyGoalTool];
+const captureEvidenceSchema = z.object({
+  goalId: z.string(),
+  taskId: z.string().nullable().default(null),
+  kind: z.enum([
+    "test",
+    "build",
+    "typecheck",
+    "lint",
+    "screenshot",
+    "audit-report",
+    "file-change",
+    "command-output",
+    "deployment",
+    "manual-confirmation",
+    "other",
+  ]),
+  label: z.string(),
+  reference: z.string(),
+  passed: z.boolean(),
+  revision: z.string().nullable().optional(),
+});
+
+export const captureEvidenceTool = defineTool({
+  name: "capture_evidence",
+  description: "Record evidence for a goal or task to satisfy its completion criteria.",
+  schema: captureEvidenceSchema,
+  readOnly: false,
+  modifiesState: true,
+  execute: async (args, ctx) => {
+    const state = await readGoalState(ctx.appPath, args.goalId);
+
+    // Add evidence
+    const newEvidence = {
+      id: `ev-${Date.now().toString(36)}`,
+      taskId: args.taskId ?? null,
+      kind: args.kind,
+      label: args.label,
+      reference: args.reference,
+      passed: args.passed,
+      revision: args.revision ?? null,
+      createdAt: Date.now(),
+    };
+    state.evidence.push(newEvidence);
+
+    // Transition task status if appropriate
+    if (args.taskId) {
+      const task = state.tasks.find((t) => t.id === args.taskId);
+      if (task && (task.status === "running" || task.status === "repairing")) {
+        task.status = "verifying";
+      }
+    }
+
+    const file = stateFile(ctx.appPath, args.goalId);
+    const tmp = `${file}.tmp.${Date.now()}`;
+    await fs.promises.writeFile(tmp, JSON.stringify(state, null, 2), "utf8");
+    await fs.promises.rename(tmp, file);
+
+    return `Evidence captured for goal ${args.goalId}${args.taskId ? ` task ${args.taskId}` : ""}.`;
+  },
+  presentCall: (args: any) => `Capture evidence: ${args.label}`,
+});
+
+const runTestsSchema = z.object({
+  command: z
+    .string()
+    .optional()
+    .describe("Optional specific test command (default: bun run test or npm test)"),
+  flags: z.string().optional().describe("Optional flags to pass to the test runner"),
+});
+
+export const runTestsTool = defineTool({
+  name: "run_tests",
+  description:
+    "Run test suite for the project. Automatically uses Vitest/Jest via the local package manager.",
+  schema: runTestsSchema,
+  readOnly: true,
+  modifiesState: false,
+  execute: async (args, ctx) => {
+    const cmdStr = args.command ?? "bun run test";
+    const fullCmd = args.flags ? `${cmdStr} ${args.flags}` : cmdStr;
+    try {
+      const { stdout, stderr } = await execFileAsync("bash", ["-c", fullCmd], {
+        cwd: ctx.appPath,
+        timeout: 60000,
+      });
+      return `Test execution passed.\nOutput:\n${stdout}\n${stderr}`;
+    } catch (e: any) {
+      return `Test execution failed.\nError:\n${e.message}\nOutput:\n${e.stdout}\n${e.stderr}`;
+    }
+  },
+  presentCall: (args: any) => `Run tests: ${args.command ?? "default"}`,
+});
+
+const runLintSchema = z.object({
+  command: z
+    .string()
+    .optional()
+    .describe("Optional specific lint command (default: bun run lint or npm run lint)"),
+});
+
+export const runLintTool = defineTool({
+  name: "run_lint",
+  description: "Run linter for the project.",
+  schema: runLintSchema,
+  readOnly: true,
+  modifiesState: false,
+  execute: async (args, ctx) => {
+    const cmdStr = args.command ?? "bun run lint";
+    try {
+      const { stdout, stderr } = await execFileAsync("bash", ["-c", cmdStr], {
+        cwd: ctx.appPath,
+        timeout: 60000,
+      });
+      return `Lint execution passed.\nOutput:\n${stdout}\n${stderr}`;
+    } catch (e: any) {
+      return `Lint execution failed.\nError:\n${e.message}\nOutput:\n${e.stdout}\n${e.stderr}`;
+    }
+  },
+  presentCall: (args: any) => `Run lint: ${args.command ?? "default"}`,
+});
+
+export const ALL_GOAL_TOOLS: ToolDef[] = [
+  updateGoalStateTool,
+  goalStatusTool,
+  verifyGoalTool,
+  captureEvidenceTool,
+  runTestsTool,
+  runLintTool,
+];

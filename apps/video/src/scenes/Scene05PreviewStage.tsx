@@ -7,7 +7,7 @@ import { AbsoluteFill, useCurrentFrame, interpolate, spring, useVideoConfig } fr
 import { BackgroundGlow } from "../components/BackgroundGlow";
 import { CaideWindowShell } from "../components/CaideWindowShell";
 import { MouseCursor } from "../components/MouseCursor";
-import { SPRING_SMOOTH } from "../constants/timings";
+import { EASING_SMOOTH } from "../constants/timings";
 
 export const Scene05PreviewStage: React.FC = () => {
   const frame = useCurrentFrame();
@@ -17,25 +17,20 @@ export const Scene05PreviewStage: React.FC = () => {
   const stageSpring = spring({
     frame: frame - 8,
     fps,
-    config: SPRING_SMOOTH,
   });
 
   const previewProgress = interpolate(stageSpring, [0, 1], [0, 1]);
 
   // Cursor moves from chat area to the 1W timeframe pill on the mobile preview screen
   // Device screen center is located around X: 1445, Y: 532
-  const cursorX = interpolate(
-    frame,
-    [15, 50, 75],
-    [1050, 1445, 1445],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
-  );
-  const cursorY = interpolate(
-    frame,
-    [15, 50, 75],
-    [650, 532, 532],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
-  );
+  const cursorX = interpolate(frame, [15, 50, 75], [1050, 1445, 1445], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const cursorY = interpolate(frame, [15, 50, 75], [650, 532, 532], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
 
   const isClick = frame >= 52 && frame <= 60;
   const is1W = frame >= 54;

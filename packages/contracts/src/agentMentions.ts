@@ -47,6 +47,11 @@ export const AGENT_MENTION_ALIASES_BY_PROVIDER: Record<
   fireworks: {},
   opencodeZen: {},
   opencodeGo: {},
+  custom: {},
+  azure: {},
+  bedrock: {},
+  minimax: {},
+  lmstudio: {},
 };
 
 export const AGENT_MENTION_ALIASES = Object.fromEntries(
@@ -71,6 +76,11 @@ const AGENT_MENTION_AUTOCOMPLETE_ALIASES_BY_PROVIDER: Record<ProviderKind, reado
   fireworks: [],
   opencodeZen: [],
   opencodeGo: [],
+  custom: [],
+  azure: [],
+  bedrock: [],
+  minimax: [],
+  lmstudio: [],
 };
 
 function mapAgentEntries(input: Record<string, AgentAliasDefinition>): ResolvedAgentAlias[] {

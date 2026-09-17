@@ -27,6 +27,15 @@ export const GoalTaskStateSchema = z.object({
   dependencies: z.array(z.string()).default([]),
   completionCriteria: z.array(z.string()).default([]),
   verificationMethod: z.string().nullable().default(null),
+  runLedger: z
+    .array(
+      z.object({
+        status: z.enum(["completed", "failed", "cancelled"]),
+        error: z.string().optional(),
+        timestamp: z.number(),
+      }),
+    )
+    .default([]),
 });
 
 export const GoalEvidenceSchema = z.object({
@@ -62,12 +71,21 @@ export const GoalStateSchema = z.object({
   version: z.number().describe("Must be 1"),
   goalId: z.string().min(1),
   objective: z.string().min(1),
-  status: z.enum(["active", "blocked", "awaiting-user", "completion-candidate", "completed", "paused"]),
+  status: z.enum([
+    "active",
+    "blocked",
+    "awaiting-user",
+    "completion-candidate",
+    "completed",
+    "paused",
+  ]),
   currentPhase: z.string().nullable(),
   currentTask: z.string().nullable(),
   tasks: z.array(GoalTaskStateSchema),
   evidence: z.array(GoalEvidenceSchema),
-  steering: z.array(z.object({ instruction: z.string().min(1), createdAt: z.number() })).default([]),
+  steering: z
+    .array(z.object({ instruction: z.string().min(1), createdAt: z.number() }))
+    .default([]),
   blocker: z
     .object({
       reason: z.string().min(1),
@@ -92,7 +110,10 @@ export type GoalState = z.infer<typeof GoalStateSchema>;
 let goalCounter = 0;
 
 /** Fresh goal skeleton (donor defaults). */
-export function createGoalState(objective: string, tasks: Array<{ title: string; description?: string }>): GoalState {
+export function createGoalState(
+  objective: string,
+  tasks: Array<{ title: string; description?: string }>,
+): GoalState {
   return {
     version: 1,
     goalId: `goal-${Date.now().toString(36)}-${++goalCounter}`,
@@ -110,6 +131,7 @@ export function createGoalState(objective: string, tasks: Array<{ title: string;
       dependencies: i > 0 ? [`task-${i}`] : [],
       completionCriteria: [],
       verificationMethod: null,
+      runLedger: [],
     })),
     evidence: [],
     steering: [],

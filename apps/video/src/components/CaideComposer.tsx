@@ -25,7 +25,8 @@ export const CaideComposer: React.FC<CaideComposerProps> = ({
   const opacity = interpolate(entrance, [0, 0.4, 1], [0, 0.8, 1]);
   const translateY = interpolate(entrance, [0, 1], [30, 0]);
 
-  const fullPrompt = "Build a crypto tracker app with live candlestick charts, wallet connect, and real-time push alerts.";
+  const fullPrompt =
+    "Build a crypto tracker app with live candlestick charts, wallet connect, and real-time push alerts.";
   const typingProgress = Math.max(0, frame - typingStartFrame);
   const charsCount = Math.min(fullPrompt.length, Math.floor(typingProgress * 1.6));
   const currentPrompt = fullPrompt.slice(0, charsCount);
@@ -47,7 +48,7 @@ export const CaideComposer: React.FC<CaideComposerProps> = ({
         borderRadius: "24px",
         border: `1.5px solid ${isSending ? CAIDE_THEME.colors.primary : "rgba(255, 255, 255, 0.12)"}`,
         boxShadow: isSending
-          ? `0 20px 50px rgba(0, 0, 0, 0.6), 0 0 35px ${CAIDE_THEME.colors.primaryGlow}`
+          ? `0 20px 50px rgba(0, 0, 0, 0.6), 0 0 35px ${CAIDE_THEME.colors.primary}`
           : "0 20px 50px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05)",
         padding: "20px 24px",
         transform: `translateY(${translateY}px) scale(${scale})`,
@@ -80,7 +81,13 @@ export const CaideComposer: React.FC<CaideComposerProps> = ({
             <span style={{ color: "#818cf8", fontSize: "14px" }}>✦</span>
             <span>claude-3-7-sonnet</span>
             <svg width="10" height="6" viewBox="0 0 10 6" fill="none">
-              <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              <path
+                d="M1 1L5 5L9 1"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             </svg>
           </div>
 
@@ -161,7 +168,14 @@ export const CaideComposer: React.FC<CaideComposerProps> = ({
       </div>
 
       {/* Bottom Actions Bar */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: "4px" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          paddingTop: "4px",
+        }}
+      >
         {/* Left tools (attach, voice, directory) */}
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <div
@@ -176,7 +190,14 @@ export const CaideComposer: React.FC<CaideComposerProps> = ({
               color: CAIDE_THEME.colors.mutedForeground,
             }}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
             </svg>
           </div>
@@ -193,7 +214,14 @@ export const CaideComposer: React.FC<CaideComposerProps> = ({
               color: CAIDE_THEME.colors.mutedForeground,
             }}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
               <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8" />
             </svg>
@@ -215,7 +243,7 @@ export const CaideComposer: React.FC<CaideComposerProps> = ({
             alignItems: "center",
             justifyContent: "center",
             color: "#ffffff",
-            boxShadow: isSending ? `0 0 20px ${CAIDE_THEME.colors.primaryGlow}` : "none",
+            boxShadow: isSending ? `0 0 20px ${CAIDE_THEME.colors.primary}` : "none",
             transform: `scale(${isSending ? interpolate(sendSpring, [0, 1], [1, 1.1]) : 1})`,
           }}
         >
@@ -229,7 +257,14 @@ export const CaideComposer: React.FC<CaideComposerProps> = ({
               }}
             />
           ) : (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+            >
               <path d="M12 19V5M5 12l7-7 7 7" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           )}

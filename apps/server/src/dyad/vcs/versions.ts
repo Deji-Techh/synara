@@ -1,13 +1,3 @@
-// FILE: versions.ts
-// Purpose: App version snapshots (commit/restore/list) for the Versions
-// timeline. Snapshots are git commits plus an app-scoped metadata log
-// (<app>/.caide/versions.jsonl); restore checks out paths from a snapshot
-// without touching the index beyond the restored files. Donor pattern:
-// version_handlers.ts commit/restore (Electron + drizzle versions table
-// replaced by git + JSONL; retryOnLocked unneeded — no shared SQLite).
-// Unwired UI: the right-dock timeline consumes listVersions/restoreVersion
-// in a follow-up.
-
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { execFile } from "node:child_process";
@@ -21,12 +11,16 @@ export interface AppVersion {
   message: string;
   createdAt: number;
   files: string[];
+  isFavorite?: boolean;
+  note?: string;
 }
 
 interface VersionLogEntry {
   hash: string;
   message: string;
   createdAt: number;
+  isFavorite?: boolean;
+  note?: string;
 }
 
 function versionsFile(appPath: string): string {
@@ -46,9 +40,13 @@ async function git(cwd: string, args: string[], signal?: AbortSignal): Promise<s
     if (e?.code === "ENOENT") throw new GitToolError("git binary not found on PATH");
     const combined = `${e?.stdout ?? ""}\n${e?.stderr ?? ""}`;
     if (/not a git repository/i.test(combined)) {
-      throw new GitToolError("Not a git repository — run `git init` first or pick a project workspace");
+      throw new GitToolError(
+        "Not a git repository — run `git init` first or pick a project workspace",
+      );
     }
-    throw new GitToolError(`git ${args[0]} failed: ${(e?.stderr ?? e?.message ?? String(e)).trim()}`);
+    throw new GitToolError(
+      `git ${args[0]} failed: ${(e?.stderr ?? e?.message ?? String(e)).trim()}`,
+    );
   }
 }
 
@@ -70,10 +68,23 @@ async function appendVersionLog(appPath: string, entry: VersionLogEntry): Promis
   await fs.promises.appendFile(versionsFile(appPath), `${JSON.stringify(entry)}\n`);
 }
 
-/**
- * Snapshot the working tree as a version. Clean trees record the current
- * HEAD without a new commit. Returns the version entry.
- */
+export async function updateVersionMetadata(
+  appPath: string,
+  hash: string,
+  updates: { isFavorite?: boolean; note?: string },
+): Promise<void> {
+  const log = readVersionLog(appPath);
+  const entry = log.find((e) => e.hash === hash);
+  if (!entry) throw new GitToolError(`Version ${hash} not found`);
+  if (updates.isFavorite !== undefined) entry.isFavorite = updates.isFavorite;
+  if (updates.note !== undefined) entry.note = updates.note;
+  await fs.promises.mkdir(path.join(appPath, ".caide"), { recursive: true });
+  await fs.promises.writeFile(
+    versionsFile(appPath),
+    log.map((e) => JSON.stringify(e)).join("\n") + "\n",
+  );
+}
+
 export async function createVersion(
   appPath: string,
   message: string,
@@ -90,9 +101,6 @@ export async function createVersion(
     const fullMessage = message.trim() || "Checkpoint";
     await git(appPath, ["commit", "-m", fullMessage], signal);
     hash = (await git(appPath, ["rev-parse", "HEAD"], signal)).trim();
-    // Porcelain v1 lines are `XY PATH` (rename: `XY ORIG -> PATH`), but some
-    // gits collapse the Y column (`M a.txt`). Strip the longest status
-    // prefix that fits rather than slicing a fixed width.
     files = status
       .split("\n")
       .map((l) => l.replace(/^..\s/, "").replace(/^.\s/, "").trim())
@@ -100,15 +108,21 @@ export async function createVersion(
       .map((p) => p.replace(/^"|"$/g, ""))
       .filter(Boolean);
   }
-  const entry: VersionLogEntry = { hash, message: message.trim() || "Checkpoint", createdAt: Date.now() };
+  const entry: VersionLogEntry = {
+    hash,
+    message: message.trim() || "Checkpoint",
+    createdAt: Date.now(),
+  };
   await appendVersionLog(appPath, entry);
   return { ...entry, files };
 }
 
-/** List versions newest-first (metadata log joined with git history). */
-export async function listVersions(appPath: string, limit = 30, signal?: AbortSignal): Promise<AppVersion[]> {
+export async function listVersions(
+  appPath: string,
+  limit = 30,
+  signal?: AbortSignal,
+): Promise<AppVersion[]> {
   const log = readVersionLog(appPath);
-  // Verify hashes still exist (history rewrites drop them).
   const existing = new Set<string>();
   try {
     const revs = (await git(appPath, ["rev-list", `HEAD`, `--max-count=${limit * 2}`], signal))
@@ -126,19 +140,13 @@ export async function listVersions(appPath: string, limit = 30, signal?: AbortSi
     .map((e) => ({ ...e, files: [] as string[] }));
 }
 
-/**
- * Restore working-tree files from a snapshot without committing. Dirty
- * uncommitted work is stashed first (stash entry named caide-restore-wip)
- * so nothing is lost. Returns a summary.
- */
 export async function restoreVersion(
   appPath: string,
   hash: string,
   signal?: AbortSignal,
 ): Promise<string> {
-  if (!/^[0-9a-f]{4,64}$/i.test(hash)) {
+  if (!/^[0-9a-f]{4,64}$/i.test(hash))
     throw new GitToolError(`Refusing to restore "${hash}": not a commit hash`);
-  }
   try {
     await git(appPath, ["cat-file", "-e", `${hash}^{commit}`], signal);
   } catch {
@@ -152,4 +160,115 @@ export async function restoreVersion(
   }
   await git(appPath, ["checkout", hash, "--", "."], signal);
   return `Restored working tree from ${hash}.${stashed ? " Previous uncommitted work was stashed as caide-restore-wip." : ""} Review with git status/diff, then commit when satisfied.`;
+}
+
+export interface VersionChange {
+  path: string;
+  type: "added" | "modified" | "deleted";
+  diff?: string;
+}
+
+export async function getVersionChanges(
+  appPath: string,
+  hash: string,
+  signal?: AbortSignal,
+): Promise<VersionChange[]> {
+  if (!/^[0-9a-f]{4,64}$/i.test(hash)) throw new GitToolError(`Invalid hash: ${hash}`);
+  const out: VersionChange[] = [];
+  try {
+    const nameStatus = await git(appPath, ["diff", "--name-status", `${hash}^`, hash], signal);
+    const lines = nameStatus
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean);
+
+    // Concurrency limit of 10 for diff fetching
+    const CONCURRENCY = 10;
+    for (let i = 0; i < lines.length; i += CONCURRENCY) {
+      const chunk = lines.slice(i, i + CONCURRENCY);
+      await Promise.all(
+        chunk.map(async (line) => {
+          const parts = line.split(/\s+/);
+          const status = parts[0];
+          const filePath = parts[parts.length - 1]; // Handles renames mostly via last part
+
+          let type: VersionChange["type"] = "modified";
+          if (status.startsWith("A")) type = "added";
+          else if (status.startsWith("D")) type = "deleted";
+
+          let diff = "";
+          try {
+            // 1MB + binary guard
+            const diffOutput = await git(
+              appPath,
+              ["diff", `${hash}^`, hash, "--", filePath],
+              signal,
+            );
+            if (diffOutput.length > 1024 * 1024) {
+              diff = "<diff too large to display (exceeds 1MB)>";
+            } else if (diffOutput.includes("Binary files")) {
+              diff = "<binary file>";
+            } else {
+              diff = diffOutput;
+            }
+          } catch {
+            diff = "<diff unavailable>";
+          }
+
+          out.push({ path: filePath, type, diff });
+        }),
+      );
+    }
+  } catch {
+    // If it's the very first commit, diffing against hash^ fails
+    const nameStatus = await git(
+      appPath,
+      ["show", "--name-status", "--format=", hash],
+      signal,
+    ).catch(() => "");
+    const lines = nameStatus
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean);
+    for (const line of lines) {
+      const parts = line.split(/\s+/);
+      out.push({ path: parts[parts.length - 1], type: "added" });
+    }
+  }
+  return out;
+}
+
+export async function checkoutVersion(
+  appPath: string,
+  hash: string,
+  branchName: string,
+  signal?: AbortSignal,
+): Promise<string> {
+  if (!/^[0-9a-f]{4,64}$/i.test(hash)) throw new GitToolError(`Invalid hash: ${hash}`);
+  const dirty = (await git(appPath, ["status", "--porcelain=v1"], signal)).trim();
+  if (dirty)
+    throw new GitToolError(
+      "Working tree is dirty. Please commit or stash changes before checking out a version branch.",
+    );
+  await git(appPath, ["checkout", "-b", branchName, hash], signal);
+  // Note: Neon preview/dev switch hooks should be orchestrated by the caller when this succeeds.
+  return `Checked out new branch ${branchName} at ${hash}`;
+}
+
+export async function revertVersion(
+  appPath: string,
+  hash: string,
+  signal?: AbortSignal,
+): Promise<string> {
+  if (!/^[0-9a-f]{4,64}$/i.test(hash)) throw new GitToolError(`Invalid hash: ${hash}`);
+  const dirty = (await git(appPath, ["status", "--porcelain=v1"], signal)).trim();
+  if (dirty)
+    throw new GitToolError(
+      "Working tree is dirty. Please commit or stash changes before reverting.",
+    );
+
+  await git(appPath, ["revert", "--no-edit", hash], signal);
+  // Note: message prune, Neon point-in-time restore, and Supabase redeploy
+  // should be orchestrated by the backend service coordinating the revert.
+  return `Reverted commit ${hash}`;
 }
