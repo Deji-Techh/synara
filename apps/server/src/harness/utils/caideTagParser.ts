@@ -9,7 +9,11 @@ function normalizePath(path: string): string {
 }
 
 function unescapeXmlAttr(str: string): string {
-  return str.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&amp;/g, "&");
+  return str
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, "&");
 }
 
 function unescapeXmlContent(str: string): string {
@@ -53,13 +57,56 @@ export function getCaideWriteTags(fullResponse: string): CaideFileTag[] {
   return parseCaideFileTags(normalizeTagAliases(fullResponse), "dyad-write");
 }
 
+export function getCaideSearchReplaceTags(fullResponse: string): CaideFileTag[] {
+  return parseCaideFileTags(normalizeTagAliases(fullResponse), "dyad-search-replace");
+}
+
+export function getCaideGenerateTestTags(fullResponse: string): CaideFileTag[] {
+  return parseCaideFileTags(normalizeTagAliases(fullResponse), "dyad-generate-test");
+}
+
+export interface CaideCopyTag {
+  from: string;
+  to: string;
+  description?: string;
+}
+
+export function getCaideCopyTags(fullResponse: string): CaideCopyTag[] {
+  const normalized = normalizeTagAliases(fullResponse);
+  const copyRegex = /<dyad-copy([^>]*?)(?:>([\s\S]*?)<\/dyad-copy>|\/>)/gi;
+  const fromRegex = /from="([^"]+)"/;
+  const toRegex = /to="([^"]+)"/;
+  const descriptionRegex = /description="([^"]+)"/;
+  let m: RegExpExecArray | null;
+  const out: CaideCopyTag[] = [];
+  while ((m = copyRegex.exec(normalized)) !== null) {
+    const attrs = m[1] ?? "";
+    const fromMatch = fromRegex.exec(attrs);
+    const toMatch = toRegex.exec(attrs);
+    const descriptionMatch = descriptionRegex.exec(attrs);
+    if (fromMatch?.[1] && toMatch?.[1]) {
+      const tag: CaideCopyTag = {
+        from: normalizePath(unescapeXmlAttr(fromMatch[1])),
+        to: normalizePath(unescapeXmlAttr(toMatch[1])),
+      };
+      const description = descriptionMatch?.[1] ? unescapeXmlAttr(descriptionMatch[1]) : undefined;
+      if (description !== undefined) tag.description = description;
+      out.push(tag);
+    }
+  }
+  return out;
+}
+
 export function getCaideRenameTags(fullResponse: string): Array<{ from: string; to: string }> {
   const normalized = normalizeTagAliases(fullResponse);
   const re = /<dyad-rename from="([^"]+)" to="([^"]+)"[^>]*>([\s\S]*?)<\/dyad-rename>/g;
   let m: RegExpExecArray | null;
   const out: Array<{ from: string; to: string }> = [];
   while ((m = re.exec(normalized)) !== null) {
-    out.push({ from: normalizePath(unescapeXmlAttr(m[1] ?? "")), to: normalizePath(unescapeXmlAttr(m[2] ?? "")) });
+    out.push({
+      from: normalizePath(unescapeXmlAttr(m[1] ?? "")),
+      to: normalizePath(unescapeXmlAttr(m[2] ?? "")),
+    });
   }
   return out;
 }
