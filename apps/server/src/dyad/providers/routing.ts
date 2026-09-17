@@ -33,6 +33,12 @@ export interface SettingsLike {
    * Optional — runners fall back to DEFAULT_MAX_TOOL_CALL_STEPS.
    */
   maxToolCallSteps?: number;
+  /**
+   * Donor settings.autoApproveChanges: build-mode responses apply directly
+   * instead of parking a proposal card. Optional, default off (018 owns the
+   * settings UI + sync; the turn only reads it).
+   */
+  autoApproveChanges?: boolean;
 }
 
 function settingsApiKey(input: ProviderSettingsInput | undefined): string | null | undefined {

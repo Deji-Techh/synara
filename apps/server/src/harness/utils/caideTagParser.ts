@@ -138,6 +138,23 @@ export function stripCaideTags(text: string): string {
   );
 }
 
+/**
+ * Whether the text ends inside an unclosed write tag (the model was cut off
+ * mid-file). Donor hasUnclosedDyadWrite verbatim, run on alias-normalized
+ * text so caide- tags count too.
+ */
+export function hasUnclosedCaideWriteTag(text: string): boolean {
+  const normalized = normalizeTagAliases(text);
+  const openRegex = /<dyad-write[^>]*>/g;
+  let lastOpenIndex = -1;
+  let match: RegExpExecArray | null;
+  while ((match = openRegex.exec(normalized)) !== null) {
+    lastOpenIndex = match.index;
+  }
+  if (lastOpenIndex === -1) return false;
+  return !/<\/dyad-write>/.test(normalized.substring(lastOpenIndex));
+}
+
 export interface FunctionTagCall {
   /** Tool name as written, e.g. "write_file". */
   name: string;

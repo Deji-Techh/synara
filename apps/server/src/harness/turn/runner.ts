@@ -922,6 +922,47 @@ export class CaideRunner {
       // carries the turn prompt; later passes append only their reminder.
       // Explicit LoopOptions: without it the callbacks lose contextual
       // typing (implicit any).
+      // History assembly shared by the native loop AND the build text path:
+      // pass 1 carries the turn prompt; follow-up passes continue from extra.
+      const buildTurnMessages = async (
+        extraUserMessages: ChatMessage[] = [],
+      ): Promise<ChatMessage[]> => {
+        const chain = await buildConversationChain(input.sessionId, undefined, storage);
+        const history = buildMessages(chain, { role: "builder", includeSystem: false });
+        if (compactedSummary === null) {
+          return [
+            { role: "system" as const, content: system },
+            ...history,
+            ...extraUserMessages,
+            // The turn prompt opens pass 1 only; follow-up passes continue.
+            ...(extraUserMessages.length === 0
+              ? [
+                  {
+                    role: "user" as const,
+                    content: [effectivePrompt, provenanceReminder].filter(Boolean).join("\n\n"),
+                  },
+                ]
+              : []),
+          ];
+        }
+        return assembleCompactedMessages({
+          system,
+          summary: compactedSummary,
+          history: history as Array<{
+            role: "system" | "user" | "assistant";
+            content: unknown;
+          }>,
+          prompt: [
+            effectivePrompt,
+            provenanceReminder,
+            ...extraUserMessages.map((m) =>
+              typeof m.content === "string" ? m.content : JSON.stringify(m.content),
+            ),
+          ]
+            .filter(Boolean)
+            .join("\n\n"),
+        });
+      };
       const buildLoopOptions = (extraUserMessages: ChatMessage[] = []): LoopOptions => ({
         sessionId: input.sessionId,
         turnId,
@@ -930,43 +971,7 @@ export class CaideRunner {
         signal: controller.signal,
         inbox: input.inbox,
         llm,
-        buildMessages: async (): Promise<ChatMessage[]> => {
-          const chain = await buildConversationChain(input.sessionId, undefined, storage);
-          const history = buildMessages(chain, { role: "builder", includeSystem: false });
-          if (compactedSummary === null) {
-            return [
-              { role: "system" as const, content: system },
-              ...history,
-              ...extraUserMessages,
-              // The turn prompt opens pass 1 only; follow-up passes continue.
-              ...(extraUserMessages.length === 0
-                ? [
-                    {
-                      role: "user" as const,
-                      content: [effectivePrompt, provenanceReminder].filter(Boolean).join("\n\n"),
-                    },
-                  ]
-                : []),
-            ];
-          }
-          return assembleCompactedMessages({
-            system,
-            summary: compactedSummary,
-            history: history as Array<{
-              role: "system" | "user" | "assistant";
-              content: unknown;
-            }>,
-            prompt: [
-              effectivePrompt,
-              provenanceReminder,
-              ...extraUserMessages.map((m) =>
-                typeof m.content === "string" ? m.content : JSON.stringify(m.content),
-              ),
-            ]
-              .filter(Boolean)
-              .join("\n\n"),
-          });
-        },
+        buildMessages: async (): Promise<ChatMessage[]> => buildTurnMessages(extraUserMessages),
         tools: ctx.tools.map((t) => ({
           name: t.name,
           description: t.description,
@@ -1079,12 +1084,33 @@ export class CaideRunner {
       } catch {
         // pre-turn compaction never fails turn start
       }
-      await runLoopOnce();
+      // Donor build path (008-m9b): build turns that opt into
+      // autoApproveChanges stream model text with ZERO native tools, repair
+      // it (dry-run + continuation), and apply the file tags directly.
+      // Default (setting off/unset) keeps the native tool loop: the proposal
+      // card that V1 shows instead lands with the 017 surface (m9b-2).
+      const useBuildTextPath = chatMode === "build" && input.settings?.autoApproveChanges === true;
+      if (useBuildTextPath) {
+        const { runBuildTextTurn } = await import("./buildTextTurn.ts");
+        await runBuildTextTurn({
+          sessionId: input.sessionId,
+          turnId,
+          appPath: input.appPath,
+          ...(input.framework ? { framework: input.framework } : {}),
+          signal: controller.signal,
+          llm,
+          buildMessages: (extra) => buildTurnMessages(extra),
+          onEvent: forward,
+        });
+      } else {
+        await runLoopOnce();
+      }
 
       // ---- Turn-closing pipeline (donor parity, scoped) ----
       // 1. Explorer synthesis: completed explorer subagents report into one
-      // more pass (in-memory only — never persisted as history).
-      if (!controller.signal.aborted && chatMode !== "plan") {
+      // more pass (in-memory only — never persisted as history). Skipped on
+      // the build text path (V1 covers this with checkpoint passes, m9b-3).
+      if (!controller.signal.aborted && chatMode !== "plan" && !useBuildTextPath) {
         const explorers = listSubagentTasks(input.sessionId).filter(
           (t) =>
             (t.persona === "explorer" || t.role === "explorer") &&
@@ -1112,9 +1138,11 @@ export class CaideRunner {
         }
       }
       // 2. Todo follow-up (max 1): incomplete todos + turn said something.
+      // Skipped on the build text path (same checkpoint-chain reasoning).
       if (
         !controller.signal.aborted &&
         !todoFollowUpDone &&
+        !useBuildTextPath &&
         chatMode !== "ask" &&
         chatMode !== "plan" &&
         turnUsage.outputTokens > 0

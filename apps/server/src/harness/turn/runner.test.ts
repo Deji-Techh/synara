@@ -122,6 +122,64 @@ describe("caide runner turns (m3)", () => {
     });
   });
 
+  describe("008-m9b build text path gate", () => {
+    const tagText = '<dyad-write path="built.ts">export const built = true;</dyad-write>';
+
+    it("build + autoApproveChanges streams text with no tools and applies tags", async () => {
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), "caide-buildgate-"));
+      const events: HarnessEvent[] = [];
+      const runner = new CaideRunner();
+      await runner.startTurn({
+        sessionId: `s-buildtext-${Date.now()}`,
+        appPath: dir,
+        prompt: "build it",
+        mode: "build",
+        framework: "website",
+        settings: {
+          providerSettings: { openai: { apiKey: "sk-test" } },
+          autoApproveChanges: true,
+        },
+        llmOverride: fakeLlm([{ type: "token", content: tagText }]),
+        onEvent: (e) => events.push(e),
+      });
+      expect(runner.getStatus()).toBe("completed");
+      expect(fs.readFileSync(path.join(dir, "built.ts"), "utf8")).toBe(
+        "export const built = true;",
+      );
+      // Donor parity: zero native tool calls on the text path.
+      expect(events.some((e) => e.type === "tool_call")).toBe(false);
+      expect(events.at(-1)).toMatchObject({
+        type: "turn_end",
+        status: "completed",
+        updatedFiles: ["built.ts"],
+      });
+    });
+
+    it("build without the flag keeps the native tool loop (recovered tool calls)", async () => {
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), "caide-buildgate-"));
+      const events: HarnessEvent[] = [];
+      const runner = new CaideRunner();
+      await runner.startTurn({
+        sessionId: `s-buildnative-${Date.now()}`,
+        appPath: dir,
+        prompt: "build it",
+        mode: "build",
+        framework: "website",
+        settings: { providerSettings: { openai: { apiKey: "sk-test" } } },
+        llmOverride: fakeLlm([{ type: "token", content: tagText }]),
+        onEvent: (e) => events.push(e),
+      });
+      expect(runner.getStatus()).toBe("completed");
+      // Native path: the tag executes as a recovered write_file tool call
+      // (write_file defaults to always-allow); the text path emits none.
+      expect(events).toContainEqual(
+        expect.objectContaining({ type: "tool_call", name: "write_file", status: "started" }),
+      );
+      expect(fs.existsSync(path.join(dir, "built.ts"))).toBe(true);
+      expect(events.at(-1)).toMatchObject({ type: "turn_end", status: "completed" });
+    });
+  });
+
   it("appends a project run log per turn (self-improve telemetry)", async () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "caide-runlog-"));
     const runner = new CaideRunner();
