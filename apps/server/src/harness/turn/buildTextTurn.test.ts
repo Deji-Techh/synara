@@ -54,6 +54,7 @@ describe("runBuildTextTurn (donor build path)", () => {
       turnId: "t-1",
       appPath: dir,
       framework: "website",
+      isNewApp: false,
       autoApprove: true,
       llm: scriptedLlm([
         'Intro text\n<dyad-write path="src/a.ts">export const a = 1;</dyad-write>\nDone',
@@ -77,6 +78,7 @@ describe("runBuildTextTurn (donor build path)", () => {
       sessionId: "s-bt-repair",
       turnId: "t-2",
       appPath: dir,
+      isNewApp: false,
       autoApprove: true,
       llm: scriptedLlm(
         [
@@ -106,6 +108,7 @@ describe("runBuildTextTurn (donor build path)", () => {
       sessionId: "s-bt-cont",
       turnId: "t-3",
       appPath: dir,
+      isNewApp: false,
       autoApprove: true,
       llm: scriptedLlm(
         ['<dyad-write path="half.ts">const half = 1;', "\nconst done = 2;</dyad-write>"],
@@ -127,6 +130,7 @@ describe("runBuildTextTurn (donor build path)", () => {
       sessionId: "s-bt-empty",
       turnId: "t-4",
       appPath: dir,
+      isNewApp: false,
       autoApprove: true,
       llm: scriptedLlm([""]),
       buildMessages: baseMessages,
@@ -148,6 +152,7 @@ describe("runBuildTextTurn (donor build path)", () => {
       turnId: "t-5",
       appPath: dir,
       signal: controller.signal,
+      isNewApp: false,
       autoApprove: true,
       llm: scriptedLlm(['<dyad-write path="x.ts">x</dyad-write>']),
       buildMessages: baseMessages,
@@ -188,6 +193,7 @@ describe("runBuildTextTurn proposal gate (donor shouldAutoApply)", () => {
         sessionId: "s-bt-prop-ok",
         turnId: "t-6",
         appPath: dir,
+        isNewApp: false,
         autoApprove: false,
         llm: scriptedLlm([tagText]),
         buildMessages: baseMessages,
@@ -215,6 +221,7 @@ describe("runBuildTextTurn proposal gate (donor shouldAutoApply)", () => {
         sessionId: "s-bt-prop-no",
         turnId: "t-7",
         appPath: dir,
+        isNewApp: false,
         autoApprove: false,
         llm: scriptedLlm([tagText]),
         buildMessages: baseMessages,
@@ -241,6 +248,7 @@ describe("runBuildTextTurn proposal gate (donor shouldAutoApply)", () => {
       sessionId: "s-bt-prop-headless",
       turnId: "t-8",
       appPath: dir,
+      isNewApp: false,
       autoApprove: false,
       llm: scriptedLlm([tagText]),
       buildMessages: baseMessages,
@@ -248,5 +256,94 @@ describe("runBuildTextTurn proposal gate (donor shouldAutoApply)", () => {
     });
     expect(result.applied).toBeNull();
     expect(fs.existsSync(path.join(dir, "p.ts"))).toBe(false);
+  });
+});
+
+describe("runBuildTextTurn checkpoint chain (donor substantive builds)", () => {
+  it("runs design passes into the same response and applies their tags", async () => {
+    const dir = workspace();
+    const { onEvent } = harness();
+    const seen: ChatMessage[][] = [];
+    const passTag = (n: number): string =>
+      `<dyad-write path="pass${n}.ts">export const p${n} = ${n};</dyad-write>`;
+    const result = await runBuildTextTurn({
+      sessionId: "s-bt-chain",
+      turnId: "t-9",
+      appPath: dir,
+      framework: "website",
+      isNewApp: false,
+      autoApprove: true,
+      llm: scriptedLlm(
+        [
+          '<dyad-write path="a.ts">export const a = 1;</dyad-write><dyad-write path="b.ts">export const b = 2;</dyad-write>',
+          passTag(1),
+          passTag(2),
+          passTag(3),
+          passTag(4),
+          passTag(5),
+        ],
+        seen,
+      ),
+      buildMessages: baseMessages,
+      onEvent,
+    });
+    // Main stream + the 5-pass website core, every pass making edits.
+    expect(seen.length).toBe(6);
+    expect(JSON.stringify(seen[1])).toContain("Checkpoint pass: ui-ux-core");
+    expect(JSON.stringify(seen[5])).toContain("Checkpoint pass: anti-ai-slop");
+    expect(result.applied?.writtenFiles).toEqual(
+      expect.arrayContaining(["a.ts", "b.ts", "pass1.ts", "pass5.ts"]),
+    );
+    expect(fs.readFileSync(path.join(dir, "pass3.ts"), "utf8")).toBe("export const p3 = 3;");
+  });
+
+  it("retries a zero-change pass exactly once with the retry note", async () => {
+    const dir = workspace();
+    const { onEvent } = harness();
+    const seen: ChatMessage[][] = [];
+    const result = await runBuildTextTurn({
+      sessionId: "s-bt-chain-retry",
+      turnId: "t-10",
+      appPath: dir,
+      framework: "website",
+      isNewApp: false,
+      autoApprove: true,
+      llm: scriptedLlm(
+        [
+          '<dyad-write path="a.ts">export const a = 1;</dyad-write><dyad-write path="b.ts">export const b = 2;</dyad-write>',
+          "",
+          "",
+          '<dyad-write path="late.ts">export const late = 1;</dyad-write>',
+        ],
+        seen,
+      ),
+      buildMessages: baseMessages,
+      onEvent,
+    });
+    // Main + ui-ux-core (no change) + retry + motion (change) + remaining core.
+    expect(seen.length).toBeGreaterThan(3);
+    expect(JSON.stringify(seen[2])).toContain("previous attempt at this pass made no changes");
+    expect(result.applied?.writtenFiles).toEqual(
+      expect.arrayContaining(["a.ts", "b.ts", "late.ts"]),
+    );
+  });
+
+  it("skips the chain for insubstantial responses", async () => {
+    const dir = workspace();
+    const { onEvent } = harness();
+    const seen: ChatMessage[][] = [];
+    await runBuildTextTurn({
+      sessionId: "s-bt-chain-skip",
+      turnId: "t-11",
+      appPath: dir,
+      framework: "website",
+      isNewApp: false,
+      autoApprove: true,
+      llm: scriptedLlm(['<dyad-write path="solo.ts">export const solo = 1;</dyad-write>'], seen),
+      buildMessages: baseMessages,
+      onEvent,
+    });
+    expect(seen.length).toBe(1);
+    expect(fs.existsSync(path.join(dir, "solo.ts"))).toBe(true);
   });
 });

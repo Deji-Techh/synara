@@ -12,12 +12,24 @@ import * as path from "node:path";
 import type { HarnessEvent } from "@caide/contracts";
 import type { ChatMessage } from "../session/buildChain.ts";
 import type { LLMAdapter } from "../loop/loop.ts";
-import { hasUnclosedCaideWriteTag } from "../utils/caideTagParser.ts";
+import {
+  getCaideDeleteTags,
+  getCaideRenameTags,
+  getCaideWriteTags,
+  hasUnclosedCaideWriteTag,
+} from "../utils/caideTagParser.ts";
 import {
   applyBuildResponseTags,
   dryRunSearchReplaceTags,
   type BuildTagIssue,
 } from "../../dyad/editing/buildPipeline.ts";
+import {
+  advanceChain,
+  buildPassPrompt,
+  createChain,
+  isBackendCodePath,
+  isOnboardingScreenPath,
+} from "../../dyad/prompts/checkpointChain.ts";
 import type { CaideFramework } from "../../dyad/prompts/index.ts";
 
 export interface BuildTextTurnInput {
@@ -35,6 +47,8 @@ export interface BuildTextTurnInput {
    * a proposal card and applies only on approval (V1 default).
    */
   autoApprove: boolean;
+  /** Brand-new scaffold (blueprint marker present): enables product-flow pass. */
+  isNewApp: boolean;
 }
 
 export interface BuildTextTurnResult {
@@ -42,6 +56,28 @@ export interface BuildTextTurnResult {
   fullText: string;
   /** Pipeline outcome when tags were applied. */
   applied: Awaited<ReturnType<typeof applyBuildResponseTags>> | null;
+}
+
+/** Donor substantive-build gate: chain passes run after real file edits. */
+const CHAIN_EDITS_BEFORE_PASS = 2;
+/** Donor stepCountIs(20): every LLM stream in the turn counts. */
+const MAX_BUILD_STREAMS = 20;
+
+/** Write + rename + delete tag count (donor chainEditsNow, verbatim scope). */
+function countChainEdits(text: string): number {
+  return (
+    getCaideWriteTags(text).length +
+    getCaideRenameTags(text).length +
+    getCaideDeleteTags(text).length
+  );
+}
+
+function touchedPaths(text: string): string[] {
+  return [
+    ...getCaideWriteTags(text).map((tag) => tag.path),
+    ...getCaideRenameTags(text).flatMap((tag) => [tag.from, tag.to]),
+    ...getCaideDeleteTags(text),
+  ];
 }
 
 /** Donor repair prompts (chat_stream_handlers.ts, verbatim). */
@@ -100,12 +136,16 @@ async function streamTextPass(input: {
 export async function runBuildTextTurn(input: BuildTextTurnInput): Promise<BuildTextTurnResult> {
   const { sessionId, signal, llm, appPath } = input;
   let fullText = "";
+  // Donor stepCountIs(20): the main stream, repairs, continuations, and
+  // chain passes all draw from one budget.
+  let streamsUsed = 0;
   const emitTokens = (text: string): void => {
     fullText += text;
     input.onEvent({ type: "token", sessionId, content: text });
   };
 
   // Main pass: history + turn prompt, no tools.
+  streamsUsed++;
   await streamTextPass({
     sessionId,
     llm,
@@ -133,6 +173,7 @@ export async function runBuildTextTurn(input: BuildTextTurnInput): Promise<Build
       content: `${repairAttempts === 0 ? FIX_READ_PROMPT : FIX_WRITE_PROMPT}\n\n${formatIssues(issues)}`,
     };
     repairAttempts++;
+    streamsUsed++;
     incremental = await streamTextPass({
       sessionId,
       llm,
@@ -160,6 +201,7 @@ export async function runBuildTextTurn(input: BuildTextTurnInput): Promise<Build
     !signal?.aborted
   ) {
     continuationAttempts++;
+    streamsUsed++;
     await streamTextPass({
       sessionId,
       llm,
@@ -171,6 +213,47 @@ export async function runBuildTextTurn(input: BuildTextTurnInput): Promise<Build
       onEvent: input.onEvent,
       emitTokens,
     });
+  }
+
+  // Checkpoint chain (donor, substantive builds only): deterministic
+  // design-audit passes stream into the same response; a zero-change pass
+  // retries exactly once, then the chain moves on. Mirrors the local-agent
+  // chain. Deferred to later work: auto-fix problems (needs the 016
+  // typecheck worker) and the MCP-agent detour (needs 013 + 018).
+  let chainEditsNow = countChainEdits(fullText);
+  if (chainEditsNow >= CHAIN_EDITS_BEFORE_PASS && !signal?.aborted) {
+    const touched = touchedPaths(fullText);
+    const chain = createChain({
+      isNewApp: input.isNewApp,
+      hasOnboardingScreens: touched.some(isOnboardingScreenPath),
+      hasBackendCode: touched.some(isBackendCodePath),
+      // De-Pro: no quota tiers exist, so every turn runs the full chain.
+      freeModelMode: false,
+      isWebApp: input.framework === "website",
+    });
+    let chainEditsAtPassStart = chainEditsNow;
+    for (;;) {
+      if (signal?.aborted || streamsUsed >= MAX_BUILD_STREAMS) break;
+      const madeEdits = chainEditsNow > chainEditsAtPassStart;
+      const { step, pass } = advanceChain(chain, madeEdits);
+      if (!pass) break;
+      chainEditsAtPassStart = chainEditsNow;
+      streamsUsed++;
+      await streamTextPass({
+        sessionId,
+        llm,
+        messages: await input.buildMessages([
+          { role: "assistant", content: fullText },
+          { role: "user", content: buildPassPrompt(pass, { retry: step === "retry" }) },
+        ]),
+        ...(signal ? { signal } : {}),
+        onEvent: input.onEvent,
+        emitTokens,
+      });
+      // Re-count edits across the whole response (including tags the pass
+      // emitted) to seed the next advance.
+      chainEditsNow = countChainEdits(fullText);
+    }
   }
 
   if (signal?.aborted) return { fullText, applied: null };

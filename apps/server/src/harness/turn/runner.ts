@@ -630,8 +630,11 @@ export class CaideRunner {
       // needsAppBlueprint at app creation). No marker (imports, existing
       // apps, later chats) → no gate, exactly like a cleared V1 app flag.
       // (The enableAppBlueprint master toggle lands with 018 settings.)
+      // The marker doubles as the checkpoint chain's isNewApp signal.
+      let isNewAppBuild = false;
       try {
-        if (hasBlueprintMarker(input.appPath)) setBlueprintRequired(input.sessionId);
+        isNewAppBuild = hasBlueprintMarker(input.appPath);
+        if (isNewAppBuild) setBlueprintRequired(input.sessionId);
       } catch {
         // arming best-effort; never fails turn start
       }
@@ -1101,6 +1104,7 @@ export class CaideRunner {
           buildMessages: (extra) => buildTurnMessages(extra),
           onEvent: forward,
           autoApprove: input.settings?.autoApproveChanges === true,
+          isNewApp: isNewAppBuild,
         });
       } else {
         await runLoopOnce();
