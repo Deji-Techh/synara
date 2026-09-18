@@ -25,9 +25,7 @@ function addressScore(name: string, address: string): number {
   return score;
 }
 
-export function selectLanAddress(
-  interfaces: NodeJS.Dict<NetworkInterfaceInfo[]>,
-): string | null {
+export function selectLanAddress(interfaces: NodeJS.Dict<NetworkInterfaceInfo[]>): string | null {
   const candidates: Array<{ address: string; score: number }> = [];
   for (const [name, addresses] of Object.entries(interfaces)) {
     for (const address of addresses ?? []) {
@@ -40,9 +38,7 @@ export function selectLanAddress(
   }
 
   candidates.sort((left, right) => right.score - left.score);
-  return (
-    candidates.find((candidate) => Number.isFinite(candidate.score))?.address ?? null
-  );
+  return candidates.find((candidate) => Number.isFinite(candidate.score))?.address ?? null;
 }
 
 /** Live lookup: best LAN IPv4 or null (WiFi off / no network). */

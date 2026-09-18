@@ -137,6 +137,13 @@ export const createEffectServer = Effect.fn(function* (
         } catch {
           // tunnel teardown is best-effort on shutdown
         }
+        try {
+          void import("./harness/preview/proxy.ts")
+            .then((m) => m.stopAllProxies())
+            .catch(() => undefined);
+        } catch {
+          // proxy teardown is best-effort on shutdown
+        }
       }),
     );
   }

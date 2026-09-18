@@ -5,7 +5,7 @@ import { Worker } from "node:worker_threads";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-const WORKER_PATH = path.resolve(__dirname, "..", "..", "worker", "proxy_server.js");
+const WORKER_PATH = path.resolve(__dirname, "proxy_server.cjs");
 
 /** Finds a currently-free localhost port (closed before returning). */
 function findFreePort(): Promise<number> {

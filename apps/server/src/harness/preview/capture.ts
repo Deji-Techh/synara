@@ -85,7 +85,14 @@ function connectPageDebugger(endpoint: string, timeoutMs: number): Promise<PageS
   return new Promise((resolve, reject) => {
     const ws = new WebSocket(endpoint, { handshakeTimeout: timeoutMs });
     let nextId = 1;
-    const pending = new Map<number, { resolve: (v: unknown) => void; reject: (e: Error) => void; timer: ReturnType<typeof setTimeout> }>();
+    const pending = new Map<
+      number,
+      {
+        resolve: (v: unknown) => void;
+        reject: (e: Error) => void;
+        timer: ReturnType<typeof setTimeout>;
+      }
+    >();
     const listeners = new Map<string, Array<() => void>>();
     let settled = false;
     const failAll = (err: Error) => {
@@ -137,7 +144,12 @@ function connectPageDebugger(endpoint: string, timeoutMs: number): Promise<PageS
     });
     ws.on("message", (data) => {
       try {
-        const msg = JSON.parse(String(data)) as { id?: number; method?: string; result?: unknown; error?: { message?: string } };
+        const msg = JSON.parse(String(data)) as {
+          id?: number;
+          method?: string;
+          result?: unknown;
+          error?: { message?: string };
+        };
         if (typeof msg.id === "number") {
           const p = pending.get(msg.id);
           if (!p) return;

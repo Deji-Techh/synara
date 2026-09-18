@@ -400,7 +400,7 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
     modifiesState: false,
     readOnly: true,
     caideMapping: "caide-native",
-    caideTool: "lint_project",
+    caideTool: "dyad/verify",
   },
   {
     name: "run_command",

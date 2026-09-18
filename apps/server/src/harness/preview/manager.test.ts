@@ -37,16 +37,16 @@ describe("normalizePreviewUrl", () => {
 
 describe("PORT_CONFLICT_PATTERN", () => {
   it("matches node and expo port-taken output", () => {
-    expect(PORT_CONFLICT_PATTERN.test("Error: listen EADDRINUSE: address already in use :::8081")).toBe(
+    expect(
+      PORT_CONFLICT_PATTERN.test("Error: listen EADDRINUSE: address already in use :::8081"),
+    ).toBe(true);
+    expect(PORT_CONFLICT_PATTERN.test("Port 8081 is already in use")).toBe(true);
+    expect(PORT_CONFLICT_PATTERN.test("Port 8081 is running vento-rn in another window")).toBe(
       true,
     );
-    expect(PORT_CONFLICT_PATTERN.test("Port 8081 is already in use")).toBe(true);
     expect(
-      PORT_CONFLICT_PATTERN.test("Port 8081 is running vento-rn in another window"),
-    ).toBe(true);
-    expect(PORT_CONFLICT_PATTERN.test("Input is required, but 'npx expo' is in non-interactive mode")).toBe(
-      false,
-    );
+      PORT_CONFLICT_PATTERN.test("Input is required, but 'npx expo' is in non-interactive mode"),
+    ).toBe(false);
     expect(PORT_CONFLICT_PATTERN.test("> Use port 8082 instead?")).toBe(true);
   });
 

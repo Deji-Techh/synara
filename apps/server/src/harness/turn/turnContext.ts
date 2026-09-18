@@ -31,7 +31,7 @@ import { ALL_MISC_TOOLS } from "../../dyad/misc/index.ts";
 import { ALL_GOAL_TOOLS } from "../../dyad/goals/index.ts";
 import { ALL_GITHUB_TOOLS, ALL_VERCEL_TOOLS, ALL_COOLIFY_TOOLS } from "../../dyad/publish/index.ts";
 import { ALL_SHARE_TOOLS } from "../../dyad/share/index.ts";
-import { ALL_VERIFY_TOOLS } from "../../dyad/verify/index.ts";
+import { ALL_TYPECHECK_TOOLS, ALL_VERIFY_TOOLS } from "../../dyad/verify/index.ts";
 import { ALL_SANDBOX_TOOLS } from "../../dyad/sandbox/index.ts";
 import {
   ALL_WEB_FETCH_TOOLS,
@@ -181,6 +181,7 @@ const UNIFIED_DEFS: ToolDef[] = [
   ...ALL_COOLIFY_TOOLS,
   ...ALL_SHARE_TOOLS,
   ...ALL_VERIFY_TOOLS,
+  ...ALL_TYPECHECK_TOOLS,
   ...ALL_SANDBOX_TOOLS,
   ...ALL_WEB_FETCH_TOOLS,
   ...ALL_WEB_SEARCH_TOOLS,

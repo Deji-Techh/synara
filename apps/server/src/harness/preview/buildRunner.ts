@@ -56,10 +56,13 @@ export function parseBuildErrors(stderr: string, stdout = ""): StructuredBuildEr
 }
 
 const METRO_RESOLVE_PATTERN = /Unable to resolve\s+([^\s]+)\s+from\s+([^\s:]+)(?::(\d+))?/i;
-const TRANSFORM_ERROR_PATTERN = /(TransformError|SyntaxError|ReferenceError|TypeError)\s*:?\s*([^\n]{1,300})/i;
+const TRANSFORM_ERROR_PATTERN =
+  /(TransformError|SyntaxError|ReferenceError|TypeError)\s*:?\s*([^\n]{1,300})/i;
 const TRANSFORM_LOCATION_PATTERN = /([a-zA-Z0-9_\-./]+\.(?:tsx?|jsx?|js))(?:[:(](\d+))?/;
-const FLUTTER_RUN_PATTERN = /(?:No (?:devices|connected devices)|flutter: command not found|Could not resolve|Target .* not found|Gradle (?:build|task).*failed|CocoaPods?.*(?:not installed|failed)|Dart SDK (?:not found|version))/i;
-const EXPO_TUNNEL_PATTERN = /Tunnel URL not found|expo (?:start )?(?:failed|crashed)| packing failed|Metro (?:bundler )?(?:crashed|encountered an error)/i;
+const FLUTTER_RUN_PATTERN =
+  /(?:No (?:devices|connected devices)|flutter: command not found|Could not resolve|Target .* not found|Gradle (?:build|task).*failed|CocoaPods?.*(?:not installed|failed)|Dart SDK (?:not found|version))/i;
+const EXPO_TUNNEL_PATTERN =
+  /Tunnel URL not found|expo (?:start )?(?:failed|crashed)| packing failed|Metro (?:bundler )?(?:crashed|encountered an error)/i;
 
 /**
  * Structured boot-error parser for dev-server output (item 3): Metro
@@ -90,7 +93,9 @@ export function parseBootErrors(logText: string): StructuredBuildError[] {
   const lines = logText.split("\n");
   const peekLocation = (index: number): { file: string; line?: number } | null => {
     for (let j = index + 1; j < Math.min(index + 4, lines.length); j++) {
-      const match = TRANSFORM_LOCATION_PATTERN.exec((lines[j] ?? "").replace(/\u001b\[[0-9;]*m/g, ""));
+      const match = TRANSFORM_LOCATION_PATTERN.exec(
+        (lines[j] ?? "").replace(/\u001b\[[0-9;]*m/g, ""),
+      );
       if (match?.[1]) {
         return { file: match[1], ...(match[2] ? { line: parseInt(match[2], 10) } : {}) };
       }

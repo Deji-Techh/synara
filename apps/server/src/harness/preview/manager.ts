@@ -12,10 +12,13 @@ import { getThreadWorkspaceCwd } from "../../harnessCompat.ts";
 export interface PreviewSession {
   threadId: string;
   process: ChildProcess;
+  /** Direct dev-server URL (tunnel/LAN derive from this). */
   url: string;
   kind: "web" | "native";
   logs: string[];
   appDir: string;
+  /** Proxy-fronted serving URL (injected clients) once the proxy is up. */
+  proxyUrl?: string;
   /** True when spawned with a LAN-bound command (serves phones on the same WiFi). */
   lan: boolean;
   /** Spawn epoch ms; readyAt set when the URL resolves (cold-start metric). */
@@ -77,17 +80,23 @@ export function getPreviewState(threadId: string): {
   lastReloadAt?: number;
   /** Owning app dir when a session exists (quality gates prefer it). */
   appDir?: string;
+  /** Direct dev-server URL (tunnel/LAN derive from this, never the proxy). */
+  directUrl?: string;
 } {
   const session = sessions.get(threadId);
   if (!session || session.process.exitCode !== null) {
     return { running: false, url: "", logs: [] };
   }
+  // Serve through the proxy when it is up (injected clients for visual
+  // editing/screenshots/logs); fall back to the direct URL otherwise.
+  const servingUrl = session.proxyUrl || session.url;
   return {
     running: true,
-    url: session.url,
+    url: servingUrl,
     logs: [...session.logs],
     kind: session.kind,
     appDir: session.appDir,
+    directUrl: session.url || undefined,
     ...(session.readyAt !== undefined && session.startedAt
       ? { coldStartMs: Math.max(0, session.readyAt - session.startedAt) }
       : {}),
@@ -323,7 +332,8 @@ export async function startPreview(input: {
     // A localhost-bound session also serves loopback after a LAN restart, but
     // a LAN session always satisfies plain requests — reuse when compatible.
     if (!wantLan || existing.lan) {
-      return { url: existing.url, kind: existing.kind };
+      const serving = await ensureSessionProxy(input.threadId, existing);
+      return { url: serving, kind: existing.kind };
     }
     await stopPreview(input.threadId);
   }
@@ -429,7 +439,12 @@ export async function startPreview(input: {
           session.url = url;
           session.readyAt = Date.now();
           clearTimeout(timeout);
-          resolve({ url, kind: session.kind });
+          // Front the dev server with the injection proxy (best-effort:
+          // a proxy failure must never fail the preview itself).
+          void ensureSessionProxy(input.threadId, session).then(
+            (serving) => resolve({ url: serving, kind: session.kind }),
+            () => resolve({ url, kind: session.kind }),
+          );
         }
       }
     };
@@ -472,7 +487,26 @@ export async function stopPreview(threadId: string): Promise<boolean> {
   if (!session) return false;
   session.process.kill("SIGTERM");
   sessions.delete(threadId);
+  const { stopProxyForSession } = await import("./proxy.ts");
+  await stopProxyForSession(threadId).catch(() => undefined);
   return true;
+}
+
+/**
+ * Ensure the injection proxy fronts a live session (donor proxy plane:
+ * the served page carries visual-editing, screenshots, log forwarding).
+ * Best-effort — returns the direct URL when the proxy cannot start.
+ */
+async function ensureSessionProxy(threadId: string, session: PreviewSession): Promise<string> {
+  if (!session.url) return session.url;
+  if (session.proxyUrl) return session.proxyUrl;
+  try {
+    const { startProxyForSession } = await import("./proxy.ts");
+    session.proxyUrl = await startProxyForSession(threadId, session.url);
+    return session.proxyUrl;
+  } catch {
+    return session.url;
+  }
 }
 
 /**

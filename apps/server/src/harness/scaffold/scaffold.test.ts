@@ -186,9 +186,9 @@ describe("framework scaffolds (d)", () => {
       const config = getFrameworkConfig(framework);
       const files = await config.scaffold(dir, "RegApp");
       expect(files.length).toBeGreaterThan(0);
-      expect(JSON.parse(fs.readFileSync(path.join(dir, ".caide", "framework.json"), "utf8")).framework).toBe(
-        framework,
-      );
+      expect(
+        JSON.parse(fs.readFileSync(path.join(dir, ".caide", "framework.json"), "utf8")).framework,
+      ).toBe(framework);
     }
   });
 

@@ -90,18 +90,21 @@ export function relayAppIdForThread(threadId: string): number {
 
 function localPortForPreview(threadId: string): number {
   const state = getPreviewState(threadId);
-  if (!state.running || !state.url) {
+  // The tunnel reverse-proxies the DEV server, never the injection proxy
+  // (the proxy binds its own port in front of it).
+  const direct = state.directUrl || state.url;
+  if (!state.running || !direct) {
     throw new TunnelPreviewError(
       "No active preview — call open_preview first, then share it through the tunnel.",
     );
   }
   try {
-    const port = new URL(state.url).port;
+    const port = new URL(direct).port;
     const parsed = Number(port);
     if (!Number.isInteger(parsed) || parsed <= 0) throw new Error("no port");
     return parsed;
   } catch {
-    throw new TunnelPreviewError(`Preview URL has no local port: ${state.url}`);
+    throw new TunnelPreviewError(`Preview URL has no local port: ${direct}`);
   }
 }
 

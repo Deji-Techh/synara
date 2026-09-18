@@ -4,7 +4,7 @@ import { Worker } from "node:worker_threads";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-const WORKER_PATH = path.resolve(__dirname, "..", "..", "worker", "proxy_server.js");
+const WORKER_PATH = path.resolve(__dirname, "proxy_server.cjs");
 
 /** Binds a TCP listener and resolves once it is actively occupying `port`. */
 function occupyPort(port: number): Promise<net.Server> {

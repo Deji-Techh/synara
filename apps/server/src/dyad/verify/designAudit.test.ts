@@ -19,12 +19,26 @@ function fixture(files: Record<string, string>): string {
 }
 
 const GOOD_SPEC = JSON.stringify({
-  colorTokens: { accent: "#007AFF", background: "#F2F2F7", surface: "#FFF", textPrimary: "#000", textMuted: "#636366" },
+  colorTokens: {
+    accent: "#007AFF",
+    background: "#F2F2F7",
+    surface: "#FFF",
+    textPrimary: "#000",
+    textMuted: "#636366",
+  },
   darkMode: { enabled: true },
   imagery: { strategy: "generated" },
-  viewportsVerified: ["compact-phone", "large-phone", "phone-landscape", "tablet-portrait", "tablet-landscape"],
+  viewportsVerified: [
+    "compact-phone",
+    "large-phone",
+    "phone-landscape",
+    "tablet-portrait",
+    "tablet-landscape",
+  ],
 });
-const GOOD_MOTION = JSON.stringify({ entries: [{ id: "tab", trigger: "press", technique: "default", reducedMotionFallback: "none" }] });
+const GOOD_MOTION = JSON.stringify({
+  entries: [{ id: "tab", trigger: "press", technique: "default", reducedMotionFallback: "none" }],
+});
 
 describe("verify_design audit", () => {
   it("passes a compliant workspace", () => {
@@ -59,12 +73,15 @@ describe("verify_design audit", () => {
     });
     const findings = auditDesignWorkspace(dir);
     const viewports = findings.filter((f) => f.check === "viewports");
-    expect(viewports.some((f) => f.level === "major" && /meta name="viewport"/i.test(f.message))).toBe(true);
+    expect(
+      viewports.some((f) => f.level === "major" && /meta name="viewport"/i.test(f.message)),
+    ).toBe(true);
     expect(viewports.some((f) => /Fixed phone width/.test(f.message))).toBe(true);
     expect(viewports.some((f) => /No responsive rules/.test(f.message))).toBe(true);
   });
 
-  it("passes a responsive web workspace with viewport meta", () => {    const dir = fixture({
+  it("passes a responsive web workspace with viewport meta", () => {
+    const dir = fixture({
       ".caide/design-spec.json": GOOD_SPEC,
       ".caide/motion-spec.json": GOOD_MOTION,
       "package.json": JSON.stringify({ dependencies: { react: "*" } }),
@@ -121,7 +138,9 @@ describe("verify_design audit", () => {
     });
     const findings = auditDesignWorkspace(dir);
     expect(
-      findings.some((f) => f.check === "viewports" && f.file === "web/index.html" && f.level === "major"),
+      findings.some(
+        (f) => f.check === "viewports" && f.file === "web/index.html" && f.level === "major",
+      ),
     ).toBe(true);
   });
 });
