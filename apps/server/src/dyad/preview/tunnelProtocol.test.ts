@@ -22,12 +22,7 @@ describe("tunnel protocol helpers", () => {
 
   it("builds the secondary WebSocket URL with tunnel id, token, and stream", () => {
     expect(
-      wsSecondaryUrl(
-        "https://caide-preview-api.onrender.com",
-        "tunnel-1",
-        "secret",
-        "stream-9",
-      ),
+      wsSecondaryUrl("https://caide-preview-api.onrender.com", "tunnel-1", "secret", "stream-9"),
     ).toBe(
       "wss://caide-preview-api.onrender.com/v1/tunnels/ws/tunnel-1?token=secret&stream=stream-9",
     );
@@ -78,8 +73,10 @@ describe("tunnel protocol helpers", () => {
     const buffer = Buffer.alloc(WS_FRAME_CHUNK_BYTES + 7, 0xab);
     const chunks = toBase64Chunks(buffer);
     expect(chunks).toHaveLength(2);
-    expect(Buffer.from(chunks[0], "base64")).toHaveLength(WS_FRAME_CHUNK_BYTES);
-    expect(Buffer.from(chunks[1], "base64")).toHaveLength(7);
+    const [first, second] = chunks;
+    if (first === undefined || second === undefined) throw new Error("chunks missing");
+    expect(Buffer.from(first, "base64")).toHaveLength(WS_FRAME_CHUNK_BYTES);
+    expect(Buffer.from(second, "base64")).toHaveLength(7);
     expect(Buffer.concat(chunks.map((c) => Buffer.from(c, "base64")))).toEqual(buffer);
   });
 

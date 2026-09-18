@@ -18,7 +18,7 @@ export const REDACTED_ENV_VALUE = "••••••••";
 export interface EnvVar {
   key: string;
   value: string;
-  description?: string;
+  description?: string | undefined;
 }
 
 export interface AppEnvVar {
@@ -64,9 +64,7 @@ export function resolveRedactedEnvVarUpdates({
     if (envVar.value !== REDACTED_ENV_VALUE) return envVar;
     const existingValue = existingByKey.get(envVar.key);
     if (existingValue === undefined || !isSensitiveEnvVarKey(envVar.key)) {
-      throw new EnvFileError(
-        `A masked value cannot be used for ${envVar.key}; enter a new value`,
-      );
+      throw new EnvFileError(`A masked value cannot be used for ${envVar.key}; enter a new value`);
     }
     return { key: envVar.key, value: existingValue };
   });
@@ -81,10 +79,7 @@ export function getEnvFilePath(appPath: string): string {
  * permissions. Exclusive temp file prevents partial writes and refuses to
  * follow a malicious `.env.local` symlink planted by generated app code.
  */
-export async function writeEnvFileSecurely(
-  destination: string,
-  contents: string,
-): Promise<void> {
+export async function writeEnvFileSecurely(destination: string, contents: string): Promise<void> {
   let existing: fs.Stats | undefined;
   try {
     existing = await fs.promises.lstat(destination);
@@ -292,8 +287,7 @@ export async function updatePostgresUrlEnvVar(
 
 export async function readPostgresUrlFromEnvFile(appPath: string): Promise<string> {
   const contents = await readEnvFile(appPath);
-  const postgresUrl = parseEnvFile(contents).find((envVar) => envVar.key === "POSTGRES_URL")
-    ?.value;
+  const postgresUrl = parseEnvFile(contents).find((envVar) => envVar.key === "POSTGRES_URL")?.value;
   if (!postgresUrl) throw new EnvFileError("POSTGRES_URL not found in .env.local");
   return postgresUrl;
 }

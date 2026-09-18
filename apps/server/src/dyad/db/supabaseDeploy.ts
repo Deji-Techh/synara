@@ -144,7 +144,7 @@ export interface SupabaseDeployProgress {
   completed: number;
   succeeded: number;
   failed: number;
-  functionName?: string;
+  functionName?: string | undefined;
 }
 
 export async function mapSettledWithConcurrency<T, R>(
@@ -378,10 +378,7 @@ async function collectLocalDependencies({
   }
   function visit(node: import("typescript").Node): void {
     if (unsafeReason) return;
-    if (
-      (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
-      node.moduleSpecifier
-    ) {
+    if ((ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) && node.moduleSpecifier) {
       addSpecifier(node.moduleSpecifier);
       return;
     }
@@ -519,9 +516,7 @@ export interface SupabaseDeployArgs {
  * single bulk activation → dangling prune → finished/failed progress.
  * Returns error strings (empty when clean).
  */
-export async function deploySupabaseFunctions(
-  args: SupabaseDeployArgs,
-): Promise<string[]> {
+export async function deploySupabaseFunctions(args: SupabaseDeployArgs): Promise<string[]> {
   const { appPath, projectId, organizationSlug, skipPruneEdgeFunctions, onProgress, deps } = args;
   const functionsDir = path.join(appPath, "supabase", "functions");
   try {

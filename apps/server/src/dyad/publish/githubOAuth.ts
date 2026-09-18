@@ -30,7 +30,9 @@ function deviceCodeUrl(): string {
 
 function accessTokenUrl(): string {
   const base = testBase();
-  return base ? `${base}/github/login/oauth/access_token` : "https://github.com/login/oauth/access_token";
+  return base
+    ? `${base}/github/login/oauth/access_token`
+    : "https://github.com/login/oauth/access_token";
 }
 
 export class GithubOAuthError extends Error {
@@ -53,16 +55,14 @@ async function postJson(url: string, body: unknown, signal?: AbortSignal): Promi
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify(body),
-    signal,
+    signal: signal ?? null,
   });
   const data = (await res.json().catch(() => null)) as {
     error?: string;
     error_description?: string;
   } | null;
   if (!res.ok) {
-    throw new GithubOAuthError(
-      `GitHub API Error: ${data?.error_description || res.statusText}`,
-    );
+    throw new GithubOAuthError(`GitHub API Error: ${data?.error_description || res.statusText}`);
   }
   return data;
 }
@@ -148,10 +148,14 @@ export async function pollGithubAccessToken(
     }
     await new Promise<void>((resolve, reject) => {
       const timer = setTimeout(resolve, interval * 1000);
-      opts?.signal?.addEventListener("abort", () => {
-        clearTimeout(timer);
-        reject(opts.signal?.reason ?? new Error("aborted"));
-      }, { once: true });
+      opts?.signal?.addEventListener(
+        "abort",
+        () => {
+          clearTimeout(timer);
+          reject(opts.signal?.reason ?? new Error("aborted"));
+        },
+        { once: true },
+      );
     });
   }
 }

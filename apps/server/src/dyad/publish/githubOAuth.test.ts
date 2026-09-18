@@ -36,10 +36,14 @@ function handler(req: http.IncomingMessage, res: http.ServerResponse): void {
   if (url.pathname === "/github/login/oauth/access_token" && req.method === "POST") {
     polls++;
     if (mode === "pending-then-ok") {
-      return polls === 1 ? json(200, { error: "authorization_pending" }) : json(200, { access_token: "gho_test" });
+      return polls === 1
+        ? json(200, { error: "authorization_pending" })
+        : json(200, { access_token: "gho_test" });
     }
     if (mode === "slow-down-then-ok") {
-      return polls === 1 ? json(200, { error: "slow_down" }) : json(200, { access_token: "gho_test" });
+      return polls === 1
+        ? json(200, { error: "slow_down" })
+        : json(200, { access_token: "gho_test" });
     }
     return json(200, { error: "access_denied", error_description: "denied" });
   }
@@ -91,9 +95,9 @@ describe("github device flow", () => {
   it("fails fast on access_denied", async () => {
     polls = 0;
     mode = "deny";
-    await expect(pollGithubAccessToken("dev-1", { interval: 0, expiresIn: 30 })).rejects.toBeInstanceOf(
-      GithubOAuthError,
-    );
+    await expect(
+      pollGithubAccessToken("dev-1", { interval: 0, expiresIn: 30 }),
+    ).rejects.toBeInstanceOf(GithubOAuthError);
   });
 
   it("rejects empty token saves", () => {

@@ -126,7 +126,9 @@ describe("coolify publish (phase 4c)", () => {
   });
 
   it("presents countable calls", () => {
-    expect(coolifyConnectTool.presentCall?.({})).toBe("Connect Coolify instance");
+    expect(coolifyConnectTool.presentCall?.({ instanceUrl: "https://coolify.test" })).toBe(
+      "Connect Coolify instance",
+    );
     expect(coolifyStatusTool.presentCall?.({})).toBe("Coolify status");
   });
 });

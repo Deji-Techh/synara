@@ -25,22 +25,27 @@ export class VercelApiError extends Error {
 export interface VercelProject {
   id: string;
   name: string;
-  framework?: string;
+  framework?: string | undefined;
 }
 
 export interface VercelDeployment {
   id: string;
-  url?: string;
-  state?: string;
-  target?: string;
-  createdAt?: number;
+  url?: string | undefined;
+  state?: string | undefined;
+  target?: string | undefined;
+  createdAt?: number | undefined;
 }
 
 async function vercelFetch(
   baseUrl: string,
   token: string,
   path: string,
-  options: { method?: string; body?: unknown; signal?: AbortSignal; teamId?: string } = {},
+  options: {
+    method?: string | undefined;
+    body?: unknown;
+    signal?: AbortSignal | undefined;
+    teamId?: string | undefined;
+  } = {},
 ): Promise<unknown> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 25_000);
@@ -90,9 +95,9 @@ function requireToken(token: string): void {
 /** Validate a token by reading the auth user. */
 export async function getVercelAuthUser(input: {
   token: string;
-  baseUrl?: string;
-  signal?: AbortSignal;
-}): Promise<{ id: string; username?: string; email?: string }> {
+  baseUrl?: string | undefined;
+  signal?: AbortSignal | undefined;
+}): Promise<{ id: string; username?: string | undefined; email?: string | undefined }> {
   requireToken(input.token);
   const data = (await vercelFetch(input.baseUrl ?? VERCEL_API_BASE_URL, input.token, "/v2/user", {
     signal: input.signal,
@@ -104,9 +109,9 @@ export async function getVercelAuthUser(input: {
 
 export async function listVercelProjects(input: {
   token: string;
-  teamId?: string;
-  baseUrl?: string;
-  signal?: AbortSignal;
+  teamId?: string | undefined;
+  baseUrl?: string | undefined;
+  signal?: AbortSignal | undefined;
 }): Promise<VercelProject[]> {
   requireToken(input.token);
   const data = (await vercelFetch(
@@ -128,9 +133,9 @@ export async function listVercelProjects(input: {
 export async function createVercelProject(input: {
   token: string;
   name: string;
-  teamId?: string;
-  baseUrl?: string;
-  signal?: AbortSignal;
+  teamId?: string | undefined;
+  baseUrl?: string | undefined;
+  signal?: AbortSignal | undefined;
 }): Promise<VercelProject> {
   requireToken(input.token);
   const name = input.name
@@ -156,9 +161,9 @@ export async function createVercelProject(input: {
 export async function listVercelDeployments(input: {
   token: string;
   projectId: string;
-  teamId?: string;
-  baseUrl?: string;
-  signal?: AbortSignal;
+  teamId?: string | undefined;
+  baseUrl?: string | undefined;
+  signal?: AbortSignal | undefined;
 }): Promise<VercelDeployment[]> {
   requireToken(input.token);
   const data = (await vercelFetch(
@@ -193,9 +198,9 @@ export async function triggerVercelDeployment(input: {
   token: string;
   projectId: string;
   projectName: string;
-  teamId?: string;
-  baseUrl?: string;
-  signal?: AbortSignal;
+  teamId?: string | undefined;
+  baseUrl?: string | undefined;
+  signal?: AbortSignal | undefined;
 }): Promise<VercelDeployment> {
   requireToken(input.token);
   const data = (await vercelFetch(
@@ -219,9 +224,9 @@ export { NEON_VERCEL_ENV_KEYS };
 async function listVercelEnvIds(input: {
   token: string;
   projectId: string;
-  teamId?: string;
-  baseUrl?: string;
-  signal?: AbortSignal;
+  teamId?: string | undefined;
+  baseUrl?: string | undefined;
+  signal?: AbortSignal | undefined;
 }): Promise<Map<string, string>> {
   const data = (await vercelFetch(
     input.baseUrl ?? VERCEL_API_BASE_URL,
@@ -244,9 +249,9 @@ export async function syncNeonEnvToVercel(input: {
   token: string;
   projectId: string;
   vars: Partial<Record<(typeof NEON_VERCEL_ENV_KEYS)[number], string>>;
-  teamId?: string;
-  baseUrl?: string;
-  signal?: AbortSignal;
+  teamId?: string | undefined;
+  baseUrl?: string | undefined;
+  signal?: AbortSignal | undefined;
 }): Promise<string[]> {
   requireToken(input.token);
   const existing = await listVercelEnvIds({
@@ -298,9 +303,9 @@ export async function syncNeonEnvToVercel(input: {
 export async function removeNeonEnvFromVercel(input: {
   token: string;
   projectId: string;
-  teamId?: string;
-  baseUrl?: string;
-  signal?: AbortSignal;
+  teamId?: string | undefined;
+  baseUrl?: string | undefined;
+  signal?: AbortSignal | undefined;
 }): Promise<string[]> {
   requireToken(input.token);
   const existing = await listVercelEnvIds({

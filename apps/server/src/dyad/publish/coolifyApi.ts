@@ -15,20 +15,20 @@ export class CoolifyApiError extends Error {
 
 export interface CoolifyServer {
   uuid: string;
-  name?: string;
-  ip?: string;
+  name?: string | undefined;
+  ip?: string | undefined;
 }
 
 export interface CoolifyProject {
   uuid: string;
-  name?: string;
+  name?: string | undefined;
 }
 
 export interface CoolifyApplication {
   uuid: string;
-  name?: string;
-  status?: string;
-  fqdn?: string;
+  name?: string | undefined;
+  status?: string | undefined;
+  fqdn?: string | undefined;
 }
 
 async function coolifyFetch(
@@ -36,10 +36,10 @@ async function coolifyFetch(
   token: string,
   path: string,
   options: {
-    method?: string;
+    method?: string | undefined;
     body?: unknown;
-    signal?: AbortSignal;
-    query?: Record<string, string>;
+    signal?: AbortSignal | undefined;
+    query?: Record<string, string> | undefined;
   } = {},
 ): Promise<unknown> {
   const controller = new AbortController();
@@ -85,13 +85,13 @@ function base(input: { instanceUrl: string; token: string }): { baseUrl: string;
 export async function probeCoolifyInstance(input: {
   instanceUrl: string;
   token: string;
-  signal?: AbortSignal;
-}): Promise<{ version?: string }> {
+  signal?: AbortSignal | undefined;
+}): Promise<{ version?: string | undefined }> {
   const { baseUrl, token } = base(input);
   const data = (await coolifyFetch(baseUrl, token, "/api/v1/version", {
     signal: input.signal,
   })) as {
-    version?: string;
+    version?: string | undefined;
   };
   return { version: data.version };
 }
@@ -99,7 +99,7 @@ export async function probeCoolifyInstance(input: {
 export async function listCoolifyServers(input: {
   instanceUrl: string;
   token: string;
-  signal?: AbortSignal;
+  signal?: AbortSignal | undefined;
 }): Promise<CoolifyServer[]> {
   const { baseUrl, token } = base(input);
   const data = (await coolifyFetch(baseUrl, token, "/api/v1/servers", {
@@ -119,7 +119,7 @@ export async function listCoolifyServers(input: {
 export async function listCoolifyProjects(input: {
   instanceUrl: string;
   token: string;
-  signal?: AbortSignal;
+  signal?: AbortSignal | undefined;
 }): Promise<CoolifyProject[]> {
   const { baseUrl, token } = base(input);
   const data = (await coolifyFetch(baseUrl, token, "/api/v1/projects", {
@@ -135,7 +135,7 @@ export async function createCoolifyProject(input: {
   instanceUrl: string;
   token: string;
   name: string;
-  signal?: AbortSignal;
+  signal?: AbortSignal | undefined;
 }): Promise<CoolifyProject> {
   const { baseUrl, token } = base(input);
   const name = input.name.trim();
@@ -154,8 +154,8 @@ export async function triggerCoolifyDeploy(input: {
   instanceUrl: string;
   token: string;
   applicationUuid: string;
-  force?: boolean;
-  signal?: AbortSignal;
+  force?: boolean | undefined;
+  signal?: AbortSignal | undefined;
 }): Promise<{ queued: boolean }> {
   const { baseUrl, token } = base(input);
   if (!input.applicationUuid.trim()) throw new CoolifyApiError("Application uuid is required.");
@@ -172,7 +172,7 @@ export async function getCoolifyApplication(input: {
   instanceUrl: string;
   token: string;
   applicationUuid: string;
-  signal?: AbortSignal;
+  signal?: AbortSignal | undefined;
 }): Promise<CoolifyApplication> {
   const { baseUrl, token } = base(input);
   const data = (await coolifyFetch(

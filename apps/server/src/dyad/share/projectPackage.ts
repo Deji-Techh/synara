@@ -155,9 +155,7 @@ async function createGitBundle(
 ): Promise<ArchiveFileInput | undefined> {
   if (!fs.existsSync(path.join(appPath, ".git"))) return undefined;
   const bundlePath = path.join(tempDirectory, "repository.bundle");
-  const result = await runGit(["bundle", "create", bundlePath, "--all"], appPath).catch(
-    () => null,
-  );
+  const result = await runGit(["bundle", "create", bundlePath, "--all"], appPath).catch(() => null);
   if (!result || result.exitCode !== 0) return undefined;
   const stat = await fs.promises.stat(bundlePath);
   return {
@@ -175,17 +173,21 @@ async function collectCaideStateFiles(
   const files: ArchiveFileInput[] = [];
   // Whole goals/ + evidence trees (bounded by the archive limits).
   const trees = [".caide/goals", ".caide/evidence"];
-  for (const tree of trees) {
-    const root = path.join(appPath, tree);
+  const walkTree = async (dir: string): Promise<void> => {
     let entries: fs.Dirent[];
     try {
-      entries = await fs.promises.readdir(root, { withFileTypes: true, recursive: true } as never);
+      entries = await fs.promises.readdir(dir, { withFileTypes: true });
     } catch {
-      continue;
+      return;
     }
-    for (const entry of entries as fs.Dirent[]) {
+    for (const entry of entries) {
+      const absolute = path.join(dir, entry.name);
+      if (entry.isSymbolicLink()) continue;
+      if (entry.isDirectory()) {
+        await walkTree(absolute);
+        continue;
+      }
       if (!entry.isFile()) continue;
-      const absolute = path.join(entry.parentPath ?? entry.path, entry.name);
       const relative = path.relative(appPath, absolute).replaceAll("\\", "/");
       if (isSecretFile(relative)) {
         securityReport.excludedFiles.push(relative);
@@ -199,6 +201,9 @@ async function collectCaideStateFiles(
         sha256: await sha256File(absolute),
       });
     }
+  };
+  for (const tree of trees) {
+    await walkTree(path.join(appPath, tree));
   }
   for (const rel of CAIDE_STATE_PATHS) {
     const absolute = path.join(appPath, rel);
@@ -255,9 +260,7 @@ export async function exportProjectPackage(
   const stat = await fs.promises.stat(params.appPath).catch(() => null);
   if (!stat?.isDirectory()) throw new ProjectPackageError("Project workspace is unavailable");
   const securityReport = newSecurityReport();
-  const tempDirectory = await fs.promises.mkdtemp(
-    path.join(os.tmpdir(), "caide-project-package-"),
-  );
+  const tempDirectory = await fs.promises.mkdtemp(path.join(os.tmpdir(), "caide-project-package-"));
   try {
     const files = await collectWorkspaceFiles(params.appPath, securityReport);
     const stateFiles = await collectCaideStateFiles(params.appPath, securityReport);
@@ -322,15 +325,15 @@ export async function inspectProjectPackage(
   packagePath: string,
 ): Promise<InspectProjectPackageResult> {
   const stat = await fs.promises.stat(packagePath);
-  let manifest: ProjectPackageManifest | null = null;
-  let metadata: ProjectPackageMetadata | null = null;
+  const seen: Record<string, unknown> = {};
   await readProjectArchive(packagePath, {
     onJson: (name, value) => {
-      if (name === "manifest") manifest = ProjectPackageManifestSchema.parse(value);
-      if (name === "metadata") metadata = value as unknown as ProjectPackageMetadata;
+      seen[name] = value;
     },
   });
-  if (!manifest) throw new ProjectPackageError("Package has no manifest");
+  if (!seen["manifest"]) throw new ProjectPackageError("Package has no manifest");
+  const manifest = ProjectPackageManifestSchema.parse(seen["manifest"]);
+  const metadata = (seen["metadata"] as ProjectPackageMetadata | undefined) ?? null;
   const checksum = await sha256File(packagePath);
   return {
     path: packagePath,
@@ -348,17 +351,18 @@ export async function importProjectPackage(
   params: ImportProjectPackageParams,
 ): Promise<ImportProjectPackageResult> {
   const staging = await fs.promises.mkdtemp(path.join(os.tmpdir(), "caide-project-import-"));
-  let manifest: ProjectPackageManifest | null = null;
+  const seen: Record<string, unknown> = {};
   try {
     await readProjectArchive(params.packagePath, {
       destinationDirectory: staging,
       onJson: (name, value) => {
-        if (name === "manifest") manifest = ProjectPackageManifestSchema.parse(value);
+        seen[name] = value;
       },
     });
-    if (!manifest) throw new ProjectPackageError("Package has no manifest");
+    if (!seen["manifest"]) throw new ProjectPackageError("Package has no manifest");
+    const manifest = ProjectPackageManifestSchema.parse(seen["manifest"]);
     const projectName = sanitizeProjectName(
-      params.projectName ?? (manifest as ProjectPackageManifest).projectName,
+      params.projectName ?? manifest.projectName,
     );
     const destination = path.join(params.workspaceRoot, projectName);
     if (fs.existsSync(destination)) {
@@ -368,9 +372,7 @@ export async function importProjectPackage(
     let gitRestored = false;
     if (fs.existsSync(bundlePath)) {
       await fs.promises.mkdir(params.workspaceRoot, { recursive: true });
-      const result = await runGit(["clone", "--", bundlePath, destination], ".").catch(
-        () => null,
-      );
+      const result = await runGit(["clone", "--", bundlePath, destination], ".").catch(() => null);
       if (!result || result.exitCode !== 0) {
         throw new ProjectPackageError("Failed to restore Git history from the package bundle");
       }
@@ -386,7 +388,9 @@ export async function importProjectPackage(
         await Promise.all(
           existing
             .filter((e) => e.name !== ".git")
-            .map((e) => fs.promises.rm(path.join(destination, e.name), { recursive: true, force: true })),
+            .map((e) =>
+              fs.promises.rm(path.join(destination, e.name), { recursive: true, force: true }),
+            ),
         );
       }
       await copyDirectoryRecursive(workspaceRoot, destination);

@@ -59,8 +59,9 @@ describe("proxy worker port fallback", () => {
       if (typeof m !== "string") return;
       messages.push(m);
       for (let i = waiters.length - 1; i >= 0; i--) {
-        if (waiters[i].predicate(m)) {
-          waiters[i].resolve(m);
+        const waiter = waiters[i];
+        if (waiter && waiter.predicate(m)) {
+          waiter.resolve(m);
           waiters.splice(i, 1);
         }
       }
