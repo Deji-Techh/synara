@@ -982,5 +982,90 @@ ios/Flutter/.last_build_id
 `,
   );
 
+  // 15. Web platform support (flutter run -d web-server / flutter build
+  // web — the preview path). flutter create --platforms web equivalent:
+  // index.html + manifest + placeholder icons (1px PNGs; replace with
+  // real artwork before store submission).
+  await write(
+    "web/index.html",
+    `<!DOCTYPE html>
+<html>
+<head>
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="${appName} built with Caide.">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="${appName}">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>${appName}</title>
+  <link rel="manifest" href="manifest.json">
+</head>
+<body>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>
+`,
+  );
+  await write(
+    "web/manifest.json",
+    JSON.stringify(
+      {
+        name: appName,
+        short_name: appName,
+        start_url: ".",
+        display: "standalone",
+        background_color: "#0175C2",
+        theme_color: "#0175C2",
+        description: `${appName} built with Caide.`,
+        orientation: "portrait-primary",
+        prefer_related_applications: false,
+        icons: [
+          { src: "icons/Icon-192.png", sizes: "192x192", type: "image/png" },
+          { src: "icons/Icon-512.png", sizes: "512x512", type: "image/png" },
+          {
+            src: "icons/Icon-maskable-192.png",
+            sizes: "192x192",
+            type: "image/png",
+            purpose: "maskable",
+          },
+          {
+            src: "icons/Icon-maskable-512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "maskable",
+          },
+        ],
+      },
+      null,
+      4,
+    ),
+  );
+  // Placeholder 1px transparent PNGs (replace with real icons).
+  const placeholderIcon = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGJgAQAAAP//AwAABgAFV7+r1AAAAABJRU5ErkJggg==",
+    "base64",
+  );
+  for (const iconPath of [
+    "web/favicon.png",
+    "web/icons/Icon-192.png",
+    "web/icons/Icon-512.png",
+    "web/icons/Icon-maskable-192.png",
+    "web/icons/Icon-maskable-512.png",
+  ]) {
+    const full = path.join(root, iconPath);
+    await fs.promises.mkdir(path.dirname(full), { recursive: true });
+    await fs.promises.writeFile(full, placeholderIcon);
+    createdFiles.push(iconPath);
+  }
+
   return createdFiles;
 }

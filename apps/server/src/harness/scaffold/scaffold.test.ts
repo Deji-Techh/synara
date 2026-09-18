@@ -48,6 +48,13 @@ describe("framework scaffolds (d)", () => {
       "AI_RULES.md",
       "README.md",
       ".env.example",
+      "web/index.html",
+      "web/manifest.json",
+      "web/favicon.png",
+      "web/icons/Icon-192.png",
+      "web/icons/Icon-512.png",
+      "web/icons/Icon-maskable-192.png",
+      "web/icons/Icon-maskable-512.png",
       ".caide/framework.json",
       ".caide/design-spec.json",
       ".caide/motion-spec.json",
@@ -68,6 +75,9 @@ describe("framework scaffolds (d)", () => {
     expect(s.read("lib/services/api_client.dart")).toContain("createApiClient");
     expect(s.read("AI_RULES.md")).toContain("flutter test");
     expect(s.read("README.md")).toContain("flutter run -d web-server");
+    // Web platform support (preview runs the web-server build).
+    expect(s.read("web/index.html")).toContain("flutter_bootstrap.js");
+    expect(JSON.parse(s.read("web/manifest.json")).display).toBe("standalone");
     expect(JSON.parse(s.read(".caide/framework.json")).framework).toBe("flutter");
   });
 
