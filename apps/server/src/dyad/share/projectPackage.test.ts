@@ -31,7 +31,12 @@ function fixture(): string {
 describe("project packages", () => {
   it("exports, inspects, and imports with git history", async () => {
     const dir = fixture();
-    const exported = await exportProjectPackage({ appPath: dir, projectName: "Demo App" });
+    const outDir = fs.mkdtempSync(path.join(os.tmpdir(), "caide-pkg-out-"));
+    const exported = await exportProjectPackage({
+      appPath: dir,
+      projectName: "Demo App",
+      destination: path.join(outDir, "demo.caidepkg"),
+    });
     expect(exported.path.endsWith(".caidepkg")).toBe(true);
     expect(exported.manifest.includes.gitHistory).toBe(true);
     expect(exported.securityReport.excludedFiles).toContain(".env");
