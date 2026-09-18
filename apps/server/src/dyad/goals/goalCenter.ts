@@ -7,11 +7,7 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
-import {
-  GoalStateSchema,
-  createGoalState,
-  type GoalState,
-} from "./goalState.ts";
+import { GoalStateSchema, createGoalState, type GoalState } from "./goalState.ts";
 
 export class GoalCenterError extends Error {
   constructor(message: string) {
@@ -72,7 +68,10 @@ export async function listGoals(appPath: string): Promise<GoalState[]> {
   const goals: GoalState[] = [];
   for (const entry of entries) {
     try {
-      const raw = await fs.promises.readFile(path.join(goalsDir(appPath), entry, "state.json"), "utf8");
+      const raw = await fs.promises.readFile(
+        path.join(goalsDir(appPath), entry, "state.json"),
+        "utf8",
+      );
       goals.push(GoalStateSchema.parse(JSON.parse(raw)));
     } catch {
       // skip invalid goal dirs
@@ -81,18 +80,27 @@ export async function listGoals(appPath: string): Promise<GoalState[]> {
   return goals.sort((a, b) => b.updatedAt - a.updatedAt);
 }
 
-export async function steerGoal(appPath: string, goalId: string, instruction: string): Promise<GoalState> {
+export async function steerGoal(
+  appPath: string,
+  goalId: string,
+  instruction: string,
+): Promise<GoalState> {
   if (!instruction.trim()) throw new GoalCenterError("Instruction must not be empty.");
   const state = await readGoal(appPath, goalId);
   state.steering.push({ instruction: instruction.trim(), createdAt: Date.now() });
   return writeState(appPath, state);
 }
 
-export async function pauseGoal(appPath: string, goalId: string, reason?: string): Promise<GoalState> {
+export async function pauseGoal(
+  appPath: string,
+  goalId: string,
+  reason?: string,
+): Promise<GoalState> {
   const state = await readGoal(appPath, goalId);
   if (state.status === "completed") throw new GoalCenterError("Goal is already completed.");
   state.status = "paused";
-  if (reason?.trim()) state.steering.push({ instruction: `Paused: ${reason.trim()}`, createdAt: Date.now() });
+  if (reason?.trim())
+    state.steering.push({ instruction: `Paused: ${reason.trim()}`, createdAt: Date.now() });
   return writeState(appPath, state);
 }
 
@@ -106,14 +114,23 @@ export async function resumeGoal(appPath: string, goalId: string): Promise<GoalS
   return writeState(appPath, state);
 }
 
-export async function cancelGoal(appPath: string, goalId: string, reason?: string): Promise<GoalState> {
+export async function cancelGoal(
+  appPath: string,
+  goalId: string,
+  reason?: string,
+): Promise<GoalState> {
   const state = await readGoal(appPath, goalId);
   for (const task of state.tasks) {
     if (task.status !== "verified") task.status = "cancelled";
   }
   state.status = "awaiting-user";
   if (reason?.trim()) {
-    state.blocker = { reason: reason.trim(), userAction: null, retryable: false, detectedAt: Date.now() };
+    state.blocker = {
+      reason: reason.trim(),
+      userAction: null,
+      retryable: false,
+      detectedAt: Date.now(),
+    };
   }
   return writeState(appPath, state);
 }
@@ -141,6 +158,7 @@ export async function editGoal(
             dependencies: [],
             completionCriteria: [],
             verificationMethod: null,
+            runLedger: [],
           };
     });
   }
@@ -148,7 +166,11 @@ export async function editGoal(
   return writeState(appPath, state);
 }
 
-export async function retryTask(appPath: string, goalId: string, taskId: string): Promise<GoalState> {
+export async function retryTask(
+  appPath: string,
+  goalId: string,
+  taskId: string,
+): Promise<GoalState> {
   const state = await readGoal(appPath, goalId);
   const task = state.tasks.find((t) => t.id === taskId);
   if (!task) throw new GoalCenterError(`Task not found: ${taskId}`);

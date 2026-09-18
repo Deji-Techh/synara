@@ -71,6 +71,8 @@ import {
   Stream,
 } from "effect";
 import { RpcClient, RpcSerialization } from "effect/unstable/rpc";
+import type * as Rpc from "effect/unstable/rpc/Rpc";
+import type * as RpcGroup from "effect/unstable/rpc/RpcGroup";
 import * as Socket from "effect/unstable/socket/Socket";
 
 import { APP_VERSION } from "./branding";
@@ -191,11 +193,21 @@ function awaitWithAbort<A>(promise: Promise<A>, signal: AbortSignal | undefined)
 // merge or their calls die client-side with "Unknown RPC method".
 // Exported for tests: this is the exact group the socket client is built from,
 // so the membership test below guards the real call path (not a copy of it).
-export const wsFeatureSocketClientGroup = WsFeatureRpcGroup.merge(WsDeviceRpcGroup)
-  .merge(WsGoalsRpcGroup)
-  .merge(WsSubagentsRpcGroup)
-  .merge(WsPreviewRpcGroup);
-const makeRpcClient = RpcClient.make(wsFeatureSocketClientGroup);
+// Single variadic merge (mirrors the server's AdmittedWsFeatureRpcGroup).
+// Split const: the inferred 100+ RPC union exceeds what the compiler will
+// serialize on an exported node (TS7056), while RpcClient.make below needs
+// the full member map. The unexported const keeps full fidelity for the
+// client; the exported alias carries the top type (runtime-identical, so
+// the membership test still guards the real call path).
+const wsFeatureSocketClientGroupFull = WsFeatureRpcGroup.merge(
+  WsDeviceRpcGroup,
+  WsGoalsRpcGroup,
+  WsSubagentsRpcGroup,
+  WsPreviewRpcGroup,
+);
+export const wsFeatureSocketClientGroup =
+  wsFeatureSocketClientGroupFull as unknown as RpcGroup.RpcGroup<Rpc.Any>;
+const makeRpcClient = RpcClient.make(wsFeatureSocketClientGroupFull);
 const makeBootstrapRpcClient = RpcClient.make(WsBootstrapRpcGroup);
 const REQUEST_TIMEOUT_MS = 60_000;
 const FEATURE_CONNECTION_PROBE_TIMEOUT_MS = 10_000;

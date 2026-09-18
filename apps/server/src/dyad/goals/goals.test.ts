@@ -7,7 +7,21 @@ import * as path from "node:path";
 import { describe, expect, it } from "vitest";
 import type { ToolContext } from "../../harness/tools/defineTool.ts";
 import { createGoalState, isGoalComplete, type GoalState } from "./goalState.ts";
-import { goalStatusTool, updateGoalStateTool } from "./goalTools.ts";
+import {
+  captureEvidenceTool,
+  detectLintCommand,
+  detectTestCommand,
+  goalStatusTool,
+  updateGoalStateTool,
+} from "./goalTools.ts";
+import { createGoal, readGoal } from "./goalCenter.ts";
+
+
+function mustTask(state: GoalState, index: number) {
+  const task = state.tasks[index];
+  if (!task) throw new Error(`fixture task ${index} missing`);
+  return task;
+}
 
 function toolCtx(appPath: string): ToolContext {
   return {
@@ -51,10 +65,13 @@ describe("dyad goals transplant", () => {
     const fresh = createGoalState("Ship auth", [{ title: "A" }, { title: "B" }]);
     expect(fresh.version).toBe(1);
     expect(fresh.tasks).toHaveLength(2);
-    expect(fresh.tasks[1].dependencies).toEqual(["task-1"]);
+    expect(mustTask(fresh, 1).dependencies).toEqual(["task-1"]);
     expect(isGoalComplete(fresh)).toBe(false);
     expect(isGoalComplete(verifiedState())).toBe(true);
-    const noCriteria = { ...verifiedState(), verification: { passed: true, checkedAt: 2, revision: "abc", criteria: [] } };
+    const noCriteria = {
+      ...verifiedState(),
+      verification: { passed: true, checkedAt: 2, revision: "abc", criteria: [] },
+    };
     expect(isGoalComplete(noCriteria)).toBe(false);
   });
 
@@ -79,5 +96,64 @@ describe("dyad goals transplant", () => {
     await expect(
       updateGoalStateTool.execute({ goalId: "../escape", state }, toolCtx(dir)),
     ).rejects.toThrow(/Invalid goalId/);
+  });
+
+  it("couples capture_evidence to goal state with server revision", async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "caide-goal-"));
+    const goal = await createGoal(dir, "Ship", [{ title: "A" }]);
+    const taskId = mustTask(goal, 0).id;
+    const st = await readGoal(dir, goal.goalId);
+    mustTask(st, 0).status = "running";
+    await updateGoalStateTool.execute({ goalId: goal.goalId, state: st }, toolCtx(dir));
+    const out = (await captureEvidenceTool.execute(
+      {
+        goalId: goal.goalId,
+        taskId,
+        kind: "test",
+        label: "unit",
+        reference: "npm run test",
+        passed: true,
+      },
+      toolCtx(dir),
+    )) as string;
+    expect(out).toContain(`Evidence recorded for goal ${goal.goalId}`);
+    expect(out).toContain("revision: (unknown)");
+    const after = await readGoal(dir, goal.goalId);
+    expect(mustTask(after, 0).status).toBe("verifying");
+    expect(after.evidence[0]).toMatchObject({ taskId, kind: "test", passed: true, revision: null });
+    await expect(
+      captureEvidenceTool.execute(
+        {
+          goalId: goal.goalId,
+          taskId: "nope",
+          kind: "test",
+          label: "x",
+          reference: "y",
+          passed: true,
+        },
+        toolCtx(dir),
+      ),
+    ).rejects.toThrow(/Task not found/);
+    await expect(
+      captureEvidenceTool.execute(
+        { goalId: "missing", kind: "test", label: "x", reference: "y", passed: true },
+        toolCtx(dir),
+      ),
+    ).rejects.toThrow(/Goal not found/);
+  });
+
+  it("auto-detects test and lint commands from package.json", async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "caide-goal-"));
+    expect(await detectTestCommand(dir)).toBe("npm run test");
+    expect(await detectLintCommand(dir)).toBe("npm run lint");
+    fs.writeFileSync(
+      path.join(dir, "package.json"),
+      JSON.stringify({
+        scripts: { "test:unit": "vitest run", lint: "eslint ." },
+        devDependencies: { vitest: "^3.0.0" },
+      }),
+    );
+    expect(await detectTestCommand(dir)).toBe("npm run test:unit");
+    expect(await detectLintCommand(dir)).toBe("npm run lint");
   });
 });

@@ -33,8 +33,12 @@ V1 refs: `src/ipc/handlers/chat_stream_handlers.ts:2273-2298` (`chat:cancel` →
 
 ## 2. Turn engine transplant
 
-Port V1 `local_agent_handler.ts` flow as `apps/server/src/dyad/agent/turnEngine.ts`
-(or equivalent), keeping V1's exact order:
+Port V1 `src/pro/main/ipc/handlers/local_agent/local_agent_handler.ts` flow as
+the turn orchestration in `apps/server/src/harness/turn/` (runner/loop),
+keeping V1's exact order. Tool/prompt/consent primitives land in
+`apps/server/src/dyad/` (tools, prompts, plan, mcp). There is no `dyad/agent/`
+folder by design: orchestration lives behind the frozen `/harness` transport,
+primitives live in `dyad/` (007 §1 as amended).
 
 - Handler branches per mode (ask `readOnly:true`, plan `planModeOnly:true`, agent full,
   build XML-tag path — §3). `resolveChatModeForTurn` stored/requested/default with

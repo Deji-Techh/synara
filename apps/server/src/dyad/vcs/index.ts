@@ -35,5 +35,11 @@ export {
   createVersion,
   listVersions,
   restoreVersion,
+  getVersionChanges,
+  checkoutVersion,
+  revertVersion,
+  updateVersionMetadata,
+  ensureCaideGitignored,
   type AppVersion,
+  type VersionChange,
 } from "./versions.ts";

@@ -94,6 +94,11 @@ export const GoalStateSchema = z.object({
       detectedAt: z.number(),
     })
     .nullable(),
+  // Donor goal-row parity (goal_scheduler.ts): consecutive run failures drive
+  // exponential-backoff retries (nextRetryAt) and the no-progress block
+  // threshold. Goal-level (across tasks), persisted so restarts keep counting.
+  consecutiveFailures: z.number().int().nonnegative().default(0),
+  nextRetryAt: z.number().nullable().default(null),
   verification: z.object({
     passed: z.boolean(),
     checkedAt: z.number().nullable(),
@@ -136,6 +141,8 @@ export function createGoalState(
     evidence: [],
     steering: [],
     blocker: null,
+    consecutiveFailures: 0,
+    nextRetryAt: null,
     verification: { passed: false, checkedAt: null, revision: null, criteria: [] },
     updatedAt: Date.now(),
   };

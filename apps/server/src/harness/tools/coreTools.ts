@@ -269,8 +269,8 @@ export const screenshotTool = defineTool({
       const full = path.join(ctx.appPath, rel);
       fs.mkdirSync(path.dirname(full), { recursive: true });
       fs.writeFileSync(full, Buffer.from(shot.base64, "base64"));
-      const { executeCaptureEvidence } = await import("../../dyad/misc/miscTools.ts");
-      await executeCaptureEvidence(
+      const { appendSessionEvidence } = await import("../../dyad/misc/miscTools.ts");
+      await appendSessionEvidence(
         { kind: "screenshot", label: "preview screenshot", reference: rel, passed: true },
         ctx.sessionId,
         ctx.appPath,

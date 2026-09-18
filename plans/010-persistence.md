@@ -51,14 +51,20 @@ getChat/getChats/deleteChat/searchChats/deleteMessages` with cascade.
   every turn. V1's "edit AI_RULES.md only when asked to remember" rule stays
   in the prompt.
 
-## 5. Goals engine (autonomy restored, server-side)
+## 5. Goals engine (autonomy restored, server-side) — CLOSED (see 007 §8 A2/A3)
 
 - Port `update_goal_state` (full-state replace), `capture_evidence` WITH
   `goalId/taskId`/kind-enum/revision gating (re-couple evidence→predicate),
-  `run_tests`/`run_lint` (confirm `test_project`/`lint_project` naming or rename).
+  `run_tests`/`run_lint` (naming confirmed: donor `goal_verification.ts`
+  names keep; coexist with framework-aware `test_project`/`lint_project`).
+  Single `capture_evidence` def only (`dyad/goals`).
 - Scheduler: interval driver + `recoverExpiredRuns` + `nextRetryAt` persistence +
   wake-on-mutation + retryable-blocker probing + stall detection (no Electron tray;
   lifetime = server). Failure/run ledger ("M4" debt) ships here, not later.
+  → Shipped: `dyad/goals/goalScheduler.ts` (ledger + backoff + 8-run block +
+  30m lease recovery + probing + stall + 10s driver + wake + outbox/sink),
+  registered per-turn in `harness/turn/runner.ts`, lifetime in `effectServer.ts`.
+  WS event type + toast rendering ride Phase 6 (015/017) via `drainGoalEvents()`.
 - Notifications via WS events (015 renders them): goal completed/failed,
   input-needed. No silent goals.
 - Questionnaire 5q→3q alignment lives in 008; prompt text promising

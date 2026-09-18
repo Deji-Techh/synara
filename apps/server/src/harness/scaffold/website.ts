@@ -997,6 +997,7 @@ dist-ssr
 *.local
 test-results/
 playwright-report/
+.caide/
 `,
   );
 

@@ -20,6 +20,13 @@ import {
 } from "./goalCenter.ts";
 import { advanceGoal, nextActionableTasks, verifyGoal } from "./goalScheduler.ts";
 import { readGoalState, verifyGoalTool } from "./goalTools.ts";
+import type { GoalState } from "./goalState.ts";
+
+function mustTask(state: GoalState, index: number) {
+  const task = state.tasks[index];
+  if (!task) throw new Error(`fixture task ${index} missing`);
+  return task;
+}
 
 function appDir(withGit = false): string {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "caide-goal-"));
@@ -41,22 +48,30 @@ function toolCtx(appPath: string): ToolContext {
 describe("dyad goal center + scheduler (a2)", () => {
   it("creates, lists, steers, pauses, resumes, edits, retries, cancels", async () => {
     const dir = appDir();
-    const goal = await createGoal(dir, "Ship auth", [{ title: "Build login" }, { title: "Add tests" }]);
+    const goal = await createGoal(dir, "Ship auth", [
+      { title: "Build login" },
+      { title: "Add tests" },
+    ]);
     expect(goal.status).toBe("active");
-    expect((await listGoals(dir))).toHaveLength(1);
+    expect(await listGoals(dir)).toHaveLength(1);
 
     const steered = await steerGoal(dir, goal.goalId, "Use JWT sessions");
     expect(steered.steering).toHaveLength(1);
 
     const paused = await pauseGoal(dir, goal.goalId, "waiting on creds");
     expect(paused.status).toBe("paused");
-    await expect(resumeGoal(dir, goal.goalId)).resolves.toMatchObject({ status: "active", blocker: null });
+    await expect(resumeGoal(dir, goal.goalId)).resolves.toMatchObject({
+      status: "active",
+      blocker: null,
+    });
 
-    const edited = await editGoal(dir, goal.goalId, { tasks: [{ title: "Build login" }, { title: "Add OAuth" }] });
+    const edited = await editGoal(dir, goal.goalId, {
+      tasks: [{ title: "Build login" }, { title: "Add OAuth" }],
+    });
     expect(edited.tasks.map((t) => t.title)).toEqual(["Build login", "Add OAuth"]);
 
-    const retried = await retryTask(dir, goal.goalId, edited.tasks[1].id);
-    expect(retried.tasks[1].status).toBe("pending");
+    const retried = await retryTask(dir, goal.goalId, mustTask(edited, 1).id);
+    expect(mustTask(retried, 1).status).toBe("pending");
 
     const cancelled = await cancelGoal(dir, goal.goalId, "pivoting");
     expect(cancelled.status).toBe("awaiting-user");
@@ -88,10 +103,16 @@ describe("dyad goal center + scheduler (a2)", () => {
 
     // Mark running + attach passing evidence at HEAD, then verify.
     const state = await readGoalState(dir, goal.goalId);
-    state.tasks[0].status = "running";
+    mustTask(state, 0).status = "running";
     state.evidence.push({
-      id: "ev-1", taskId: state.tasks[0].id, kind: "test", label: "unit",
-      reference: "bun run test", passed: true, revision, createdAt: Date.now(),
+      id: "ev-1",
+      taskId: mustTask(state, 0).id,
+      kind: "test",
+      label: "unit",
+      reference: "bun run test",
+      passed: true,
+      revision,
+      createdAt: Date.now(),
     });
     const { GoalStateSchema } = await import("./goalState.ts");
     const file = path.join(dir, ".caide", "goals", goal.goalId, "state.json");

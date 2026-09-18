@@ -418,7 +418,7 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
     modifiesState: false,
     readOnly: true,
     caideMapping: "caide-native",
-    caideTool: "test_project",
+    caideTool: "dyad/goals",
   },
   // Donor alias: models taught run_build resolve to build_project via
   // resolveDonorAliasTarget instead of dying as Unknown tool.
@@ -438,7 +438,7 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
     modifiesState: false,
     readOnly: true,
     caideMapping: "caide-native",
-    caideTool: "lint_project",
+    caideTool: "dyad/goals",
   },
   {
     name: "run_pre_commit",
@@ -453,10 +453,10 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
     name: "capture_evidence",
     category: "verify",
     defaultConsent: "always",
-    modifiesState: false,
-    readOnly: true,
+    modifiesState: true,
+    readOnly: false,
     caideMapping: "caide-native",
-    caideTool: "dyad/misc",
+    caideTool: "dyad/goals",
   },
   {
     name: "telemetry_review",

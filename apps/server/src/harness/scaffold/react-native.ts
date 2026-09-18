@@ -895,6 +895,7 @@ npm-debug.*
 *.key
 *.mobileprovision
 .env.local
+.caide/
 `,
   );
 

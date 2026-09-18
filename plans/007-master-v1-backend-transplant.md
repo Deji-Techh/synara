@@ -18,18 +18,18 @@ V2 = this repo. Donor `/home/DejiTech/dev/dyad` is reference-only (ambiguities, 
 
 ### BRING IN (V1 → `apps/server/src/dyad/**`, Electron-only bits → `apps/desktop`)
 
-| V1 source                                                                                                                                                                                                                    | Lands in                                             | Plan |
-| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- | ---- |
-| `src/pro/main/ipc/handlers/local_agent/` (handler, tools, consent, MCP) + `src/ipc/handlers/chat_stream_handlers.ts` turn flow                                                                                               | `dyad/agent/` (new) behind harness protocol          | 008  |
-| `src/prompts/` (all constructors, skill packs, loader, guides)                                                                                                                                                               | `dyad/prompts/` (replace partials)                   | 008  |
-| Providers: `language_model_constants`, `get_model_client`, `remote_language_model_catalog`, `opencode_zen_models`, ChatGPT auth, custom provider/model handlers                                                              | `dyad/providers/`                                    | 009  |
-| `src/db/` + `drizzle/` (threads, messages, versions, goals, MCP, collections, language models) + compaction/memory/goal-scheduler                                                                                            | `dyad/store/` + `persistence/Migrations`             | 010  |
-| Preview: `worker/proxy_server.js` + injected clients, `preview_tunnel_service`, `public_preview_service`, console/problems/tests/security/configure, visual editing, DeviceLab, Capacitor + managed toolchain, ReleaseCentre | `dyad/preview/` + `apps/desktop` (toolchain)         | 011  |
-| GitHub/Vercel handlers, `vercel_neon_sync`, CAIDEPKG package service, remote share, collaboration + preview sessions (server code already vendored — wire client)                                                            | `dyad/publish/`, `dyad/share/`, `dyad/collab/`       | 012  |
-| MCP handlers/manager/OAuth/consent, Supabase + Neon full lifecycles, `add_integration`                                                                                                                                       | `dyad/mcp/`, `dyad/db/` (extend)                     | 013  |
-| Skills/prompts CRUD, context pickers, media mentions, queue/tabs/versions UI-state backends, image-gen backend, theme-gen (user-keyed), help bot (user-keyed)                                                                | `dyad/knowledge/` + 017 homes                        | 014  |
-| Deep-link router (7 routes), file dialogs, safeStorage recovery, first-run, notification events                                                                                                                              | `apps/desktop`                                       | 015  |
-| Services (`app_runtime`, `git_service`, `isolated_test_db`, `collaboration_service`, `provider_api_key_validation`), code-explorer + tsc workers, explore/code-search/LSP tools, scaffolds, release scripts                  | `dyad/services/`, `dyad/workers/`, `dyad/scaffolds/` | 016  |
+| V1 source                                                                                                                                                                                                                    | Lands in                                                                                                         | Plan |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ---- |
+| `src/pro/main/ipc/handlers/local_agent/` (handler, tools, consent, MCP) + `src/ipc/handlers/chat_stream_handlers.ts` turn flow                                                                                               | turn orchestration → `harness/turn/`, tool/prompt/consent primitives → `dyad/` (transport/flow adaptation split) | 008  |
+| `src/prompts/` (all constructors, skill packs, loader, guides)                                                                                                                                                               | `dyad/prompts/` (replace partials)                                                                               | 008  |
+| Providers: `language_model_constants`, `get_model_client`, `remote_language_model_catalog`, `opencode_zen_models`, ChatGPT auth, custom provider/model handlers                                                              | `dyad/providers/`                                                                                                | 009  |
+| `src/db/` + `drizzle/` (threads, messages, versions, goals, MCP, collections, language models) + compaction/memory/goal-scheduler                                                                                            | `dyad/store/` + `persistence/Migrations`                                                                         | 010  |
+| Preview: `worker/proxy_server.js` + injected clients, `preview_tunnel_service`, `public_preview_service`, console/problems/tests/security/configure, visual editing, DeviceLab, Capacitor + managed toolchain, ReleaseCentre | `dyad/preview/` + `apps/desktop` (toolchain)                                                                     | 011  |
+| GitHub/Vercel handlers, `vercel_neon_sync`, CAIDEPKG package service, remote share, collaboration + preview sessions (server code already vendored — wire client)                                                            | `dyad/publish/`, `dyad/share/`, `dyad/collab/`                                                                   | 012  |
+| MCP handlers/manager/OAuth/consent, Supabase + Neon full lifecycles, `add_integration`                                                                                                                                       | `dyad/mcp/`, `dyad/db/` (extend)                                                                                 | 013  |
+| Skills/prompts CRUD, context pickers, media mentions, queue/tabs/versions UI-state backends, image-gen backend, theme-gen (user-keyed), help bot (user-keyed)                                                                | `dyad/knowledge/` + 017 homes                                                                                    | 014  |
+| Deep-link router (7 routes), file dialogs, safeStorage recovery, first-run, notification events                                                                                                                              | `apps/desktop`                                                                                                   | 015  |
+| Services (`app_runtime`, `git_service`, `isolated_test_db`, `collaboration_service`, `provider_api_key_validation`), code-explorer + tsc workers, explore/code-search/LSP tools, scaffolds, release scripts                  | `dyad/services/`, `dyad/workers/`, `dyad/scaffolds/`                                                             | 016  |
 
 ### DELETE (never port)
 
@@ -74,7 +74,7 @@ V2 = this repo. Donor `/home/DejiTech/dev/dyad` is reference-only (ambiguities, 
   `oauth.dyad.sh`) received via our deep links (015). Our own broker is a
   recorded later milestone (013), not a wont-port.
 
-| V1 Pro mechanism | Free equivalent |
+| V1 Pro mechanism                                            | Free equivalent                                                                     |
 | ----------------------------------------------------------- | ----------------------------------------------------------------------------------- |
 | Engine gateway + `usesEngineEndpoint` tools                 | Direct provider calls with user keys; `basicAgentMode`/`PRO_AGENT_ONLY` stay no-ops |
 | `free-pro` / free-agent quota / `/free` quota               | Deleted. No limits anywhere                                                         |
@@ -142,4 +142,27 @@ Pro/quota/gateway stack (§3) · i18n (4 langs) · evals/benchmarks/119-e2e ·
 templates catalog (superseded by immutable Blank/RN/Flutter/Website) ·
 release-notes iframe (superseded by WhatsNew surface) · V1 orb-halo streaming style ·
 `prune.js` · Cloudflare deploy (absent in both) · notch IPC (drop unless spec'd) ·
-deb/rpm packaging (dmg/nsis/AppImage only) · global OS shortcuts (neither had them).
+deb/rpm packaging (dmg/nsis/AppImage only) · global OS shortcuts (neither had them) ·
+V1 local-DB migration (fresh start, no importer — user-locked) · evals/benchmarks stay out.
+
+## 8. Amendment log (locked decisions — do not re-litigate)
+
+- **A1 (010 close-out):** there is no `dyad/agent/` folder by design; the §1
+  turn-flow cell now reads orchestration → `harness/turn/`,
+  primitives → `dyad/`. V1's local-agent sources live under
+  `src/pro/main/ipc/handlers/local_agent/` (not `src/ipc/handlers/`).
+- **A2 (010 close-out):** V1 naming confirmed from donor
+  `goal_verification.ts`: `run_tests` / `run_lint` / `capture_evidence` stay.
+  They coexist with the framework-aware `test_project` / `lint_project`
+  harness tools (goal-verification vs framework-aware families — deliberate).
+  Exactly ONE `capture_evidence` def exists (`dyad/goals`, goal-gated,
+  server-captured revision); the session JSONL log is an internal helper
+  (`appendSessionEvidence`), never a second def (dispatch is first-match).
+- **A3 (010 close-out):** goal scheduler ships file-backed: per-task ledger +
+  goal-level consecutiveFailures/nextRetryAt (backoff + 8-run no-progress
+  block), lease-based expired-run recovery (30m), retryable-blocker probing,
+  stall notifications, 10s interval driver + wake-on-mutation, lossless event
+  outbox + injectable sink. The harness WS event type + toast rendering ride
+  with Phase 6 (015/017), polled via `drainGoalEvents()` until then.
+- **A4 (user-locked):** deep-links = `caide://` + `dyad://` compat (015).
+  `scaffold-flutter` = regenerate a real template (016), not a recorded gap.

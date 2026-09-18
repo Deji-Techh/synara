@@ -24,6 +24,7 @@ import { websocketRpcRouteLayer } from "./wsRpc";
 import { makeHarnessRouteLayer } from "./harness/harnessRouteLayer";
 import { sharedTurnGateway } from "./harness/turn/gateway";
 import { sharedHarnessHub } from "./harness/ws/hub";
+import { startGoalScheduler, stopGoalScheduler } from "./dyad/goals/goalScheduler";
 
 export interface ServerShape {
   readonly start: Effect.Effect<
@@ -114,6 +115,10 @@ export const createEffectServer = Effect.fn(function* (
   );
   if (nodeServer) {
     sharedTurnGateway().attachWs(sharedHarnessHub());
+    // Goal scheduler (010): autonomous tick for retryable-blocker probing,
+    // expired-run recovery, and stall detection. Lifetime = server process
+    // (no Electron tray). Started synchronously — the driver is idempotent.
+    startGoalScheduler();
     // Boot sweep (background): tombstone prompts orphaned by the restart so
     // replay never resurrects cards whose waiters died with the old process.
     // Fire-and-forget by design — it must never delay listening.
@@ -123,6 +128,7 @@ export const createEffectServer = Effect.fn(function* (
     yield* Effect.addFinalizer(() =>
       Effect.sync(() => {
         sharedTurnGateway().detachWs();
+        stopGoalScheduler();
       }),
     );
   }

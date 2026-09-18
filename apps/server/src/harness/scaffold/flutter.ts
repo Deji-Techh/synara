@@ -299,7 +299,7 @@ class SettingsScreen extends ConsumerWidget {
           if (session.valueOrNull != null)
             SettingsRow(
               icon: Icons.logout_outlined,
-              title: 'Sign out (${'$'}{session.valueOrNull})',
+              title: 'Sign out (${"$"}{session.valueOrNull})',
               onTap: () => ref.read(authSessionProvider.notifier).signOut(),
             ),
         ],
@@ -978,6 +978,7 @@ See \`AI_RULES.md\`. Config via \`--dart-define\` (see \`.env.example\`); never 
 build/
 .env.local
 ios/Flutter/.last_build_id
+.caide/
 `,
   );
 

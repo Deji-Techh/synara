@@ -9,7 +9,7 @@ import { describe, expect, it } from "vitest";
 import type { ToolContext } from "../../harness/tools/defineTool.ts";
 import {
   ALL_MISC_TOOLS,
-  captureEvidenceTool,
+  appendSessionEvidence,
   copyReferenceTool,
   executeCopyReference,
   executeReadGuide,
@@ -32,23 +32,25 @@ function toolCtx(appPath: string): ToolContext {
 }
 
 describe("dyad misc tools transplant (m2b)", () => {
-  it("registers all seven misc tools with donor previews", () => {
+  it("registers all six misc tools with donor previews", () => {
     expect(ALL_MISC_TOOLS.map((t) => t.name)).toEqual([
       "set_chat_summary",
       "summarize_context",
       "copy_reference",
-      "capture_evidence",
       "read_guide",
       "remember",
       "telemetry_review",
     ]);
     expect(setChatSummaryTool.presentCall?.({ summary: "Auth" })).toBe("Auth");
-    expect(summarizeContextTool.presentCall?.({})).toBe("Compressing chat context...");
+    expect(
+      summarizeContextTool.presentCall?.({
+        current_goal: "g",
+        active_files: [],
+        context_to_compress: "v",
+      }),
+    ).toBe("Compressing chat context...");
     expect(readGuideTool.presentCall?.({ guide: "provision-backend" })).toBe(
       "Read guide: provision-backend",
-    );
-    expect(captureEvidenceTool.presentCall?.({ kind: "test", label: "unit", passed: true })).toBe(
-      "Record test evidence: PASSED — unit",
     );
   });
 
@@ -116,12 +118,13 @@ describe("dyad misc tools transplant (m2b)", () => {
     expect(dup).toMatch(/already exists/);
   });
 
-  it("appends evidence JSONL with revision best-effort", async () => {
+  it("appends session evidence JSONL with revision best-effort", async () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "caide-misc-"));
     const ctx = toolCtx(dir);
-    const out = await captureEvidenceTool.execute(
+    const out = await appendSessionEvidence(
       { kind: "test", label: "unit suite", reference: "bun run test", passed: true },
-      ctx,
+      ctx.sessionId,
+      dir,
     );
     expect(out).toMatch(/Evidence recorded \(PASSED\): unit suite/);
     const lines = fs
@@ -129,7 +132,9 @@ describe("dyad misc tools transplant (m2b)", () => {
       .trim()
       .split("\n");
     expect(lines).toHaveLength(1);
-    const entry = JSON.parse(lines[0]);
+    const firstLine = lines[0];
+    if (firstLine === undefined) throw new Error("evidence line missing");
+    const entry = JSON.parse(firstLine);
     expect(entry).toMatchObject({ kind: "test", passed: true, label: "unit suite" });
     expect(entry.revision).toBeNull();
   });

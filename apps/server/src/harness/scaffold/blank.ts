@@ -56,7 +56,7 @@ export async function scaffoldBlank(root: string, appName = "MyBlankProject"): P
   );
 
   // 4. .gitignore
-  await write(".gitignore", `node_modules/\ndist/\n`);
+  await write(".gitignore", `node_modules/\ndist/\n.caide/\n`);
 
   return createdFiles;
 }

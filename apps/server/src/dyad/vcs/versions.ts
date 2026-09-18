@@ -27,6 +27,29 @@ function versionsFile(appPath: string): string {
   return path.join(appPath, ".caide", "versions.jsonl");
 }
 
+/**
+ * Donor ensureDyadGitignored parity (gitignoreUtils.ts): the operational
+ * `.caide/` dir is never committed — otherwise versions.jsonl (appended
+ * after every checkpoint commit) permanently dirties the tree and breaks
+ * the clean-tree guards on checkout/revert. Idempotent; creates
+ * .gitignore when missing. Called by createVersion so imported projects
+ * (not just fresh scaffolds) are covered.
+ */
+export async function ensureCaideGitignored(appPath: string): Promise<void> {
+  const gitignorePath = path.join(appPath, ".gitignore");
+  let content = "";
+  try {
+    content = await fs.promises.readFile(gitignorePath, "utf-8");
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
+  }
+  const lines = content.split(/\r?\n/);
+  const covered = lines.some((line) => line.trim() === ".caide/" || line.trim() === ".caide");
+  if (covered) return;
+  const suffix = content.length > 0 && !content.endsWith("\n") ? "\n" : "";
+  await fs.promises.writeFile(gitignorePath, `${content}${suffix}.caide/\n`, "utf-8");
+}
+
 async function git(cwd: string, args: string[], signal?: AbortSignal): Promise<string> {
   try {
     const { stdout } = await execFileAsync("git", args, {
@@ -90,6 +113,9 @@ export async function createVersion(
   message: string,
   signal?: AbortSignal,
 ): Promise<AppVersion> {
+  // Operational dir stays out of git (donor parity) so the log append below
+  // never dirties the tree it just snapshotted.
+  await ensureCaideGitignored(appPath).catch(() => undefined);
   const status = (await git(appPath, ["status", "--porcelain=v1"], signal)).trim();
   let hash: string;
   let files: string[];
@@ -106,7 +132,7 @@ export async function createVersion(
       .map((l) => l.replace(/^..\s/, "").replace(/^.\s/, "").trim())
       .map((p) => (p.includes(" -> ") ? p.slice(p.indexOf(" -> ") + 4).trim() : p))
       .map((p) => p.replace(/^"|"$/g, ""))
-      .filter(Boolean);
+      .filter((p) => Boolean(p) && p !== ".caide/" && !p.startsWith(".caide/"));
   }
   const entry: VersionLogEntry = {
     hash,
@@ -189,8 +215,9 @@ export async function getVersionChanges(
       await Promise.all(
         chunk.map(async (line) => {
           const parts = line.split(/\s+/);
-          const status = parts[0];
-          const filePath = parts[parts.length - 1]; // Handles renames mostly via last part
+          const status = parts[0] ?? "";
+          const filePath = parts[parts.length - 1] ?? ""; // Handles renames mostly via last part
+          if (!filePath) return;
 
           let type: VersionChange["type"] = "modified";
           if (status.startsWith("A")) type = "added";
@@ -232,7 +259,8 @@ export async function getVersionChanges(
       .filter(Boolean);
     for (const line of lines) {
       const parts = line.split(/\s+/);
-      out.push({ path: parts[parts.length - 1], type: "added" });
+      const filePath = parts[parts.length - 1];
+      if (filePath) out.push({ path: filePath, type: "added" });
     }
   }
   return out;

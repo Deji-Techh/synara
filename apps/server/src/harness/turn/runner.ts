@@ -376,6 +376,14 @@ export class CaideRunner {
     // From here a real turn runs: mark live so mid-turn settings saves
     // defer instead of mutating the running turn's posture.
     setTurnLive(input.sessionId, true);
+    // Goal scheduler coverage: the tick scans registered app paths, so every
+    // turn registers its own (lifetime = server; idempotent).
+    try {
+      const { registerGoalAppPath } = await import("../../dyad/goals/goalScheduler.ts");
+      registerGoalAppPath(input.appPath);
+    } catch {
+      // scheduler registry is best-effort; turns never depend on it
+    }
     // Session log store: created up front (no I/O in the constructor) so
     // the forward() delivery path below can use it on every terminal path,
     // including failures that never reach the main setup.

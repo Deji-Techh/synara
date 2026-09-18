@@ -1,15 +1,16 @@
 // FILE: miscTools.ts
 // Purpose: Small read-side/verification tools: chat summary, context
-// compression, reference import, verification evidence, guide reader.
+// compression, reference import, guide reader.
 // Donor: dyad x caide tools/{set_chat_summary,context_pruning,
-// copy_reference,read_guide}.ts + goal_verification capture_evidence —
-// schemas/descriptions/consent levels kept; Electron/DB/AI-SDK replaced:
+// copy_reference,read_guide}.ts — schemas/descriptions/consent levels kept;
+// Electron/DB/AI-SDK replaced:
 // - chat title → session-scoped store (M4 persists to SQLite).
 // - summarize_context → injected cheap-model summarizer; deterministic
 //   extractive fallback when unwired (never fake LLM output).
-// - capture_evidence → .caide/evidence/<session>.jsonl (donor goal
-//   state.json is goal-system-coupled; goals are out of scope).
 // - read_guide → fs-loaded dyad/guides + framework filter (fixed import).
+// capture_evidence is NOT here: exactly one def lives in dyad/goals
+// (goal-gated, V1 parity). The session JSONL below is an internal helper
+// for screenshotTool, never a tool.
 
 import * as fs from "node:fs";
 import * as os from "node:os";
@@ -247,9 +248,15 @@ export async function executeCopyReference(
   return `Successfully copied ${stat.isDirectory() ? "folder" : "file"} from ${absPath} to ${destPath}`;
 }
 
-// --- capture_evidence (goal-decoupled: .caide/evidence JSONL) ---
+// --- session evidence (goal-decoupled .caide/evidence JSONL) ---
+// NOTE: there is exactly ONE `capture_evidence` tool and it lives in
+// dyad/goals/goalTools.ts (goal-gated, V1 parity). This helper is the
+// internal session log used by screenshotTool — it is NOT a tool def and
+// must never be registered under the capture_evidence name (dispatch is
+// first-match, so a second def would shadow the goal-coupled tool and break
+// goal verification).
 
-const captureEvidenceSchema = z.object({
+const sessionEvidenceSchema = z.object({
   kind: z
     .string()
     .describe("Evidence kind: test | typecheck | lint | build | screenshot | preview"),
@@ -263,21 +270,7 @@ const captureEvidenceSchema = z.object({
   passed: z.boolean().describe("Whether this evidence indicates the check passed"),
 });
 
-export const captureEvidenceTool = defineTool({
-  name: "capture_evidence",
-  description: `Record a piece of verification evidence for this session.
-Use this after running a check (tests, type checks, lint, build) to persist the outcome as verifiable evidence the session can build on.
-Always capture_evidence after run_tests, run_lint, or run_type_checks equivalents (test_project, lint_project, build_project).`,
-  schema: captureEvidenceSchema,
-  readOnly: false,
-  modifiesState: true,
-  execute: async (args, ctx) =>
-    executeCaptureEvidence(captureEvidenceSchema.parse(args), ctx.sessionId, ctx.appPath),
-  presentCall: (args: any) =>
-    `Record ${args.kind} evidence: ${args.passed ? "PASSED" : "FAILED"} — ${args.label}`,
-});
-
-export interface EvidenceEntry {
+export interface SessionEvidenceEntry {
   id: string;
   kind: string;
   label: string;
@@ -289,12 +282,12 @@ export interface EvidenceEntry {
 
 let evidenceCounter = 0;
 
-export async function executeCaptureEvidence(
-  input: z.infer<typeof captureEvidenceSchema>,
+export async function appendSessionEvidence(
+  input: z.infer<typeof sessionEvidenceSchema>,
   sessionId: string,
   appPath: string,
 ): Promise<string> {
-  const parsed = captureEvidenceSchema.parse(input);
+  const parsed = sessionEvidenceSchema.parse(input);
   let revision: string | null = null;
   try {
     const { execFile } = await import("node:child_process");
@@ -304,7 +297,7 @@ export async function executeCaptureEvidence(
   } catch {
     // best-effort
   }
-  const entry: EvidenceEntry = {
+  const entry: SessionEvidenceEntry = {
     id: `ev-${Date.now()}-${++evidenceCounter}`,
     kind: parsed.kind,
     label: parsed.label,
@@ -463,7 +456,6 @@ export const ALL_MISC_TOOLS: ToolDef[] = [
   setChatSummaryTool,
   summarizeContextTool,
   copyReferenceTool,
-  captureEvidenceTool,
   readGuideTool,
   rememberTool,
   telemetryReviewTool,
