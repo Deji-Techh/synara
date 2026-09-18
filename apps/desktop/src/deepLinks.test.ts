@@ -2,7 +2,7 @@
 // Purpose: Deep-link routing (schemes, routes, argv extraction, queue).
 
 import { describe, expect, it } from "vitest";
-import { createDeepLinkQueue, deepLinksFromArgv, parseDeepLink } from "./deepLinks.ts";
+import { createDeepLinkQueue, deepLinksFromArgv, parseDeepLink } from "./deepLinks";
 
 describe("deep links", () => {
   it("routes known links on both schemes", () => {

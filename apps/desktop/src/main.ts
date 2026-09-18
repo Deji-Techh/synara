@@ -3631,14 +3631,13 @@ function registerIpcHandlers(): void {
       throw new Error("Invalid open file input.");
     }
     const owner = BrowserWindow.getFocusedWindow() ?? mainWindow;
-    const options = {
-      title: input.title,
-      defaultPath: input.defaultPath,
+    const properties: Array<"openFile" | "multiSelections"> = ["openFile"];
+    if (input.multi) properties.push("multiSelections");
+    const options: Electron.OpenDialogOptions = {
+      properties,
+      ...(input.title !== undefined ? { title: input.title } : {}),
+      ...(input.defaultPath !== undefined ? { defaultPath: input.defaultPath } : {}),
       ...(input.filters ? { filters: input.filters } : {}),
-      properties: [
-        "openFile",
-        ...(input.multi ? ["multiSelections"] : []),
-      ] as Array<"openFile" | "multiSelections">,
     };
     const result = owner
       ? await dialog.showOpenDialog(owner, options)
@@ -4458,7 +4457,7 @@ async function bootstrap(): Promise<void> {
       ) {
         const move = await showDesktopConfirmDialog(
           "Move Caide to Applications for reliable auto-updates?",
-          mainWindow ?? undefined,
+          mainWindow ?? null,
         );
         if (move) {
           try {

@@ -527,6 +527,13 @@ export interface DesktopBridge {
     contents: string;
     filters?: ReadonlyArray<{ name: string; extensions: ReadonlyArray<string> }>;
   }) => Promise<string | null>;
+  openFile?: (input: {
+    title?: string;
+    defaultPath?: string;
+    filters?: ReadonlyArray<{ name: string; extensions: ReadonlyArray<string> }>;
+    multi?: boolean;
+  }) => Promise<ReadonlyArray<string> | null>;
+  onDeepLink?: (listener: (route: unknown) => void) => () => void;
   confirm: (message: string) => Promise<boolean>;
   setTheme: (theme: DesktopTheme) => Promise<void>;
   getAppIcon?: () => Promise<DesktopAppIcon>;
@@ -624,9 +631,7 @@ export interface NativeApi {
       input: GitHubProjectProvisionInput,
       options?: { readonly signal?: AbortSignal },
     ) => Promise<GitHubProjectProvisionResult>;
-    detectFramework: (
-      input: ProjectDetectFrameworkInput,
-    ) => Promise<ProjectDetectFrameworkResult>;
+    detectFramework: (input: ProjectDetectFrameworkInput) => Promise<ProjectDetectFrameworkResult>;
     onProvisionProgress: (
       callback: (event: GitHubProjectProvisionProgressEvent) => void,
     ) => () => void;
@@ -918,6 +923,10 @@ export interface NativeApi {
     buildStart: (input: PreviewBuildStartInput) => Promise<PreviewBuildStartResult>;
     buildState: (input: PreviewBuildStateInput) => Promise<PreviewBuildStateResult>;
     screenshot: (input: PreviewScreenshotInput) => Promise<PreviewScreenshotResult>;
+    mobileUrl: (input: {
+      readonly threadId: ThreadId;
+      readonly appDir?: string;
+    }) => Promise<{ lanUrl: string; lanIp: string; restarted: boolean }>;
     devices: (input: PreviewDevicesInput) => Promise<PreviewDevicesResult>;
     flutterToolchainStatus: (
       input: FlutterToolchainStatusInput,
