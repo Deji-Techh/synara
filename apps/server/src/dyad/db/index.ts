@@ -75,6 +75,35 @@ export {
 } from "./supabaseApi.ts";
 export { slugifyMigrationName, writeMigrationFile } from "./migrations.ts";
 export {
+  SOCIAL_AUTH_PROVIDERS,
+  buildSocialAuthProviderPatch,
+  listSupabaseSocialAuthProviders,
+  updateSupabaseSocialAuthProvider,
+  getSupabaseFunctionLogs,
+  getSupabaseOrganizationDetails,
+  getSupabaseOrganizationMembers,
+  SupabaseAuthApiError,
+  type SocialAuthProviderId,
+  type SocialAuthProviderStatus,
+  type SupabaseFunctionLog,
+  type SupabaseOrganizationDetails,
+  type SupabaseOrganizationMember,
+} from "./supabaseAuth.ts";
+export {
+  NeonAuthApiError,
+  ensureNeonAuth,
+  getNeonEmailPasswordConfig,
+  updateNeonEmailPasswordConfig,
+  listNeonTrustedDomains,
+  addNeonTrustedDomains,
+  classifyNeonBranch,
+  resolveNeonBranchEnv,
+  type NeonAuthIntegration,
+  type NeonEmailPasswordConfig,
+  type NeonBranchType,
+  type NeonBranchEnvResolution,
+} from "./neonAuth.ts";
+export {
   SUPABASE_BUNDLE_ONLY_DEPLOY_CONCURRENCY,
   SUPABASE_ACTIVATING_DEPLOY_CONCURRENCY,
   enqueueSupabaseDeploy,
