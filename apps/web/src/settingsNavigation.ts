@@ -4,23 +4,11 @@
 // Exports: section ids, nav items, and search normalization helper
 
 export const SETTINGS_SECTION_IDS = [
-  "database",
-  "general",
   "profile",
-  "appearance",
-  "notifications",
-  "behavior",
-  "shortcuts",
-  "worktrees",
-  "archived",
-  "providers",
-  "skills",
-  "integrations",
-  "advanced",
 ] as const;
 
 export type SettingsSectionId = (typeof SETTINGS_SECTION_IDS)[number];
-export type SettingsNavGroupId = "personal" | "integrations" | "coding" | "system" | "archived";
+export type SettingsNavGroupId = "personal";
 
 /**
  * Deep-link scroll targets inside settings panels. Each id is shared by its DOM owner and callers
@@ -47,21 +35,9 @@ export const SETTINGS_NAV_GROUPS: ReadonlyArray<{
   label: string;
 }> = [
   { id: "personal", label: "Personal" },
-  { id: "integrations", label: "Integrations" },
-  { id: "coding", label: "Coding" },
-  { id: "system", label: "System" },
-  { id: "archived", label: "Archived" },
 ] as const;
 
 export const SETTINGS_NAV_ITEMS: readonly SettingsNavItem[] = [
-  {
-    id: "general",
-    group: "personal",
-    label: "General",
-    description: "Choose defaults for new chats, navigation, and the Context panel.",
-    icon: "settings-gear-4",
-    eyebrow: "Workflow defaults",
-  },
   {
     id: "profile",
     group: "personal",
@@ -69,94 +45,6 @@ export const SETTINGS_NAV_ITEMS: readonly SettingsNavItem[] = [
     description: "Your local activity, streaks, and a shareable stats card.",
     icon: "user",
     eyebrow: "Your stats",
-  },
-  {
-    id: "appearance",
-    group: "personal",
-    label: "Appearance",
-    description: "Customize the theme, typography, density, and time format.",
-    icon: "color-palette",
-    eyebrow: "Visual language",
-  },
-  {
-    id: "notifications",
-    group: "personal",
-    label: "Notifications",
-    description: "Choose how Caide tells you when work finishes or needs attention.",
-    icon: "bell",
-    eyebrow: "Alerts",
-  },
-  {
-    id: "behavior",
-    group: "personal",
-    label: "Chat behavior",
-    description: "Control live responses, follow-ups, review defaults, and safety confirmations.",
-    icon: "settings-slider-hor",
-    eyebrow: "Interaction rules",
-  },
-  {
-    id: "shortcuts",
-    group: "personal",
-    label: "Keybindings",
-    description: "Capture, customize, and add shortcuts for every Caide command.",
-    icon: "shortcut",
-    eyebrow: "Key bindings",
-  },
-  {
-    id: "integrations",
-    group: "integrations",
-    label: "MCP servers",
-    description: "Connect tools your agent can call, with per-tool consent.",
-    icon: "plugin-1",
-    eyebrow: "Agent tools",
-  },
-  {
-    id: "database",
-    group: "integrations",
-    label: "Database",
-    description: "Supabase and Neon connections plus blockchain RPC networks.",
-    icon: "database",
-    eyebrow: "Data backends",
-  },
-  {
-    id: "providers",
-    group: "coding",
-    label: "Agent providers",
-    description: "Choose visible coding agents and manage their installed CLI tools.",
-    icon: "puzzle",
-    eyebrow: "Coding agents",
-  },
-  {
-    id: "skills",
-    group: "coding",
-    label: "Agent skills",
-    description: "Review reusable workflows discovered across all configured providers.",
-    icon: "building-blocks",
-    eyebrow: "Reusable workflows",
-  },
-  {
-    id: "worktrees",
-    group: "coding",
-    label: "Managed worktrees",
-    description: "Review and clean up isolated workspaces created by Caide.",
-    icon: "branch-simple",
-    eyebrow: "Workspace management",
-  },
-  {
-    id: "advanced",
-    group: "system",
-    label: "System tools",
-    description: "Manage sessions, recovery tools, low-level keybindings, and version details.",
-    icon: "toolbox",
-    eyebrow: "System tools",
-  },
-  {
-    id: "archived",
-    group: "archived",
-    label: "Archived threads",
-    description: "Find and restore threads you previously archived.",
-    icon: "archive",
-    eyebrow: "Thread management",
   },
 ] as const;
 
@@ -176,7 +64,7 @@ export function settingRowAnchorId(title: string): string {
 
 export function normalizeSettingsSection(value: unknown): SettingsSectionId {
   if (typeof value !== "string") {
-    return "general";
+    return "profile";
   }
-  return SETTINGS_SECTION_IDS.find((candidate) => candidate === value) ?? "general";
+  return SETTINGS_SECTION_IDS.find((candidate) => candidate === value) ?? "profile";
 }

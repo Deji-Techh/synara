@@ -27,8 +27,7 @@ const PROVIDER_ENV_KEYS: Record<string, string[]> = {
 
 export function getDesktopVoiceApiKey(provider: string): string | null {
   const norm = provider.toLowerCase();
-  const lookupKeys =
-    norm === "google" || norm === "gemini" ? ["google", "gemini"] : [norm];
+  const lookupKeys = norm === "google" || norm === "gemini" ? ["google", "gemini"] : [norm];
 
   // Check environment variables first (override)
   for (const key of lookupKeys) {
@@ -70,11 +69,7 @@ export function getDesktopVoiceApiKey(provider: string): string | null {
   try {
     const home = process.env.HOME || os.homedir();
     for (const key of lookupKeys) {
-      const secretPath = path.join(
-        home,
-        ".caide/userdata/secrets",
-        `provider-${key}-api-key.bin`,
-      );
+      const secretPath = path.join(home, ".caide/userdata/secrets", `provider-${key}-api-key.bin`);
       if (fs.existsSync(secretPath)) {
         const secretVal = fs.readFileSync(secretPath, "utf-8").trim();
         if (secretVal) return secretVal;
@@ -187,7 +182,7 @@ async function transcribeDesktopWithGemini(
 
 async function transcribeDesktopWithGroq(apiKey: string, audioBuffer: Buffer): Promise<string> {
   const formData = new FormData();
-  const blob = new Blob([audioBuffer], { type: "audio/wav" });
+  const blob = new Blob([audioBuffer as unknown as BlobPart], { type: "audio/wav" });
   formData.append("file", blob, "audio.wav");
   formData.append("model", "whisper-large-v3-turbo");
   formData.append("response_format", "json");
@@ -209,7 +204,7 @@ async function transcribeDesktopWithGroq(apiKey: string, audioBuffer: Buffer): P
 
 async function transcribeDesktopWithOpenAi(apiKey: string, audioBuffer: Buffer): Promise<string> {
   const formData = new FormData();
-  const blob = new Blob([audioBuffer], { type: "audio/wav" });
+  const blob = new Blob([audioBuffer as unknown as BlobPart], { type: "audio/wav" });
   formData.append("file", blob, "audio.wav");
   formData.append("model", "whisper-1");
   formData.append("response_format", "json");

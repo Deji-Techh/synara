@@ -1282,18 +1282,8 @@ function SettingsRouteView() {
 
   const renderRouteOwnedPanel = () => {
     switch (activeSection) {
-      case "general":
-        return renderGeneralPanel();
-      case "appearance":
-        return renderAppearancePanel();
-      case "behavior":
-        return renderBehaviorPanel();
-      case "shortcuts":
-        return <KeyboardShortcutsSettingsPanel />;
       case "profile":
         return <ProfileSettingsPanel />;
-      case "skills":
-        return <SkillsSettingsPanel />;
       default:
         return null;
     }
@@ -1365,27 +1355,6 @@ function SettingsRouteView() {
               {/* These workflow owners stay mounted so drafts, request guards, and pending
                   mutations retain route lifetime while inactive panels render no DOM. */}
               <div className="contents">
-                <NotificationsSettingsPanel
-                  active={activeSection === "notifications"}
-                  settings={settings}
-                  defaults={defaults}
-                  updateSettings={updateSettings}
-                />
-                <WorktreesSettingsPanel active={activeSection === "worktrees"} />
-                <ArchivedSettingsPanel active={activeSection === "archived"} />
-                <ProvidersSettingsPanel
-                  active={activeSection === "providers"}
-                  settings={settings}
-                  defaults={defaults}
-                  updateSettings={updateSettings}
-                  resetEpoch={resetEpoch}
-                />
-                <McpServersSettingsPanel active={activeSection === "integrations"} />
-                <DatabaseSettingsPanel active={activeSection === "database"} />
-                <AdvancedSettingsPanel
-                  active={activeSection === "advanced"}
-                  resetEpoch={resetEpoch}
-                />
               </div>
             </div>
           </div>
