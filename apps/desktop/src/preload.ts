@@ -114,6 +114,17 @@ contextBridge.exposeInMainWorld("desktopBridge", {
       ipcRenderer.removeListener(IPC.menuAction, wrappedListener);
     };
   },
+  onDeepLink: (listener) => {
+    const wrappedListener = (_event: Electron.IpcRendererEvent, route: unknown) => {
+      if (typeof route !== "object" || route === null) return;
+      listener(route);
+    };
+
+    ipcRenderer.on(IPC.deepLinkReceived, wrappedListener);
+    return () => {
+      ipcRenderer.removeListener(IPC.deepLinkReceived, wrappedListener);
+    };
+  },
   getZoomFactor: () => {
     const factor = ipcRenderer.sendSync(IPC.zoomFactor);
     return typeof factor === "number" && Number.isFinite(factor) && factor > 0 ? factor : 1;

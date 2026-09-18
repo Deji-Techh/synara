@@ -206,6 +206,7 @@ import {
   resolveBrowserHostPipeBackendEnv,
 } from "./browserUsePipeServer";
 import { normalizeDesktopWsUrl, resolveDesktopWsUrlFromEnv } from "./desktopWsBridge";
+import { createDeepLinkQueue, deepLinksFromArgv } from "./deepLinks";
 import {
   repairBrowserProfileFromBridgeManifest,
   resolveDesktopAppDataBase,
@@ -4050,6 +4051,9 @@ function createWindow(): BrowserWindow {
   window.webContents.on("did-finish-load", () => {
     window.setTitle(APP_DISPLAY_NAME);
     emitUpdateState();
+    // Cold-start-safe deep links: links arriving before the renderer
+    // existed waited in the queue — flush them now that it can receive.
+    flushDeepLinkQueue();
   });
   window.once("ready-to-show", () => {
     // Preserve the original first-launch behavior, then respect the state saved
@@ -4302,10 +4306,76 @@ configureAppIdentity();
 if (!hasSingleInstanceLock) {
   app.quit();
 } else {
-  app.on("second-instance", () => {
+  app.on("second-instance", (_event, argv) => {
+    // Second-instance deep links (Windows/Linux): route before focusing —
+    // a link opened while running must land in the live window.
+    for (const raw of deepLinksFromArgv(argv ?? [])) {
+      deepLinkQueue.push(raw);
+    }
     focusMainWindow();
+    flushDeepLinkQueue();
+  });
+  // macOS: OS-level URL opens arrive here (also cold-start).
+  app.on("open-url", (event, url) => {
+    event.preventDefault();
+    deepLinkQueue.push(url);
+    focusMainWindow();
+    flushDeepLinkQueue();
   });
 }
+
+/**
+ * Deep-link plumbing (015): caide:// primary + dyad:// compat, all 7 V1
+ * routes (minus dyad-pro-return, dropped with Pro). Links arriving before
+ * the renderer queue up; flushDeepLinkQueue delivers them in order over
+ * IPC once a window can receive. Renderer/server handling of each route
+ * (OAuth returns → settings, add-* prefills, receive-project → import)
+ * rides Phase 6 (015/017).
+ */
+const deepLinkQueue = createDeepLinkQueue();
+
+function registerDeepLinkProtocols(): void {
+  for (const scheme of ["caide", "dyad"] as const) {
+    try {
+      if (!app.isDefaultProtocolClient(scheme)) {
+        app.setAsDefaultProtocolClient(scheme);
+      }
+    } catch {
+      // Best-effort (Linux mime registration may fail outside a desktop
+      // session); protocol opens still work when the .desktop entry exists.
+    }
+  }
+}
+
+/** Queue a raw deep-link URL (argv cold-start path calls this). */
+export function handleDeepLinkUrl(raw: string): void {
+  deepLinkQueue.push(raw);
+  flushDeepLinkQueue();
+}
+
+function flushDeepLinkQueue(): void {
+  const routes = deepLinkQueue.drain();
+  if (routes.length === 0 && pendingDeepLinkRoutes.length === 0) return;
+  const window =
+    mainWindow ?? (BrowserWindow.getAllWindows()[0] as Electron.BrowserWindow | undefined);
+  if (!window || window.webContents.isDestroyed()) {
+    // Renderer not ready — hold parsed routes aside in order;
+    // did-finish-load flushes once a window can receive.
+    pendingDeepLinkRoutes.push(...routes);
+    return;
+  }
+  const outbound = [...pendingDeepLinkRoutes.splice(0, pendingDeepLinkRoutes.length), ...routes];
+  for (const route of outbound) {
+    try {
+      window.webContents.send(IPC.deepLinkReceived, route);
+    } catch {
+      pendingDeepLinkRoutes.push(route);
+      break;
+    }
+  }
+}
+
+const pendingDeepLinkRoutes: Array<object> = [];
 
 async function bootstrap(): Promise<void> {
   writeDesktopLogHeader("bootstrap start");
@@ -4437,6 +4507,11 @@ if (hasSingleInstanceLock) {
           return;
         }
         throw error;
+      }
+      // Deep-link protocols (caide:// + dyad:// compat) + cold-start argv.
+      registerDeepLinkProtocols();
+      for (const raw of deepLinksFromArgv(process.argv)) {
+        deepLinkQueue.push(raw);
       }
       startBundleSwapWatcher();
       void bootstrap().catch((error) => {

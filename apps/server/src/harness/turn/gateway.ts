@@ -360,7 +360,11 @@ export class TurnGateway {
       // that are down contribute nothing — the state still broadcasts (the
       // panel shows reachability separately via Test).
       void (async () => {
-        const models: Array<{ provider: "ollama" | "lmstudio"; modelName: string; displayName: string }> = [];
+        const models: Array<{
+          provider: "ollama" | "lmstudio";
+          modelName: string;
+          displayName: string;
+        }> = [];
         if (!provider || provider === "ollama") {
           try {
             models.push(...(await fetchOllamaModels()).models);
@@ -521,6 +525,18 @@ export class TurnGateway {
   async startTurn(request: GatewayTurnRequest, extra?: Partial<StartTurnInput>): Promise<string> {
     const resolved = resolveTurnProviders(request);
     noteSessionApp(request.sessionId, request.appPath);
+    // Prompt-library expansion (donor stream-time semantics, applied once
+    // at turn start): @prompt:<id> becomes library content. Unknown ids
+    // pass through untouched. Best-effort — never fail a turn on it.
+    let prompt = request.prompt;
+    try {
+      const { promptContentMap, replacePromptReference } = await import(
+        "../../dyad/knowledge/promptLibrary.ts"
+      );
+      prompt = replacePromptReference(prompt, await promptContentMap(request.appPath));
+    } catch {
+      // library unreadable; send the raw prompt
+    }
     const inbox = this.getInbox(request.sessionId);
     const broadcast = (event: HarnessEvent): void => {
       extra?.onEvent?.(event);
@@ -559,6 +575,7 @@ export class TurnGateway {
     };
     return this.runner.startTurn({
       ...request,
+      prompt,
       providerId: resolved.providerId,
       modelId: resolved.modelId,
       settings: resolved.settings,

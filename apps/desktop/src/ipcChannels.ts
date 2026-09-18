@@ -29,6 +29,7 @@ export const DESKTOP_IPC_CHANNELS = {
   zoomFactor: "desktop:zoom-factor",
   zoomFactorChanged: "desktop:zoom-factor-changed",
   wsUrl: "desktop:get-ws-url",
+  deepLinkReceived: "desktop:deep-link-received",
   providerKeyPresence: "desktop:provider-key-presence",
   transcribeVoice: "desktop:server-transcribe-voice",
   storageMigration: {
