@@ -43,3 +43,4 @@ export {
   type AppVersion,
   type VersionChange,
 } from "./versions.ts";
+export { GitService, GitServiceError, gitService } from "./gitService.ts";
