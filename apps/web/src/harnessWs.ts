@@ -401,6 +401,29 @@ export function writeCompactionPrefs(enabled: boolean, thresholdTokens: number):
 }
 
 /**
+ * Donor settings.maxToolCallSteps (018 ladder 25/50/100/200; default 100).
+ * The Chat-behavior panel writes this key; the server falls back to it for
+ * every agent/ask/plan turn without an explicit per-turn budget.
+ */
+export function readMaxToolCallSteps(): number {
+  try {
+    const raw = Number(localStorage.getItem("caide.max-tool-call-steps.v1"));
+    if (Number.isFinite(raw) && raw >= 1) return Math.floor(raw);
+  } catch {
+    // fall through to default
+  }
+  return 100;
+}
+
+export function writeMaxToolCallSteps(steps: number): void {
+  try {
+    localStorage.setItem("caide.max-tool-call-steps.v1", String(Math.floor(steps)));
+  } catch {
+    // private mode etc — session default applies
+  }
+}
+
+/**
  * Push client settings to the server session stores (M3g). Reads the same
  * localStorage keys the settings panels write: tool approvals, safe-SQL,
  * MCP prefs/servers, DB connections. Call on socket open and whenever the
@@ -478,6 +501,7 @@ export function syncHarnessSettings(
       agentRouting: readJson("caide:agent-routing.v1", null),
       compactionEnabled: readCompactionEnabled(),
       compactionThresholdTokens: readCompactionThresholdTokens(),
+      maxToolCallSteps: readMaxToolCallSteps(),
     },
   });
 }

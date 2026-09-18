@@ -1011,7 +1011,14 @@ export class CaideRunner {
         sessionId: input.sessionId,
         turnId,
         // Donor budgets (008-m7): build 20, agent/ask/plan settings ?? 100.
-        maxSteps: resolveModeBudget(chatMode, input.maxSteps, input.settings?.maxToolCallSteps),
+        // Precedence: per-turn maxSteps → turn settings → synced session
+        // default (018 ladder) → 100.
+        maxSteps: resolveModeBudget(
+          chatMode,
+          input.maxSteps,
+          input.settings?.maxToolCallSteps ??
+            getOrCreateSessionStores(input.sessionId).maxToolCallSteps,
+        ),
         signal: controller.signal,
         inbox: input.inbox,
         llm,

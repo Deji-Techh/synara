@@ -41,6 +41,7 @@ describe("session stores persistence (m3g)", () => {
       mcpConsents: [{ serverId: 1, toolName: "issue_write", consent: "always" }],
       dbLinks: [{ provider: "supabase", databaseUrl: "postgres://x/db" }],
       compactionThresholdTokens: 128000,
+      maxToolCallSteps: 50,
     });
     try {
       expect(entry.consent.get("run_command")).toBe("never");
@@ -50,9 +51,12 @@ describe("session stores persistence (m3g)", () => {
       expect(entry.mcp.get(1, "issue_write")).toBe("always");
       expect(getDatabaseLink(sid)?.provider).toBe("supabase");
       expect(entry.compactionThresholdTokens).toBe(128000);
+      expect(entry.maxToolCallSteps).toBe(50);
       // Invalid values never clobber.
       applySettingsSync(sid, { compactionThresholdTokens: -5 });
       expect(entry.compactionThresholdTokens).toBe(128000);
+      applySettingsSync(sid, { maxToolCallSteps: 0 });
+      expect(entry.maxToolCallSteps).toBe(50);
     } finally {
       clearSessionStores(sid);
     }

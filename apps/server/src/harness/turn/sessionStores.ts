@@ -28,6 +28,7 @@ import {
   presentBlueprint,
 } from "../../dyad/plan/blueprintStore.ts";
 import { getSessionTitle } from "../../dyad/misc/miscTools.ts";
+import { DEFAULT_MAX_TOOL_CALL_STEPS } from "../loop/loop.ts";
 import {
   DEFAULT_AGENT_ROUTING,
   normalizeAgentRouting,
@@ -42,6 +43,8 @@ export interface SettingsSyncPayload {
   compactionEnabled?: boolean;
   mcpConsents?: Array<{ serverId: string | number; toolName: string; consent: McpConsent }>;
   mcpAutoApproveSafe?: boolean;
+  /** Donor settings.maxToolCallSteps (25/50/100/200 UI ladder; default 100). */
+  maxToolCallSteps?: number;
   dbLinks?: Array<DbLink & { scope?: { type: "global" | "project"; workspaceRoot?: string } }>;
   /** Per-step model routing (single vs scout/builder/planner); validated on apply. */
   agentRouting?: unknown;
@@ -69,6 +72,8 @@ export interface SessionStores {
   compactionThresholdTokens: number;
   /** Master compaction kill-switch (donor enableContextCompaction; default on). */
   compactionEnabled: boolean;
+  /** Donor settings.maxToolCallSteps (default 100; UI ladder 25/50/100/200). */
+  maxToolCallSteps: number;
   routing: AgentRoutingConfig;
   /** Per-tool execution counts (post-consent). Powers fork-skill/subagent
    * telemetry (item 31) and fixer-retry signals for the run log. */
@@ -127,6 +132,7 @@ export function getOrCreateSessionStores(sessionId: string): SessionStores {
       mcpAutoApproveSafe: true,
       compactionThresholdTokens: DEFAULT_COMPACTION_THRESHOLD_TOKENS,
       compactionEnabled: true,
+      maxToolCallSteps: DEFAULT_MAX_TOOL_CALL_STEPS,
       routing: {
         mode: DEFAULT_AGENT_ROUTING.mode,
         steps: {
@@ -191,6 +197,13 @@ export function applySettingsSync(sessionId: string, payload: SettingsSyncPayloa
     entry.compactionEnabled = payload.compactionEnabled;
   if (typeof payload.mcpAutoApproveSafe === "boolean") {
     entry.mcpAutoApproveSafe = payload.mcpAutoApproveSafe;
+  }
+  if (
+    typeof payload.maxToolCallSteps === "number" &&
+    Number.isFinite(payload.maxToolCallSteps) &&
+    payload.maxToolCallSteps >= 1
+  ) {
+    entry.maxToolCallSteps = Math.floor(payload.maxToolCallSteps);
   }
   if (payload.mcpConsents) {
     for (const c of payload.mcpConsents) {
