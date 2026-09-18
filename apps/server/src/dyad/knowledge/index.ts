@@ -14,3 +14,4 @@ export {
   promptContentMap,
   type Prompt,
 } from "./promptLibrary.ts";
+export { helpAskTool, ALL_HELP_TOOLS } from "./helpBot.ts";

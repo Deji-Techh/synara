@@ -639,6 +639,15 @@ export const TOOL_CATALOG: readonly ToolMeta[] = [
     caideTool: "dyad/verify",
   },
   {
+    name: "ask_help",
+    category: "verify",
+    defaultConsent: "always",
+    modifiesState: false,
+    readOnly: true,
+    caideMapping: "caide-native",
+    caideTool: "dyad/knowledge",
+  },
+  {
     name: "capture_screenshot",
     category: "verify",
     defaultConsent: "always",
