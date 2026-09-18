@@ -791,15 +791,31 @@ export class CaideRunner {
       // Vite-only Nitro nudge + Neon guide filtering; the DB link restores
       // the Supabase/Neon invariant blocks; the blueprint gate state restores
       // blueprint-gated prompt branches; ask turns ride the read-only prompt.
-      // Still unset (owners: 014 theme generator, 014 project skills, 016
+      // Still unset (owners: 014 theme generator, 016
       // code explorer, 018 testing/target settings): themePrompt,
-      // appSkillPack, codeExplorerAvailable, testingEnabled, appTarget.
+      // codeExplorerAvailable, testingEnabled, appTarget.
       // Client-code snippets (supabaseClientCode/neonClientCode) and
       // neonEmailVerificationEnabled need generators that do not exist yet —
       // the available-prompt blocks stay dormant until 013 ports them.
       const promptDbLink = getDatabaseLink(input.sessionId);
       const promptSupabase = promptDbLink?.provider === "supabase";
       const promptNeon = promptDbLink?.provider === "neon";
+      // Per-project assigned skills (donor appSkillPack parity): prompts
+      // assigned to this app inject as skill sections. Best-effort — an
+      // unreadable library means no pack, never a failed turn.
+      let appSkillPack: string | undefined;
+      try {
+        const { listPromptsForApp } = await import("../../dyad/knowledge/promptLibrary.ts");
+        const assigned = await listPromptsForApp(input.appPath);
+        if (assigned.length > 0) {
+          const sections = assigned.map(
+            (p) => `## Skill: ${p.title}${p.slug ? ` (/${p.slug})` : ""}\n\n${p.content}`,
+          );
+          appSkillPack = `The following project skills are available. Activate them when relevant by following their instructions.\n\n${sections.join("\n\n")}`;
+        }
+      } catch {
+        // library unreadable; no pack
+      }
       let system = constructSystemPrompt({
         aiRules,
         chatMode,
@@ -821,6 +837,7 @@ export class CaideRunner {
         neonConnected: promptNeon,
         neonNextjsMajorVersion: detectNextJsMajorVersion(input.appPath),
         enableAppBlueprint: isBlueprintRequired(input.sessionId),
+        appSkillPack,
       });
       // Compounding project memory (APP_MEMORY.md + recent decisions).
       // Appended only when the project actually remembers something — and
