@@ -207,6 +207,7 @@ import {
 } from "./browserUsePipeServer";
 import { normalizeDesktopWsUrl, resolveDesktopWsUrlFromEnv } from "./desktopWsBridge";
 import { createDeepLinkQueue, deepLinksFromArgv } from "./deepLinks";
+import { checkAndMarkFirstRun, shouldOfferMoveToApplications } from "./firstRun";
 import {
   repairBrowserProfileFromBridgeManifest,
   resolveDesktopAppDataBase,
@@ -561,6 +562,35 @@ function isSaveFileInput(input: unknown): input is {
   if (!Array.isArray(record.filters)) {
     return false;
   }
+  return record.filters.every((filter) => {
+    if (!filter || typeof filter !== "object") return false;
+    const filterRecord = filter as Record<string, unknown>;
+    return (
+      typeof filterRecord.name === "string" &&
+      Array.isArray(filterRecord.extensions) &&
+      filterRecord.extensions.every((extension) => typeof extension === "string")
+    );
+  });
+}
+
+/**
+ * Open-file dialog input (015): filtered file pick for the V1 dialog
+ * sites — keystore select, artifact/package open, reference image pick.
+ * Returns all picked paths (empty array never surfaces: cancel → null).
+ */
+function isOpenFileInput(input: unknown): input is {
+  title?: string;
+  defaultPath?: string;
+  filters?: FileFilter[];
+  multi?: boolean;
+} {
+  if (!input || typeof input !== "object") return false;
+  const record = input as Record<string, unknown>;
+  if (record.title !== undefined && typeof record.title !== "string") return false;
+  if (record.defaultPath !== undefined && typeof record.defaultPath !== "string") return false;
+  if (record.multi !== undefined && typeof record.multi !== "boolean") return false;
+  if (record.filters === undefined) return true;
+  if (!Array.isArray(record.filters)) return false;
   return record.filters.every((filter) => {
     if (!filter || typeof filter !== "object") return false;
     const filterRecord = filter as Record<string, unknown>;
@@ -3595,6 +3625,28 @@ function registerIpcHandlers(): void {
     return result.filePaths[0] ?? null;
   });
 
+  ipcMain.removeHandler(IPC.openFile);
+  ipcMain.handle(IPC.openFile, async (_event, input: unknown) => {
+    if (!isOpenFileInput(input)) {
+      throw new Error("Invalid open file input.");
+    }
+    const owner = BrowserWindow.getFocusedWindow() ?? mainWindow;
+    const options = {
+      title: input.title,
+      defaultPath: input.defaultPath,
+      ...(input.filters ? { filters: input.filters } : {}),
+      properties: [
+        "openFile",
+        ...(input.multi ? ["multiSelections"] : []),
+      ] as Array<"openFile" | "multiSelections">,
+    };
+    const result = owner
+      ? await dialog.showOpenDialog(owner, options)
+      : await dialog.showOpenDialog(options);
+    if (result.canceled) return null;
+    return result.filePaths;
+  });
+
   ipcMain.removeHandler(IPC.saveFile);
   ipcMain.handle(IPC.saveFile, async (_event, input: unknown) => {
     if (!isSaveFileInput(input)) {
@@ -4389,6 +4441,38 @@ async function bootstrap(): Promise<void> {
   const migrationRecoveryOutcome = await handleDesktopMigrationRecovery();
   if (migrationRecoveryOutcome !== "continue") {
     return;
+  }
+
+  // First-run (015): marker + macOS move-to-Applications prompt (auto-update
+  // stickiness requires /Applications). Runs once per profile, after the
+  // recovery gate so a wedged install never blocks on it.
+  try {
+    if (checkAndMarkFirstRun(userDataPath)) {
+      writeDesktopLogHeader("bootstrap first run for this profile");
+      if (
+        shouldOfferMoveToApplications({
+          platform: process.platform,
+          isDevelopment,
+          execPath: app.getPath("exe"),
+        })
+      ) {
+        const move = await showDesktopConfirmDialog(
+          "Move Caide to Applications for reliable auto-updates?",
+          mainWindow ?? undefined,
+        );
+        if (move) {
+          try {
+            app.moveToApplicationsFolder();
+          } catch (error) {
+            writeDesktopLogHeader(
+              `move to Applications failed: ${error instanceof Error ? error.message : String(error)}`,
+            );
+          }
+        }
+      }
+    }
+  } catch {
+    // First-run UX must never block boot.
   }
 
   backendAuthToken = Crypto.randomBytes(24).toString("hex");

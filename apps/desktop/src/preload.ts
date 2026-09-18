@@ -71,6 +71,7 @@ contextBridge.exposeInMainWorld("desktopBridge", {
     }
   },
   pickFolder: () => ipcRenderer.invoke(IPC.pickFolder),
+  openFile: (input) => ipcRenderer.invoke(IPC.openFile, input),
   saveFile: (input) => ipcRenderer.invoke(IPC.saveFile, input),
   confirm: (message) => ipcRenderer.invoke(IPC.confirm, message),
   setTheme: (theme) => ipcRenderer.invoke(IPC.setTheme, theme),

@@ -49,7 +49,11 @@ export function parseDeepLink(raw: string): DeepLinkRoute {
   const scheme = url.protocol.replace(/:$/, "");
   if (scheme !== "caide" && scheme !== "dyad") return { type: "unknown", raw };
   // caide://route?x=1 and caide:///route?x=1 both occur across platforms.
-  const route = (url.hostname || url.pathname.replace(/^\/+/, "").split("/")[0] || "").toLowerCase();
+  const route = (
+    url.hostname ||
+    url.pathname.replace(/^\/+/, "").split("/")[0] ||
+    ""
+  ).toLowerCase();
   const query = parseQuery(url.search);
   switch (route) {
     case "neon-oauth-return":

@@ -4,6 +4,7 @@
 
 export const DESKTOP_IPC_CHANNELS = {
   pickFolder: "desktop:pick-folder",
+  openFile: "desktop:open-file",
   saveFile: "desktop:save-file",
   confirm: "desktop:confirm",
   setTheme: "desktop:set-theme",
