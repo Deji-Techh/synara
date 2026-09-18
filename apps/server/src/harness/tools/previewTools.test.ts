@@ -32,7 +32,7 @@ function blankDir(): string {
 }
 
 describe("preview tools (agent preview control)", () => {
-  it("registers all eight preview tools in the default registry", () => {
+  it("registers all ten preview tools in the default registry", () => {
     expect(ALL_PREVIEW_TOOLS.map((t) => t.name)).toEqual([
       "open_preview",
       "restart_preview",
@@ -42,9 +42,22 @@ describe("preview tools (agent preview control)", () => {
       "read_logs",
       "restart_app",
       "reinstall_and_restart_app",
+      "start_tunnel_preview",
+      "stop_tunnel_preview",
     ]);
     const registry = createDefaultRegistry();
-    for (const name of ["open_preview", "restart_preview", "preview_status", "stop_preview", "build_apk", "read_logs", "restart_app", "reinstall_and_restart_app"]) {
+    for (const name of [
+      "open_preview",
+      "restart_preview",
+      "preview_status",
+      "stop_preview",
+      "build_apk",
+      "read_logs",
+      "restart_app",
+      "reinstall_and_restart_app",
+      "start_tunnel_preview",
+      "stop_tunnel_preview",
+    ]) {
       expect(registry.has(name)).toBe(true);
     }
   });

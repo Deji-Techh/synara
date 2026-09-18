@@ -18,6 +18,9 @@ export const PREVIEW_WS_METHODS = {
   mobileUrl: "preview.mobileUrl",
   flutterToolchainStatus: "preview.flutterToolchainStatus",
   flutterToolchainInstall: "preview.flutterToolchainInstall",
+  tunnelStart: "preview.tunnelStart",
+  tunnelStatus: "preview.tunnelStatus",
+  tunnelStop: "preview.tunnelStop",
 } as const;
 
 // ── Limits ───────────────────────────────────────────────────────────
@@ -308,3 +311,35 @@ export type FlutterToolchainInstallInput = typeof FlutterToolchainInstallInput.T
 
 export const FlutterToolchainInstallResult = FlutterToolchainStatusResult;
 export type FlutterToolchainInstallResult = typeof FlutterToolchainInstallResult.Type;
+
+export const PreviewTunnelInput = Schema.Struct({
+  threadId: ThreadId,
+});
+export type PreviewTunnelInput = typeof PreviewTunnelInput.Type;
+
+export const PreviewTunnelState = Schema.Literals([
+  "connecting",
+  "live",
+  "stopped",
+  "expired",
+] as const);
+export type PreviewTunnelState = typeof PreviewTunnelState.Type;
+
+export const PreviewTunnelStartResult = Schema.Struct({
+  threadId: ThreadId,
+  tunnelId: Schema.String.check(Schema.isMaxLength(256)),
+  /** Public worldwide URL served by the control-plane relay. */
+  url: TrimmedNonEmptyString.check(Schema.isMaxLength(8_192)),
+  expiresAt: Schema.String.check(Schema.isMaxLength(64)),
+  state: PreviewTunnelState,
+  errorMessage: Schema.NullOr(Schema.String),
+});
+export type PreviewTunnelStartResult = typeof PreviewTunnelStartResult.Type;
+
+export const PreviewTunnelStatusResult = Schema.NullOr(PreviewTunnelStartResult);
+export type PreviewTunnelStatusResult = typeof PreviewTunnelStatusResult.Type;
+
+export const PreviewTunnelStopResult = Schema.Struct({
+  stopped: Schema.Boolean,
+});
+export type PreviewTunnelStopResult = typeof PreviewTunnelStopResult.Type;

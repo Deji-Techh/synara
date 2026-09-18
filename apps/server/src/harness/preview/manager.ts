@@ -37,7 +37,8 @@ const sessions = new Map<string, PreviewSession>();
 const ANSI_PATTERN = /\u001b\[[0-9;]*m/g;
 
 /** Matches http(s) URLs in dev-server output. */
-const URL_PATTERN = /(https?:\/\/(?:localhost|127\.0\.0\.1|0\.0\.0\.0|[a-zA-Z0-9._-]+)(?::\d+)?(?:\/[^\s]*)?)/;
+const URL_PATTERN =
+  /(https?:\/\/(?:localhost|127\.0\.0\.1|0\.0\.0\.0|[a-zA-Z0-9._-]+)(?::\d+)?(?:\/[^\s]*)?)/;
 
 /** Output shapes emitted when the dev-server port is already taken. */
 export const PORT_CONFLICT_PATTERN =
@@ -74,6 +75,8 @@ export function getPreviewState(threadId: string): {
   kind?: "web" | "native";
   coldStartMs?: number;
   lastReloadAt?: number;
+  /** Owning app dir when a session exists (quality gates prefer it). */
+  appDir?: string;
 } {
   const session = sessions.get(threadId);
   if (!session || session.process.exitCode !== null) {
@@ -84,6 +87,7 @@ export function getPreviewState(threadId: string): {
     url: session.url,
     logs: [...session.logs],
     kind: session.kind,
+    appDir: session.appDir,
     ...(session.readyAt !== undefined && session.startedAt
       ? { coldStartMs: Math.max(0, session.readyAt - session.startedAt) }
       : {}),
@@ -336,7 +340,7 @@ export async function startPreview(input: {
 
   const framework = getFrameworkConfigForAppDir(appDir);
   const rawDevCommand = wantLan
-    ? (framework?.lanDevCommand || framework?.devCommand)
+    ? framework?.lanDevCommand || framework?.devCommand
     : framework?.devCommand;
   if (!rawDevCommand) {
     throw new Error(`No dev command configured for this framework`);
@@ -451,7 +455,9 @@ export async function startPreview(input: {
     const structuredBlock =
       structured.length > 0
         ? `\nStructured findings:\n${structured
-            .map((e) => `- ${e.file ? `${e.file}${e.line ? `:${e.line}` : ""} — ` : ""}${e.message}`)
+            .map(
+              (e) => `- ${e.file ? `${e.file}${e.line ? `:${e.line}` : ""} — ` : ""}${e.message}`,
+            )
             .join("\n")}`
         : "";
     if (err instanceof Error && tail && !err.message.includes("Recent output")) {

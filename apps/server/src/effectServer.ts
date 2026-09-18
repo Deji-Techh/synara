@@ -25,6 +25,7 @@ import { makeHarnessRouteLayer } from "./harness/harnessRouteLayer";
 import { sharedTurnGateway } from "./harness/turn/gateway";
 import { sharedHarnessHub } from "./harness/ws/hub";
 import { startGoalScheduler, stopGoalScheduler } from "./dyad/goals/goalScheduler";
+import { stopAllTunnelPreviews } from "./harness/preview/tunnel";
 
 export interface ServerShape {
   readonly start: Effect.Effect<
@@ -129,6 +130,13 @@ export const createEffectServer = Effect.fn(function* (
       Effect.sync(() => {
         sharedTurnGateway().detachWs();
         stopGoalScheduler();
+        // Donor stopAllTunnelPreviews parity (main.ts on-exit): sync map
+        // teardown, async DELETEs fire-and-forget inside.
+        try {
+          stopAllTunnelPreviews();
+        } catch {
+          // tunnel teardown is best-effort on shutdown
+        }
       }),
     );
   }

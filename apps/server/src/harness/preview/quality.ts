@@ -19,13 +19,10 @@ export async function runQualityCommand(
   kind: "analyze" | "test" | "build",
   appDir?: string,
 ): Promise<QualityResult> {
-  // Prefer the active preview's working dir; fall back to the caller's appDir.
+  // Prefer the active preview session's app dir (it is the ground truth for
+  // which tree the thread is working in); fall back to the caller's appDir.
   const state = getPreviewState(threadId);
-  const cwd = state.url ? undefined : undefined; // state has no appDir; resolve below
-  void cwd;
-  void state;
-
-  const resolvedAppDir = appDir ?? process.cwd();
+  const resolvedAppDir = state.appDir ?? appDir ?? process.cwd();
 
   let command = "bun";
   let args: string[];

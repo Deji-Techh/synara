@@ -164,6 +164,10 @@ import {
   FlutterToolchainStatusResult,
   FlutterToolchainInstallInput,
   FlutterToolchainInstallResult,
+  PreviewTunnelInput,
+  PreviewTunnelStartResult,
+  PreviewTunnelStatusResult,
+  PreviewTunnelStopResult,
   PREVIEW_WS_METHODS,
 } from "./preview";
 import {
@@ -761,6 +765,24 @@ export const WsPreviewFlutterToolchainInstallRpc = Rpc.make(
   },
 );
 
+export const WsPreviewTunnelStartRpc = Rpc.make(PREVIEW_WS_METHODS.tunnelStart, {
+  payload: PreviewTunnelInput,
+  success: PreviewTunnelStartResult,
+  error: WsRpcError,
+});
+
+export const WsPreviewTunnelStatusRpc = Rpc.make(PREVIEW_WS_METHODS.tunnelStatus, {
+  payload: PreviewTunnelInput,
+  success: PreviewTunnelStatusResult,
+  error: WsRpcError,
+});
+
+export const WsPreviewTunnelStopRpc = Rpc.make(PREVIEW_WS_METHODS.tunnelStop, {
+  payload: PreviewTunnelInput,
+  success: PreviewTunnelStopResult,
+  error: WsRpcError,
+});
+
 export const WsPreviewRpcGroup = RpcGroup.make(
   WsPreviewStartRpc,
   WsPreviewStopRpc,
@@ -775,6 +797,9 @@ export const WsPreviewRpcGroup = RpcGroup.make(
   WsPreviewMobileUrlRpc,
   WsPreviewFlutterToolchainStatusRpc,
   WsPreviewFlutterToolchainInstallRpc,
+  WsPreviewTunnelStartRpc,
+  WsPreviewTunnelStatusRpc,
+  WsPreviewTunnelStopRpc,
 );
 
 // ── Build artifacts gallery ──────────────────────────────────────────

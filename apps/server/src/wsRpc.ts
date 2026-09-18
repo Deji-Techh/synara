@@ -480,6 +480,22 @@ function makeWsPreviewHandlers(_providerAdapterRegistry: any, _options: any) {
           m.getMobilePreviewUrl({ threadId: input.threadId, appDir: input.appDir }),
         ),
       ),
+    "preview.tunnelStart": (input: any) =>
+      tryPromise(
+        import("./harness/preview/tunnel.ts").then((m) => m.startTunnelPreview(input.threadId)),
+      ),
+    "preview.tunnelStatus": (input: any) =>
+      tryPromise(
+        import("./harness/preview/tunnel.ts").then((m) =>
+          Promise.resolve(m.getTunnelPreviewStatus(input.threadId)),
+        ),
+      ),
+    "preview.tunnelStop": (input: any) =>
+      tryPromise(
+        import("./harness/preview/tunnel.ts").then(async (m) => ({
+          stopped: await m.stopTunnelPreview(input.threadId).then(() => true),
+        })),
+      ),
     "preview.flutterToolchainStatus": (_input: any) =>
       tryPromise(
         (async () => {

@@ -56,7 +56,12 @@ export const openPreviewTool = defineTool({
   execute: async ({ port }, ctx) => {
     const framework = detectFramework(ctx.appPath);
     if (framework === "blank") {
-      return { started: false, url: null, framework, reason: "Preview not available for Blank projects" };
+      return {
+        started: false,
+        url: null,
+        framework,
+        reason: "Preview not available for Blank projects",
+      };
     }
     const { startPreview } = await import("../preview/manager.ts");
     const { url, kind } = await startPreview({
@@ -108,7 +113,8 @@ export const previewStatusTool = defineTool({
 // 4. stop_preview — free the dev server (end of session / port conflicts)
 export const stopPreviewTool = defineTool({
   name: "stop_preview",
-  description: "Stops the app preview dev server for this thread. Use at session end or to resolve port conflicts before reopening.",
+  description:
+    "Stops the app preview dev server for this thread. Use at session end or to resolve port conflicts before reopening.",
   schema: z.object({}),
   readOnly: false,
   modifiesState: true,
@@ -139,7 +145,12 @@ export const buildApkTool = defineTool({
           maxBuffer: 20 * 1024 * 1024,
           timeout: 590_000,
         });
-        return { success: true, framework, stdout: stdout.slice(-8000), stderr: stderr.slice(-4000) };
+        return {
+          success: true,
+          framework,
+          stdout: stdout.slice(-8000),
+          stderr: stderr.slice(-4000),
+        };
       } catch (e: any) {
         return {
           success: false,
@@ -161,17 +172,18 @@ export const buildApkTool = defineTool({
         };
       }
       try {
-        const { stdout, stderr } = await execFileAsync(
-          gradlew,
-          ["assembleDebug", "--offline"],
-          {
-            cwd: `${ctx.appPath}/android`,
-            signal: ctx.signal,
-            maxBuffer: 20 * 1024 * 1024,
-            timeout: 590_000,
-          },
-        );
-        return { success: true, framework, stdout: stdout.slice(-8000), stderr: stderr.slice(-4000) };
+        const { stdout, stderr } = await execFileAsync(gradlew, ["assembleDebug", "--offline"], {
+          cwd: `${ctx.appPath}/android`,
+          signal: ctx.signal,
+          maxBuffer: 20 * 1024 * 1024,
+          timeout: 590_000,
+        });
+        return {
+          success: true,
+          framework,
+          stdout: stdout.slice(-8000),
+          stderr: stderr.slice(-4000),
+        };
       } catch (e: any) {
         return {
           success: false,
@@ -226,7 +238,10 @@ function truncateLogMessage(message: string, maxLength: number = 1000): string {
   if (message.length <= maxLength) return message;
   const lines = message.split("\n");
   if (lines.some((line) => line.startsWith("    at "))) {
-    return `${lines[0]}\n${lines.filter((l) => l.startsWith("    at ")).slice(0, 5).join("\n")}\n... [stack trace truncated]`;
+    return `${lines[0]}\n${lines
+      .filter((l) => l.startsWith("    at "))
+      .slice(0, 5)
+      .join("\n")}\n... [stack trace truncated]`;
   }
   const half = Math.floor((maxLength - 20) / 2);
   return `${message.slice(0, half)}\n... [truncated] ...\n${message.slice(-half)}`;
@@ -259,8 +274,10 @@ export const readLogsTool = defineTool({
     const filtered = state.logs.filter((line) => {
       const lower = line.toLowerCase();
       if (query && !lower.includes(query)) return false;
-      if (type !== "all" && type !== "server" && !lower.includes(type.replace("-", " "))) return false;
-      if (level !== "all" && !(levelWords[level] ?? []).some((w) => lower.includes(w))) return false;
+      if (type !== "all" && type !== "server" && !lower.includes(type.replace("-", " ")))
+        return false;
+      if (level !== "all" && !(levelWords[level] ?? []).some((w) => lower.includes(w)))
+        return false;
       return true;
     });
     const tail = filtered.slice(-limit).map((l) => truncateLogMessage(l));
@@ -312,7 +329,9 @@ export const reinstallAndRestartAppTool = defineTool({
     }
     const framework = detectFramework(ctx.appPath);
     if (framework === "blank") {
-      throw new Error("reinstall_and_restart_app does not apply to Blank projects (no dependencies, no preview).");
+      throw new Error(
+        "reinstall_and_restart_app does not apply to Blank projects (no dependencies, no preview).",
+      );
     }
     if (framework === "flutter") {
       // Best-effort clean of stale build outputs, then a strict pub get.
@@ -364,6 +383,42 @@ export const reinstallAndRestartAppTool = defineTool({
   presentCall: () => "Delete node_modules, reinstall dependencies, and restart the current app",
 });
 
+// 9. start_tunnel_preview — worldwide share via the control-plane relay.
+// Donor app:start-tunnel-preview over the Caide preview runtime: requires a
+// live local preview (open_preview first); the relay reverse-proxies public
+// HTTP/WS back to it. Returns the public URL + expiry.
+export const startTunnelPreviewTool = defineTool({
+  name: "start_tunnel_preview",
+  description:
+    "Shares this thread's running preview with the world through a live reverse tunnel (control-plane relay). Requires an active preview — call open_preview first. Returns the public URL and expiry. Idempotent per thread. Use when the user asks for a worldwide/shareable link (not LAN QR).",
+  schema: z.object({}),
+  readOnly: false,
+  modifiesState: true,
+  timeoutMs: 60_000,
+  execute: async (_, ctx) => {
+    const { startTunnelPreview } = await import("../preview/tunnel.ts");
+    const status = await startTunnelPreview(ctx.sessionId);
+    return { started: true, ...status };
+  },
+  presentCall: () => "Share preview worldwide",
+});
+
+// 10. stop_tunnel_preview — close the worldwide share.
+export const stopTunnelPreviewTool = defineTool({
+  name: "stop_tunnel_preview",
+  description:
+    "Stops this thread's worldwide preview tunnel (the local preview keeps running). Use when the share link should go offline.",
+  schema: z.object({}),
+  readOnly: false,
+  modifiesState: true,
+  execute: async (_, ctx) => {
+    const { stopTunnelPreview } = await import("../preview/tunnel.ts");
+    await stopTunnelPreview(ctx.sessionId);
+    return { stopped: true };
+  },
+  presentCall: () => "Stop worldwide share",
+});
+
 export const ALL_PREVIEW_TOOLS: ToolDef[] = [
   openPreviewTool,
   restartPreviewTool,
@@ -373,4 +428,6 @@ export const ALL_PREVIEW_TOOLS: ToolDef[] = [
   readLogsTool,
   restartAppTool,
   reinstallAndRestartAppTool,
+  startTunnelPreviewTool,
+  stopTunnelPreviewTool,
 ];
