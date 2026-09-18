@@ -42,10 +42,16 @@ function makeShareDownloadHandler() {
       return HttpServerResponse.text("Not found", { status: 404 });
     }
   }).pipe(
-    Effect.catchCause(() => Effect.succeed(HttpServerResponse.text("Share unavailable", { status: 500 }))),
+    Effect.catchCause(() =>
+      Effect.succeed(HttpServerResponse.text("Share unavailable", { status: 500 })),
+    ),
   );
 }
 
-export const shareDownloadRouteLayer = HttpRouter.add("GET", "/api/share", makeShareDownloadHandler());
+export const shareDownloadRouteLayer = HttpRouter.add(
+  "GET",
+  "/api/share",
+  makeShareDownloadHandler(),
+);
 
 export const shareRouteLayer = Layer.mergeAll(shareDownloadRouteLayer);

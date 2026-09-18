@@ -32,6 +32,15 @@ export {
   ALL_GITHUB_TOOLS,
 } from "./githubTools.ts";
 export {
+  GithubOAuthError,
+  requestGithubDeviceCode,
+  pollGithubAccessToken,
+  saveGithubOAuthToken,
+  disconnectGithubOAuth,
+  type GithubDeviceCode,
+  type GithubPollResult,
+} from "./githubOAuth.ts";
+export {
   VERCEL_API_BASE_URL,
   VercelApiError,
   NEON_VERCEL_ENV_KEYS,
@@ -41,7 +50,18 @@ export {
   listVercelDeployments,
   triggerVercelDeployment,
   syncNeonEnvToVercel,
+  removeNeonEnvFromVercel,
 } from "./vercelApi.ts";
+export {
+  VERCEL_ENV_TARGETS,
+  NEON_VERCEL_ENV_KEYS as NEON_VERCEL_OWNED_KEYS,
+  buildVercelEnvPayload,
+  canonicalOrigin,
+  reconcileTrustedDomains,
+  type VercelEnvTarget,
+  type VercelEnvVar,
+  type NeonBranchEnvValues,
+} from "./vercelEnvSync.ts";
 export {
   getVercelToken,
   vercelConnectTool,

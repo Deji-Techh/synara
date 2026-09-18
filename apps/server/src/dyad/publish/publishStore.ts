@@ -45,9 +45,16 @@ export function readPublishLinks(appPath: string): PublishLinks {
   const cached = publishCache.get(appPath);
   if (cached) return cached;
   try {
-    const parsed = JSON.parse(fs.readFileSync(publishFile(appPath), "utf8")) as Partial<PublishLinks>;
+    const parsed = JSON.parse(
+      fs.readFileSync(publishFile(appPath), "utf8"),
+    ) as Partial<PublishLinks>;
     const links: PublishLinks = {};
-    if (parsed.github?.repo) links.github = { org: parsed.github.org, repo: parsed.github.repo, branch: parsed.github.branch };
+    if (parsed.github?.repo)
+      links.github = {
+        org: parsed.github.org,
+        repo: parsed.github.repo,
+        branch: parsed.github.branch,
+      };
     if (parsed.vercel?.projectId) {
       links.vercel = {
         projectId: parsed.vercel.projectId,
@@ -56,7 +63,10 @@ export function readPublishLinks(appPath: string): PublishLinks {
         deploymentUrl: parsed.vercel.deploymentUrl,
       };
     }
-    if (parsed.coolify && (parsed.coolify.projectUuid || parsed.coolify.applicationUuid || parsed.coolify.instanceUrl)) {
+    if (
+      parsed.coolify &&
+      (parsed.coolify.projectUuid || parsed.coolify.applicationUuid || parsed.coolify.instanceUrl)
+    ) {
       links.coolify = { ...parsed.coolify };
     }
     publishCache.set(appPath, links);

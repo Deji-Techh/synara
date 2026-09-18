@@ -25,7 +25,8 @@ function handler(req: http.IncomingMessage, res: http.ServerResponse): void {
   };
   if (key !== "Bearer good") return json(401, { message: "Unauthenticated" });
   if (url.pathname === "/api/v1/version") return json(200, { version: "4.0.0" });
-  if (url.pathname === "/api/v1/servers") return json(200, [{ uuid: "s1", name: "hetzner", ip: "1.2.3.4" }]);
+  if (url.pathname === "/api/v1/servers")
+    return json(200, [{ uuid: "s1", name: "hetzner", ip: "1.2.3.4" }]);
   if (url.pathname === "/api/v1/projects" && req.method !== "POST") {
     return json(200, [{ uuid: "p1", name: "shop" }]);
   }
@@ -76,8 +77,12 @@ describe("coolify publish (phase 4c)", () => {
     });
     expect(calls).toContain("POST /api/v1/deploy");
     await expect(probeCoolifyInstance({ instanceUrl: base, token: "bad" })).rejects.toThrow(/401/);
-    await expect(probeCoolifyInstance({ instanceUrl: "  ", token: "good" })).rejects.toThrow(/URL is required/);
-    await expect(triggerCoolifyDeploy({ ...c, applicationUuid: "  " })).rejects.toThrow(/uuid is required/);
+    await expect(probeCoolifyInstance({ instanceUrl: "  ", token: "good" })).rejects.toThrow(
+      /URL is required/,
+    );
+    await expect(triggerCoolifyDeploy({ ...c, applicationUuid: "  " })).rejects.toThrow(
+      /uuid is required/,
+    );
   });
 
   it("connect persists the instance link without the token", async () => {
@@ -89,18 +94,17 @@ describe("coolify publish (phase 4c)", () => {
     // Tool resolves token via settings/env; stub fetch for the fake host only.
     const realFetch = globalThis.fetch;
     const { vi } = await import("vitest");
-    vi.stubGlobal(
-      "fetch",
-      async (url: unknown, init?: { method?: string }) => {
-        const u = String(url);
-        if (!u.startsWith(base)) return realFetch(url as string, init as RequestInit);
-        const path = u.slice(base.length);
-        const json = (body: unknown) => ({ ok: true, status: 200, json: async () => body }) as Response;
-        if (path === "/api/v1/version") return json({ version: "4.0.0" });
-        if (path === "/api/v1/projects" && (init?.method ?? "GET") === "POST") return json({ uuid: "p9", name: "n" });
-        throw new Error(`unexpected ${u}`);
-      },
-    );
+    vi.stubGlobal("fetch", async (url: unknown, init?: { method?: string }) => {
+      const u = String(url);
+      if (!u.startsWith(base)) return realFetch(url as string, init as RequestInit);
+      const path = u.slice(base.length);
+      const json = (body: unknown) =>
+        ({ ok: true, status: 200, json: async () => body }) as Response;
+      if (path === "/api/v1/version") return json({ version: "4.0.0" });
+      if (path === "/api/v1/projects" && (init?.method ?? "GET") === "POST")
+        return json({ uuid: "p9", name: "n" });
+      throw new Error(`unexpected ${u}`);
+    });
     const saved = process.env.COOLIFY_TOKEN;
     process.env.COOLIFY_TOKEN = "good";
     // Point resolution at the loopback fake by passing it as instance URL.

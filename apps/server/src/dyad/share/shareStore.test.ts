@@ -38,12 +38,20 @@ describe("share grants (item 38)", () => {
   });
 
   it("mints, resolves, expires, and revokes", () => {
-    const grant = mintShareGrant("/app", "dist/app.apk", { expiresInDays: 7, note: "beta", filePath: file });
+    const grant = mintShareGrant("/app", "dist/app.apk", {
+      expiresInDays: 7,
+      note: "beta",
+      filePath: file,
+    });
     expect(grant.token).toMatch(/^[0-9a-f]{32}$/);
     expect(grant.expiresAtMs - grant.createdAt).toBe(7 * 86_400_000);
-    expect(resolveShareGrant(grant.token, { filePath: file })).toMatchObject({ relPath: "dist/app.apk" });
+    expect(resolveShareGrant(grant.token, { filePath: file })).toMatchObject({
+      relPath: "dist/app.apk",
+    });
     // Expired grants resolve to null and prune.
-    expect(resolveShareGrant(grant.token, { filePath: file, nowMs: grant.expiresAtMs + 1 })).toBeNull();
+    expect(
+      resolveShareGrant(grant.token, { filePath: file, nowMs: grant.expiresAtMs + 1 }),
+    ).toBeNull();
     const g2 = mintShareGrant("/app", "a.png", { filePath: file });
     expect(listShareGrants("/app", file)).toHaveLength(1);
     expect(revokeShareGrant(g2.token, file)).toBe(true);
@@ -63,9 +71,9 @@ describe("share grants (item 38)", () => {
     await expect(
       shareArtifactTool.execute({ path: "../escape.txt" }, toolCtx(dir)),
     ).rejects.toThrow(/not a file under the app/);
-    await expect(
-      shareArtifactTool.execute({ path: "missing.png" }, toolCtx(dir)),
-    ).rejects.toThrow(/not a file under the app/);
+    await expect(shareArtifactTool.execute({ path: "missing.png" }, toolCtx(dir))).rejects.toThrow(
+      /not a file under the app/,
+    );
   });
 
   it("share_artifact mints a link and list/revoke round-trip", async () => {

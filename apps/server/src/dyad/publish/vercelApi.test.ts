@@ -10,6 +10,7 @@ import {
   getVercelAuthUser,
   listVercelDeployments,
   listVercelProjects,
+  removeNeonEnvFromVercel,
   syncNeonEnvToVercel,
   triggerVercelDeployment,
   VercelApiError,
@@ -35,13 +36,27 @@ function handler(req: http.IncomingMessage, res: http.ServerResponse): void {
     return json(200, { id: "prj_9", name: "newshop" });
   }
   if (url.pathname === "/v6/deployments") {
-    return json(200, { deployments: [{ uid: "dpl_1", url: "shop.vercel.app", state: "READY", target: "production" }] });
+    return json(200, {
+      deployments: [{ uid: "dpl_1", url: "shop.vercel.app", state: "READY", target: "production" }],
+    });
   }
   if (url.pathname === "/v13/deployments" && req.method === "POST") {
     return json(200, { uid: "dpl_2", url: "shop-abc.vercel.app", state: "QUEUED" });
   }
   if (url.pathname === "/v10/projects/prj_1/env" && req.method === "POST") {
-    return json(200, {});
+    let body = "";
+    req.on("data", (c) => {
+      body += c;
+    });
+    req.on("end", () => {
+      try {
+        posted.push(JSON.parse(body));
+      } catch {
+        // ignore
+      }
+      return json(200, {});
+    });
+    return;
   }
   if (url.pathname === "/v9/projects/prj_1/env" && req.method !== "POST") {
     return json(200, { envs: [{ id: "env_1", key: "DATABASE_URL" }] });
@@ -56,6 +71,7 @@ function handler(req: http.IncomingMessage, res: http.ServerResponse): void {
 let server: http.Server;
 let base = "";
 const deleted: string[] = [];
+const posted: unknown[] = [];
 beforeAll(async () => {
   server = http.createServer(handler);
   await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
@@ -71,16 +87,37 @@ function toolCtx(appPath: string) {
 
 describe("vercel publish (phase 4b)", () => {
   it("validates tokens, lists/creates projects and deployments", async () => {
-    expect(await getVercelAuthUser({ token: "good", baseUrl: base })).toEqual({ id: "u1", username: "octo", email: undefined });
-    await expect(getVercelAuthUser({ token: "bad", baseUrl: base })).rejects.toThrow(/Invalid token/);
+    expect(await getVercelAuthUser({ token: "good", baseUrl: base })).toEqual({
+      id: "u1",
+      username: "octo",
+      email: undefined,
+    });
+    await expect(getVercelAuthUser({ token: "bad", baseUrl: base })).rejects.toThrow(
+      /Invalid token/,
+    );
     expect(await listVercelProjects({ token: "good", baseUrl: base })).toEqual([
       { id: "prj_1", name: "shop", framework: "vite" },
     ]);
-    expect(await createVercelProject({ token: "good", name: "NewShop!", baseUrl: base })).toMatchObject({ id: "prj_9" });
-    expect(await listVercelDeployments({ token: "good", projectId: "prj_1", baseUrl: base })).toEqual([
-      { id: "dpl_1", url: "shop.vercel.app", state: "READY", target: "production", createdAt: undefined },
+    expect(
+      await createVercelProject({ token: "good", name: "NewShop!", baseUrl: base }),
+    ).toMatchObject({ id: "prj_9" });
+    expect(
+      await listVercelDeployments({ token: "good", projectId: "prj_1", baseUrl: base }),
+    ).toEqual([
+      {
+        id: "dpl_1",
+        url: "shop.vercel.app",
+        state: "READY",
+        target: "production",
+        createdAt: undefined,
+      },
     ]);
-    const dep = await triggerVercelDeployment({ token: "good", projectId: "prj_1", projectName: "shop", baseUrl: base });
+    const dep = await triggerVercelDeployment({
+      token: "good",
+      projectId: "prj_1",
+      projectName: "shop",
+      baseUrl: base,
+    });
     expect(dep).toMatchObject({ id: "dpl_2", state: "QUEUED" });
     await expect(
       createVercelProject({ token: "  ", name: "x", baseUrl: base }),
@@ -89,14 +126,35 @@ describe("vercel publish (phase 4b)", () => {
 
   it("syncs only Neon-owned env keys, never POSTGRES_URL", async () => {
     deleted.length = 0;
+    posted.length = 0;
     const synced = await syncNeonEnvToVercel({
       token: "good",
       projectId: "prj_1",
-      vars: { DATABASE_URL: "postgres://x", NEON_AUTH_BASE_URL: "https://ep.auth", IGNORABLE: "y" } as Record<string, string>,
+      vars: {
+        DATABASE_URL: "postgres://x",
+        NEON_AUTH_BASE_URL: "https://ep.auth",
+        IGNORABLE: "y",
+      } as Record<string, string>,
       baseUrl: base,
     });
     expect(synced).toEqual(["DATABASE_URL", "NEON_AUTH_BASE_URL"]);
     // Existing DATABASE_URL was replaced in place (no duplicate-key 409).
+    expect(deleted).toEqual(["DATABASE_URL"]);
+    // Donor default: production-only targets (012 §2 correctness).
+    for (const body of posted) {
+      expect(body).toMatchObject({ type: "encrypted", target: ["production"] });
+    }
+    expect(posted).toHaveLength(2);
+  });
+
+  it("removes owned keys on disconnect", async () => {
+    deleted.length = 0;
+    const removed = await removeNeonEnvFromVercel({
+      token: "good",
+      projectId: "prj_1",
+      baseUrl: base,
+    });
+    expect(removed).toEqual(["DATABASE_URL"]);
     expect(deleted).toEqual(["DATABASE_URL"]);
   });
 
@@ -109,9 +167,11 @@ describe("vercel publish (phase 4b)", () => {
     const realFetch = globalThis.fetch;
     const stub = async (url: unknown, init?: { method?: string; body?: string }) => {
       const u = String(url);
-      if (!u.startsWith("https://api.vercel.com/")) return realFetch(url as string, init as RequestInit);
+      if (!u.startsWith("https://api.vercel.com/"))
+        return realFetch(url as string, init as RequestInit);
       const path = u.slice("https://api.vercel.com".length);
-      if (path === "/v2/user") return { ok: true, json: async () => ({ user: { id: "u1" } }) } as Response;
+      if (path === "/v2/user")
+        return { ok: true, json: async () => ({ user: { id: "u1" } }) } as Response;
       if (path === "/v10/projects" && (init?.method ?? "GET") === "POST") {
         return { ok: true, json: async () => ({ id: "prj_9", name: "newshop" }) } as Response;
       }
@@ -144,7 +204,8 @@ describe("vercel publish (phase 4b)", () => {
     const { mkdtempSync, mkdirSync, writeFileSync } = await import("node:fs");
     const { tmpdir } = await import("node:os");
     const { join } = await import("node:path");
-    const { vercelConnectTool: connect, vercelDeployTool: deploy } = await import("./vercelTools.ts");
+    const { vercelConnectTool: connect, vercelDeployTool: deploy } =
+      await import("./vercelTools.ts");
     const fixture = (framework: string) => {
       const dir = mkdtempSync(join(tmpdir(), "caide-fwgate-"));
       mkdirSync(join(dir, ".caide"), { recursive: true });
@@ -168,9 +229,13 @@ describe("vercel publish (phase 4b)", () => {
     }
     // Website passes the gate (then fails on the missing token — no network).
     const web = fixture("website");
-    await expect(connect.execute({ name: "x" }, ctxFor(web))).rejects.toThrow(/Vercel token missing/);
+    await expect(connect.execute({ name: "x" }, ctxFor(web))).rejects.toThrow(
+      /Vercel token missing/,
+    );
     // Unknown framework is not blocked (detection is best-effort).
     const unknown = mkdtempSync(join(tmpdir(), "caide-fwgate-"));
-    await expect(connect.execute({ name: "x" }, ctxFor(unknown))).rejects.toThrow(/Vercel token missing/);
+    await expect(connect.execute({ name: "x" }, ctxFor(unknown))).rejects.toThrow(
+      /Vercel token missing/,
+    );
   });
 });

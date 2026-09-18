@@ -35,16 +35,19 @@ async function coolifyFetch(
   instanceUrl: string,
   token: string,
   path: string,
-  options: { method?: string; body?: unknown; signal?: AbortSignal; query?: Record<string, string> } = {},
+  options: {
+    method?: string;
+    body?: unknown;
+    signal?: AbortSignal;
+    query?: Record<string, string>;
+  } = {},
 ): Promise<unknown> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 25_000);
   const onAbort = () => controller.abort();
   options.signal?.addEventListener("abort", onAbort, { once: true });
   try {
-    const qs = options.query
-      ? `?${new URLSearchParams(options.query).toString()}`
-      : "";
+    const qs = options.query ? `?${new URLSearchParams(options.query).toString()}` : "";
     const res = await fetch(`${instanceUrl.replace(/\/+$/, "")}${path}${qs}`, {
       method: options.method ?? "GET",
       signal: controller.signal,
@@ -85,7 +88,9 @@ export async function probeCoolifyInstance(input: {
   signal?: AbortSignal;
 }): Promise<{ version?: string }> {
   const { baseUrl, token } = base(input);
-  const data = (await coolifyFetch(baseUrl, token, "/api/v1/version", { signal: input.signal })) as {
+  const data = (await coolifyFetch(baseUrl, token, "/api/v1/version", {
+    signal: input.signal,
+  })) as {
     version?: string;
   };
   return { version: data.version };
@@ -97,12 +102,18 @@ export async function listCoolifyServers(input: {
   signal?: AbortSignal;
 }): Promise<CoolifyServer[]> {
   const { baseUrl, token } = base(input);
-  const data = (await coolifyFetch(baseUrl, token, "/api/v1/servers", { signal: input.signal })) as Array<{
+  const data = (await coolifyFetch(baseUrl, token, "/api/v1/servers", {
+    signal: input.signal,
+  })) as Array<{
     uuid?: string;
     name?: string;
     ip?: string;
   }>;
-  return (Array.isArray(data) ? data : []).map((s) => ({ uuid: s.uuid ?? "", name: s.name, ip: s.ip }));
+  return (Array.isArray(data) ? data : []).map((s) => ({
+    uuid: s.uuid ?? "",
+    name: s.name,
+    ip: s.ip,
+  }));
 }
 
 export async function listCoolifyProjects(input: {
@@ -111,7 +122,9 @@ export async function listCoolifyProjects(input: {
   signal?: AbortSignal;
 }): Promise<CoolifyProject[]> {
   const { baseUrl, token } = base(input);
-  const data = (await coolifyFetch(baseUrl, token, "/api/v1/projects", { signal: input.signal })) as Array<{
+  const data = (await coolifyFetch(baseUrl, token, "/api/v1/projects", {
+    signal: input.signal,
+  })) as Array<{
     uuid?: string;
     name?: string;
   }>;
@@ -168,5 +181,10 @@ export async function getCoolifyApplication(input: {
     `/api/v1/applications/${encodeURIComponent(input.applicationUuid)}`,
     { signal: input.signal },
   )) as { uuid?: string; name?: string; status?: string; fqdn?: string };
-  return { uuid: data.uuid ?? input.applicationUuid, name: data.name, status: data.status, fqdn: data.fqdn };
+  return {
+    uuid: data.uuid ?? input.applicationUuid,
+    name: data.name,
+    status: data.status,
+    fqdn: data.fqdn,
+  };
 }

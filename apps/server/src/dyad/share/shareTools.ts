@@ -57,9 +57,24 @@ function resolveAppFile(appPath: string, relPath: string): string | null {
 }
 
 const shareArtifactSchema = z.object({
-  path: z.string().describe("Workspace-relative file to share (e.g. .caide/media/hero.png, dist/app.apk, build/app.ipa, dist/index.html). Must exist under the app directory."),
-  expiresInDays: z.number().int().min(SHARE_TTL_MIN_DAYS).max(SHARE_TTL_MAX_DAYS).optional().describe(`Link lifetime in days, ${SHARE_TTL_MIN_DAYS}-${SHARE_TTL_MAX_DAYS} (default ${SHARE_TTL_DEFAULT_DAYS}).`),
-  note: z.string().optional().describe("Short label shown alongside the link (e.g. 'beta APK', 'home screenshot')."),
+  path: z
+    .string()
+    .describe(
+      "Workspace-relative file to share (e.g. .caide/media/hero.png, dist/app.apk, build/app.ipa, dist/index.html). Must exist under the app directory.",
+    ),
+  expiresInDays: z
+    .number()
+    .int()
+    .min(SHARE_TTL_MIN_DAYS)
+    .max(SHARE_TTL_MAX_DAYS)
+    .optional()
+    .describe(
+      `Link lifetime in days, ${SHARE_TTL_MIN_DAYS}-${SHARE_TTL_MAX_DAYS} (default ${SHARE_TTL_DEFAULT_DAYS}).`,
+    ),
+  note: z
+    .string()
+    .optional()
+    .describe("Short label shown alongside the link (e.g. 'beta APK', 'home screenshot')."),
 });
 
 export const shareArtifactTool = defineTool({
@@ -77,7 +92,9 @@ export const shareArtifactTool = defineTool({
     const parsed = shareArtifactSchema.parse(args);
     const full = resolveAppFile(ctx.appPath, parsed.path);
     if (!full) {
-      throw new Error(`Cannot share "${parsed.path}": not a file under the app directory (max 500MB).`);
+      throw new Error(
+        `Cannot share "${parsed.path}": not a file under the app directory (max 500MB).`,
+      );
     }
     const rel = path.relative(ctx.appPath, full).replace(/\\/g, "/");
     const grant = mintShareGrant(ctx.appPath, rel, {
@@ -101,7 +118,8 @@ const revokeShareSchema = z.object({
 
 export const revokeShareTool = defineTool({
   name: "revoke_share",
-  description: "Revoke a share link before its expiry. Accepts the full token or its first 8 characters.",
+  description:
+    "Revoke a share link before its expiry. Accepts the full token or its first 8 characters.",
   schema: revokeShareSchema,
   readOnly: false,
   modifiesState: true,

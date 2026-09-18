@@ -30,7 +30,10 @@ export function getCoolifyToken(): string | null {
 
 const coolifyConnectSchema = z.object({
   instanceUrl: z.string().describe("Coolify instance URL, e.g. https://coolify.example.com."),
-  projectName: z.string().optional().describe("Create and link a project with this name (else link manually)."),
+  projectName: z
+    .string()
+    .optional()
+    .describe("Create and link a project with this name (else link manually)."),
 });
 
 export const coolifyConnectTool = defineTool({
@@ -47,14 +50,21 @@ export const coolifyConnectTool = defineTool({
     const parsed = coolifyConnectSchema.parse(args);
     const token = getCoolifyToken();
     if (!token) {
-      throw new CoolifyToolError("Coolify token missing — add an API token in Settings → Integrations.");
+      throw new CoolifyToolError(
+        "Coolify token missing — add an API token in Settings → Integrations.",
+      );
     }
     const instanceUrl = parsed.instanceUrl.trim().replace(/\/+$/, "");
     const probe = await probeCoolifyInstance({ instanceUrl, token, signal: ctx.signal });
     let projectUuid: string | undefined;
     let projectName: string | undefined;
     if (parsed.projectName?.trim()) {
-      const created = await createCoolifyProject({ instanceUrl, token, name: parsed.projectName, signal: ctx.signal });
+      const created = await createCoolifyProject({
+        instanceUrl,
+        token,
+        name: parsed.projectName,
+        signal: ctx.signal,
+      });
       projectUuid = created.uuid;
       projectName = created.name;
     }
@@ -72,10 +82,15 @@ export const coolifyConnectTool = defineTool({
   presentCall: () => "Connect Coolify instance",
 });
 
-function requireCoolifyConnection(ctx: { appPath: string }): { instanceUrl: string; token: string } {
+function requireCoolifyConnection(ctx: { appPath: string }): {
+  instanceUrl: string;
+  token: string;
+} {
   const token = getCoolifyToken();
   if (!token) {
-    throw new CoolifyToolError("Coolify token missing — add an API token in Settings → Integrations.");
+    throw new CoolifyToolError(
+      "Coolify token missing — add an API token in Settings → Integrations.",
+    );
   }
   const instanceUrl = readPublishLinks(ctx.appPath).coolify?.instanceUrl?.trim() ?? "";
   if (!instanceUrl) {
@@ -97,8 +112,18 @@ export const coolifyDiscoverTool = defineTool({
       listCoolifyProjects({ instanceUrl, token, signal: ctx.signal }),
     ]);
     const lines = [
-      `Servers (${servers.length}): ${servers.slice(0, 10).map((s) => s.name ?? s.uuid).join(", ") || "none"}.`,
-      `Projects (${projects.length}): ${projects.slice(0, 10).map((p) => `${p.name ?? p.uuid} (${p.uuid})`).join(", ") || "none"}.`,
+      `Servers (${servers.length}): ${
+        servers
+          .slice(0, 10)
+          .map((s) => s.name ?? s.uuid)
+          .join(", ") || "none"
+      }.`,
+      `Projects (${projects.length}): ${
+        projects
+          .slice(0, 10)
+          .map((p) => `${p.name ?? p.uuid} (${p.uuid})`)
+          .join(", ") || "none"
+      }.`,
     ];
     return lines.join("\n");
   },
@@ -106,7 +131,10 @@ export const coolifyDiscoverTool = defineTool({
 });
 
 const coolifyDeploySchema = z.object({
-  applicationUuid: z.string().optional().describe("Application uuid. Defaults to the linked application."),
+  applicationUuid: z
+    .string()
+    .optional()
+    .describe("Application uuid. Defaults to the linked application."),
   force: z.boolean().optional().describe("Force rebuild even when nothing changed."),
 });
 
@@ -122,11 +150,22 @@ export const coolifyDeployTool = defineTool({
   execute: async (args, ctx) => {
     const parsed = coolifyDeploySchema.parse(args);
     const { instanceUrl, token } = requireCoolifyConnection(ctx);
-    const applicationUuid = parsed.applicationUuid?.trim() || readPublishLinks(ctx.appPath).coolify?.applicationUuid || "";
+    const applicationUuid =
+      parsed.applicationUuid?.trim() ||
+      readPublishLinks(ctx.appPath).coolify?.applicationUuid ||
+      "";
     if (!applicationUuid) {
-      throw new CoolifyToolError("No application uuid — pass applicationUuid (find it in the Coolify dashboard for this project).");
+      throw new CoolifyToolError(
+        "No application uuid — pass applicationUuid (find it in the Coolify dashboard for this project).",
+      );
     }
-    await triggerCoolifyDeploy({ instanceUrl, token, applicationUuid, force: parsed.force, signal: ctx.signal });
+    await triggerCoolifyDeploy({
+      instanceUrl,
+      token,
+      applicationUuid,
+      force: parsed.force,
+      signal: ctx.signal,
+    });
     writePublishLinks(ctx.appPath, {
       coolify: { ...(readPublishLinks(ctx.appPath).coolify ?? {}), applicationUuid },
     });
@@ -153,8 +192,15 @@ export const coolifyStatusTool = defineTool({
     }
     if (link.applicationUuid) {
       try {
-        const app = await getCoolifyApplication({ instanceUrl: link.instanceUrl, token, applicationUuid: link.applicationUuid, signal: ctx.signal });
-        lines.push(`Application ${app.name ?? app.uuid}: ${app.status ?? "unknown"}${app.fqdn ? ` — https://${app.fqdn}` : ""}.`);
+        const app = await getCoolifyApplication({
+          instanceUrl: link.instanceUrl,
+          token,
+          applicationUuid: link.applicationUuid,
+          signal: ctx.signal,
+        });
+        lines.push(
+          `Application ${app.name ?? app.uuid}: ${app.status ?? "unknown"}${app.fqdn ? ` — https://${app.fqdn}` : ""}.`,
+        );
       } catch (err) {
         lines.push(`Status lookup failed: ${err instanceof Error ? err.message : String(err)}`);
       }

@@ -22,7 +22,9 @@ export const SHARE_TTL_MIN_DAYS = 1;
 export const SHARE_TTL_MAX_DAYS = 30;
 export const SHARE_TTL_DEFAULT_DAYS = 7;
 
-export function defaultSharesPath(home = process.env.CAIDE_HOME?.trim() || path.join(os.homedir(), ".caide")): string {
+export function defaultSharesPath(
+  home = process.env.CAIDE_HOME?.trim() || path.join(os.homedir(), ".caide"),
+): string {
   // Test seam: an explicit file path isolates suites from the real home dir.
   const override = process.env.CAIDE_SHARES_PATH?.trim();
   if (override) return override;
@@ -60,7 +62,10 @@ export function resetShareStores(): void {
   memCache.clear();
 }
 
-function prune(store: { grants: Record<string, ShareGrant>; filePath: string }, nowMs = Date.now()): boolean {
+function prune(
+  store: { grants: Record<string, ShareGrant>; filePath: string },
+  nowMs = Date.now(),
+): boolean {
   let changed = false;
   for (const [token, grant] of Object.entries(store.grants)) {
     if (grant.expiresAtMs <= nowMs) {

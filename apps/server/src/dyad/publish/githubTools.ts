@@ -46,7 +46,9 @@ export const createGithubRepoTool = defineTool({
     const parsed = createGithubRepoSchema.parse(args);
     const token = getGithubToken();
     if (!token) {
-      throw new GithubToolError("GitHub token missing — add a personal access token (repo scope) in Settings → Integrations.");
+      throw new GithubToolError(
+        "GitHub token missing — add a personal access token (repo scope) in Settings → Integrations.",
+      );
     }
     const created = await createGithubRepo({
       token,
@@ -55,7 +57,11 @@ export const createGithubRepoTool = defineTool({
       signal: ctx.signal,
     });
     writePublishLinks(ctx.appPath, {
-      github: { org: created.owner || undefined, repo: created.name, branch: created.defaultBranch },
+      github: {
+        org: created.owner || undefined,
+        repo: created.name,
+        branch: created.defaultBranch,
+      },
     });
     return `Private repo created and linked: ${created.fullName}. Push with github_push (gh CLI preferred).`;
   },
@@ -84,9 +90,16 @@ export const githubPushTool = defineTool({
     }
     const owner = link.org || "";
     if (!owner) {
-      throw new GithubToolError("Linked repo has no owner — re-link with create_github_repo (org or user login required for push).");
+      throw new GithubToolError(
+        "Linked repo has no owner — re-link with create_github_repo (org or user login required for push).",
+      );
     }
-    const result = await pushWithGhCli({ appPath: ctx.appPath, owner, repo: link.repo, branch: parsed.branch });
+    const result = await pushWithGhCli({
+      appPath: ctx.appPath,
+      owner,
+      repo: link.repo,
+      branch: parsed.branch,
+    });
     if (result.pushed) {
       if (parsed.branch?.trim()) {
         writePublishLinks(ctx.appPath, { github: { ...link, branch: parsed.branch.trim() } });
@@ -105,7 +118,8 @@ const githubStatusSchema = z.object({});
 
 export const githubStatusTool = defineTool({
   name: "github_status",
-  description: "Show the linked GitHub repo, gh CLI availability, branches, and collaborator count.",
+  description:
+    "Show the linked GitHub repo, gh CLI availability, branches, and collaborator count.",
   schema: githubStatusSchema,
   readOnly: true,
   modifiesState: false,
@@ -113,19 +127,30 @@ export const githubStatusTool = defineTool({
     const link = readPublishLinks(ctx.appPath).github;
     const gh = await isGhCliAuthenticated(ctx.appPath);
     const lines = [
-      link ? `Linked repo: ${link.org ? `${link.org}/` : ""}${link.repo}${link.branch ? ` (branch ${link.branch})` : ""}.` : "No GitHub repo linked.",
+      link
+        ? `Linked repo: ${link.org ? `${link.org}/` : ""}${link.repo}${link.branch ? ` (branch ${link.branch})` : ""}.`
+        : "No GitHub repo linked.",
       `gh CLI: ${gh ? "authenticated" : "not available — PAT remote required for push"}.`,
     ];
     const token = getGithubToken();
     if (link?.org && token) {
       try {
-        const branches = await listGithubBranches({ token, owner: link.org, repo: link.repo, signal: ctx.signal });
-        lines.push(`Remote branches (${branches.length}): ${branches.slice(0, 10).join(", ")}${branches.length > 10 ? "…" : ""}.`);
+        const branches = await listGithubBranches({
+          token,
+          owner: link.org,
+          repo: link.repo,
+          signal: ctx.signal,
+        });
+        lines.push(
+          `Remote branches (${branches.length}): ${branches.slice(0, 10).join(", ")}${branches.length > 10 ? "…" : ""}.`,
+        );
       } catch (err) {
         lines.push(`Branch listing failed: ${err instanceof Error ? err.message : String(err)}`);
       }
     } else if (link && !token) {
-      lines.push("Add a GitHub token in Settings → Integrations for branch/collaborator management.");
+      lines.push(
+        "Add a GitHub token in Settings → Integrations for branch/collaborator management.",
+      );
     }
     return lines.join("\n");
   },
@@ -134,12 +159,16 @@ export const githubStatusTool = defineTool({
 
 const githubCollaboratorSchema = z.object({
   username: z.string().describe("GitHub username to invite."),
-  permission: z.enum(["pull", "triage", "push", "maintain", "admin"]).optional().describe("Permission (default push)."),
+  permission: z
+    .enum(["pull", "triage", "push", "maintain", "admin"])
+    .optional()
+    .describe("Permission (default push)."),
 });
 
 export const githubCollaboratorTool = defineTool({
   name: "github_collaborator",
-  description: "Invite a collaborator to the linked GitHub repo. Requires a token with repo permissions.",
+  description:
+    "Invite a collaborator to the linked GitHub repo. Requires a token with repo permissions.",
   schema: githubCollaboratorSchema,
   readOnly: false,
   modifiesState: true,
@@ -170,7 +199,8 @@ const listGithubReposSchema = z.object({});
 
 export const listGithubReposTool = defineTool({
   name: "list_github_repos",
-  description: "List the authenticated user's GitHub repositories (newest first). Requires a token.",
+  description:
+    "List the authenticated user's GitHub repositories (newest first). Requires a token.",
   schema: listGithubReposSchema,
   readOnly: true,
   modifiesState: false,

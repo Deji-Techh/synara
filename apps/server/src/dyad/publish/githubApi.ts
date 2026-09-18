@@ -56,8 +56,16 @@ async function githubFetch(
       // statuses are opaque and unactionable.
       let detail = "";
       try {
-        const errBody = (await res.json()) as { message?: string; errors?: Array<{ message?: string }> };
-        const msg = errBody.message ?? errBody.errors?.map((e) => e.message).filter(Boolean).join("; ");
+        const errBody = (await res.json()) as {
+          message?: string;
+          errors?: Array<{ message?: string }>;
+        };
+        const msg =
+          errBody.message ??
+          errBody.errors
+            ?.map((e) => e.message)
+            .filter(Boolean)
+            .join("; ");
         if (msg) detail = `: ${msg}`;
       } catch {
         // ignore body parse
@@ -96,9 +104,20 @@ export async function listGithubRepos(input: {
   signal?: AbortSignal;
 }): Promise<GithubRepo[]> {
   requireToken(input.token);
-  const data = (await githubFetch(input.baseUrl ?? GITHUB_API_BASE_URL, input.token, "/user/repos?per_page=100&sort=updated", {
-    signal: input.signal,
-  })) as Array<{ owner?: { login?: string }; name?: string; full_name?: string; private?: boolean; default_branch?: string }>;
+  const data = (await githubFetch(
+    input.baseUrl ?? GITHUB_API_BASE_URL,
+    input.token,
+    "/user/repos?per_page=100&sort=updated",
+    {
+      signal: input.signal,
+    },
+  )) as Array<{
+    owner?: { login?: string };
+    name?: string;
+    full_name?: string;
+    private?: boolean;
+    default_branch?: string;
+  }>;
   return (Array.isArray(data) ? data : []).map((r) => ({
     owner: r.owner?.login ?? "",
     name: r.name ?? "",
@@ -125,7 +144,13 @@ export async function createGithubRepo(input: {
     method: "POST",
     body: { name: repo, private: true, auto_init: false },
     signal: input.signal,
-  })) as { owner?: { login?: string }; name?: string; full_name?: string; private?: boolean; default_branch?: string };
+  })) as {
+    owner?: { login?: string };
+    name?: string;
+    full_name?: string;
+    private?: boolean;
+    default_branch?: string;
+  };
   return {
     owner: data.owner?.login ?? org ?? "",
     name: data.name ?? repo,
@@ -188,7 +213,8 @@ export async function pushWithGhCli(input: {
   if (!(await isGhCliAuthenticated(input.appPath))) {
     return { pushed: false, remote, reason: "gh CLI not installed or not authenticated" };
   }
-  const run = async (args: string[]) => execFileAsync("git", args, { cwd: input.appPath, timeout: 30_000 });
+  const run = async (args: string[]) =>
+    execFileAsync("git", args, { cwd: input.appPath, timeout: 30_000 });
   try {
     // Pre-checks with exact remediation (no cryptic push failures).
     await run(["rev-parse", "--is-inside-work-tree"]).catch(() => {
@@ -211,6 +237,10 @@ export async function pushWithGhCli(input: {
     await execFileAsync("git", pushArgs, { cwd: input.appPath, timeout: 120_000 });
     return { pushed: true, remote };
   } catch (err) {
-    return { pushed: false, remote, reason: err instanceof Error ? err.message.split("\n")[0] : String(err) };
+    return {
+      pushed: false,
+      remote,
+      reason: err instanceof Error ? err.message.split("\n")[0] : String(err),
+    };
   }
 }

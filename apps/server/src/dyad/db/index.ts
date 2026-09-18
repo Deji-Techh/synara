@@ -36,6 +36,28 @@ export {
 export { DbNotConnectedError } from "./connections.ts";
 export { checkSqlDanger, classifySql, splitStatements } from "./sqlSafety.ts";
 export {
+  ENV_FILE_NAME,
+  REDACTED_ENV_VALUE,
+  EnvFileError,
+  isSensitiveEnvVarKey,
+  redactAppEnvVars,
+  resolveRedactedEnvVarUpdates,
+  getEnvFilePath,
+  writeEnvFileSecurely,
+  parseEnvFile,
+  serializeEnvFile,
+  readEnvFile,
+  readEnvFileIfExists,
+  readEnvVarsOrEmpty,
+  generateCookieSecret,
+  updateNeonEnvVars,
+  removeNeonEnvVars,
+  updatePostgresUrlEnvVar,
+  readPostgresUrlFromEnvFile,
+  type EnvVar,
+  type AppEnvVar,
+} from "./envFile.ts";
+export {
   NEON_API_BASE_URL,
   listNeonProjects,
   listNeonBranches,
@@ -52,6 +74,26 @@ export {
   type SupabaseProject,
 } from "./supabaseApi.ts";
 export { slugifyMigrationName, writeMigrationFile } from "./migrations.ts";
+export {
+  SUPABASE_BUNDLE_ONLY_DEPLOY_CONCURRENCY,
+  SUPABASE_ACTIVATING_DEPLOY_CONCURRENCY,
+  enqueueSupabaseDeploy,
+  resetSupabaseDeployQueuesForTests,
+  mapSettledWithConcurrency,
+  extractFunctionName,
+  isServerFunction,
+  isSharedServerModule,
+  extractFunctionNameFromPath,
+  getSupabaseFunctionsAffectedBySharedModules,
+  deploySupabaseFunctions,
+  deployAllSupabaseFunctions,
+  deployAffectedSupabaseFunctions,
+  type SupabaseDeployDeps,
+  type SupabaseDeployedFunction,
+  type SupabaseDeployProgress,
+  type SupabaseDeployArgs,
+  type SupabaseFunctionImpact,
+} from "./supabaseDeploy.ts";
 export {
   ensureDyadSchema,
   openDyadDb,

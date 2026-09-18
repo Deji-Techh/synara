@@ -35,7 +35,9 @@ export function getVercelToken(): string | null {
 function requireVercelToken(): string {
   const token = getVercelToken();
   if (!token) {
-    throw new VercelToolError("Vercel token missing — add a personal token in Settings → Integrations.");
+    throw new VercelToolError(
+      "Vercel token missing — add a personal token in Settings → Integrations.",
+    );
   }
   return token;
 }
@@ -62,8 +64,14 @@ export async function requireWebsiteFramework(appPath: string): Promise<void> {
 }
 
 const vercelConnectSchema = z.object({
-  projectId: z.string().optional().describe("Existing Vercel project id to link. Omit to create one."),
-  name: z.string().optional().describe("Name for a new project (defaults to the app directory name)."),
+  projectId: z
+    .string()
+    .optional()
+    .describe("Existing Vercel project id to link. Omit to create one."),
+  name: z
+    .string()
+    .optional()
+    .describe("Name for a new project (defaults to the app directory name)."),
   teamId: z.string().optional().describe("Vercel team id (for team-scoped projects)."),
 });
 
@@ -85,9 +93,14 @@ export const vercelConnectTool = defineTool({
     const user = await getVercelAuthUser({ token, signal: ctx.signal });
     let project;
     if (parsed.projectId?.trim()) {
-      const projects = await listVercelProjects({ token, teamId: parsed.teamId, signal: ctx.signal });
+      const projects = await listVercelProjects({
+        token,
+        teamId: parsed.teamId,
+        signal: ctx.signal,
+      });
       const found = projects.find((p) => p.id === parsed.projectId?.trim());
-      if (!found) throw new VercelToolError(`Vercel project ${parsed.projectId} not found for this token.`);
+      if (!found)
+        throw new VercelToolError(`Vercel project ${parsed.projectId} not found for this token.`);
       project = found;
     } else {
       const fallback = ctx.appPath.split(/[\\/]/).filter(Boolean).at(-1) ?? "caide-app";
@@ -158,14 +171,19 @@ export const vercelDeploymentsTool = defineTool({
     });
     if (deployments.length === 0) return "No deployments yet.";
     return deployments
-      .map((d) => `- ${d.id} [${d.state ?? "?"}] ${d.target ?? ""} ${d.url ? `https://${d.url}` : ""}`.trim())
+      .map((d) =>
+        `- ${d.id} [${d.state ?? "?"}] ${d.target ?? ""} ${d.url ? `https://${d.url}` : ""}`.trim(),
+      )
       .join("\n");
   },
   presentCall: () => "List Vercel deployments",
 });
 
 const vercelEnvSyncSchema = z.object({
-  databaseUrl: z.string().optional().describe("DATABASE_URL value (else read from the linked Neon/database connection)."),
+  databaseUrl: z
+    .string()
+    .optional()
+    .describe("DATABASE_URL value (else read from the linked Neon/database connection)."),
   neonAuthBaseUrl: z.string().optional(),
   neonAuthCookieSecret: z.string().optional(),
 });
@@ -186,16 +204,26 @@ export const vercelEnvSyncTool = defineTool({
     if (!link) throw new VercelToolError("No Vercel project linked — run vercel_connect first.");
     const dbLink = getDatabaseLink(ctx.sessionId);
     const vars: Partial<Record<(typeof NEON_VERCEL_ENV_KEYS)[number], string>> = {
-      ...(parsed.databaseUrl?.trim() ?? dbLink?.databaseUrl?.trim()
+      ...((parsed.databaseUrl?.trim() ?? dbLink?.databaseUrl?.trim())
         ? { DATABASE_URL: (parsed.databaseUrl?.trim() || dbLink?.databaseUrl || "") as string }
         : {}),
-      ...(parsed.neonAuthBaseUrl?.trim() ? { NEON_AUTH_BASE_URL: parsed.neonAuthBaseUrl.trim() } : {}),
-      ...(parsed.neonAuthCookieSecret?.trim() ? { NEON_AUTH_COOKIE_SECRET: parsed.neonAuthCookieSecret.trim() } : {}),
+      ...(parsed.neonAuthBaseUrl?.trim()
+        ? { NEON_AUTH_BASE_URL: parsed.neonAuthBaseUrl.trim() }
+        : {}),
+      ...(parsed.neonAuthCookieSecret?.trim()
+        ? { NEON_AUTH_COOKIE_SECRET: parsed.neonAuthCookieSecret.trim() }
+        : {}),
     };
     if (Object.keys(vars).length === 0) {
       throw new VercelToolError("No values to sync — pass databaseUrl or link a database first.");
     }
-    const synced = await syncNeonEnvToVercel({ token, projectId: link.projectId, vars, teamId: link.teamId, signal: ctx.signal });
+    const synced = await syncNeonEnvToVercel({
+      token,
+      projectId: link.projectId,
+      vars,
+      teamId: link.teamId,
+      signal: ctx.signal,
+    });
     return `Synced to Vercel ${link.projectName ?? link.projectId}: ${synced.join(", ")}.`;
   },
   presentCall: () => "Sync Neon env to Vercel",

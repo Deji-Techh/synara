@@ -27,10 +27,18 @@ function handler(req: http.IncomingMessage, res: http.ServerResponse): void {
   };
   if (key !== "Bearer good") return json(401, { message: "Bad credentials" });
   if (req.method === "POST" && url.pathname === "/user/repos") {
-    return json(201, { owner: { login: "octo" }, name: "my-app", full_name: "octo/my-app", private: true, default_branch: "main" });
+    return json(201, {
+      owner: { login: "octo" },
+      name: "my-app",
+      full_name: "octo/my-app",
+      private: true,
+      default_branch: "main",
+    });
   }
   if (url.pathname === "/user/repos") {
-    return json(200, [{ owner: { login: "octo" }, name: "my-app", full_name: "octo/my-app", private: true }]);
+    return json(200, [
+      { owner: { login: "octo" }, name: "my-app", full_name: "octo/my-app", private: true },
+    ]);
   }
   if (url.pathname === "/repos/octo/my-app/branches") {
     return json(200, [{ name: "main" }, { name: "dev" }]);
@@ -60,16 +68,32 @@ describe("github publish (phase 4a)", () => {
   it("lists repos, creates private repos, manages branches and collaborators", async () => {
     const repos = await listGithubRepos({ token: "good", baseUrl: base });
     expect(repos).toEqual([
-      { owner: "octo", name: "my-app", fullName: "octo/my-app", private: true, defaultBranch: undefined },
+      {
+        owner: "octo",
+        name: "my-app",
+        fullName: "octo/my-app",
+        private: true,
+        defaultBranch: undefined,
+      },
     ]);
     const created = await createGithubRepo({ token: "good", repo: "my-app", baseUrl: base });
     expect(created).toMatchObject({ owner: "octo", name: "my-app", private: true });
-    expect(await listGithubBranches({ token: "good", owner: "octo", repo: "my-app", baseUrl: base })).toEqual(["main", "dev"]);
+    expect(
+      await listGithubBranches({ token: "good", owner: "octo", repo: "my-app", baseUrl: base }),
+    ).toEqual(["main", "dev"]);
     await expect(
-      addGithubCollaborator({ token: "good", owner: "octo", repo: "my-app", username: "mona", baseUrl: base }),
+      addGithubCollaborator({
+        token: "good",
+        owner: "octo",
+        repo: "my-app",
+        username: "mona",
+        baseUrl: base,
+      }),
     ).resolves.toBeUndefined();
     await expect(listGithubRepos({ token: "bad", baseUrl: base })).rejects.toThrow(/401/);
-    await expect(listGithubRepos({ token: "  ", baseUrl: base })).rejects.toBeInstanceOf(GithubApiError);
+    await expect(listGithubRepos({ token: "  ", baseUrl: base })).rejects.toBeInstanceOf(
+      GithubApiError,
+    );
   });
 
   it("create tool links the repo to publish.json without storing secrets", async () => {
@@ -80,9 +104,20 @@ describe("github publish (phase 4a)", () => {
     const realFetch = globalThis.fetch;
     const stub = vi.fn(async (url: unknown, init?: { method?: string; body?: string }) => {
       const u = String(url);
-      if (!u.startsWith("https://api.github.com/")) return realFetch(url as string, init as RequestInit);
+      if (!u.startsWith("https://api.github.com/"))
+        return realFetch(url as string, init as RequestInit);
       if (u.endsWith("/user/repos") && (init?.method ?? "GET") === "POST") {
-        return { ok: true, status: 201, json: async () => ({ owner: { login: "octo" }, name: "shop", full_name: "octo/shop", private: true, default_branch: "main" }) } as Response;
+        return {
+          ok: true,
+          status: 201,
+          json: async () => ({
+            owner: { login: "octo" },
+            name: "shop",
+            full_name: "octo/shop",
+            private: true,
+            default_branch: "main",
+          }),
+        } as Response;
       }
       throw new Error(`unexpected ${u}`);
     });
