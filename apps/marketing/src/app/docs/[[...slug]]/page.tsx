@@ -19,9 +19,14 @@ export default async function DocumentationPage({ params }: DocumentationPagePro
   const Content = page.data.body;
 
   const breadcrumbs = [
-    { label: "Docs", href: "/docs" },
+    ...(page.url !== "/docs" ? [{ label: "Docs", href: "/docs" }] : []),
     ...(slug && slug.length > 1
-      ? [{ label: slug[0].replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()), href: `/docs/${slug[0]}` }]
+      ? [
+          {
+            label: slug[0].replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
+            href: `/docs/${slug[0]}`,
+          },
+        ]
       : []),
     { label: page.data.title, href: page.url },
   ];
@@ -29,17 +34,23 @@ export default async function DocumentationPage({ params }: DocumentationPagePro
   return (
     <DocsPage toc={page.data.toc}>
       {/* Breadcrumb Trail */}
-      <nav aria-label="Breadcrumbs" className="mb-4 flex items-center gap-1.5 text-[11.5px] font-medium text-[var(--text-tertiary)]">
+      <nav
+        aria-label="Breadcrumbs"
+        className="mb-4 flex items-center gap-1.5 text-[11.5px] font-medium text-[var(--text-tertiary)]"
+      >
         <Link href="/" className="transition-colors hover:text-[var(--text-primary)]">
           Home
         </Link>
         {breadcrumbs.map((crumb, idx) => (
-          <span key={crumb.href} className="flex items-center gap-1.5">
+          <span key={`${crumb.href}-${idx}`} className="flex items-center gap-1.5">
             <ChevronRight className="size-3 text-[var(--divide)]" />
             {idx === breadcrumbs.length - 1 ? (
               <span className="text-[var(--text-secondary)]">{crumb.label}</span>
             ) : (
-              <Link href={crumb.href} className="transition-colors hover:text-[var(--text-primary)]">
+              <Link
+                href={crumb.href}
+                className="transition-colors hover:text-[var(--text-primary)]"
+              >
                 {crumb.label}
               </Link>
             )}
@@ -68,7 +79,8 @@ export default async function DocumentationPage({ params }: DocumentationPagePro
                 <span>Ready to build with Caide?</span>
               </div>
               <p className="mt-1 text-[12.5px] text-[var(--text-secondary)]">
-                Join our early access whitelist to test native desktop builds, copy-on-write database branches, and DeviceLab.
+                Join our early access whitelist to test native desktop builds, copy-on-write
+                database branches, and DeviceLab.
               </p>
             </div>
             <div className="flex items-center gap-2 shrink-0">

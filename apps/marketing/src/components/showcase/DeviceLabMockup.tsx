@@ -1,119 +1,202 @@
 "use client";
 
-import { QrCode, Smartphone, Wifi, RefreshCw, CheckCircle2, AppWindow } from "lucide-react";
-import { FiCopy, FiPlay } from "react-icons/fi";
+import { useState } from "react";
+import { Smartphone, Monitor, Terminal, Activity, QrCode, Wifi, Copy, Check } from "lucide-react";
+
+interface DeviceItem {
+  id: string;
+  name: string;
+  tag: string;
+  subtitle: string;
+  chips: string[];
+  footer: string;
+  Icon: typeof Smartphone;
+  accentColor: string;
+  accentBg: string;
+  borderGlow: string;
+}
+
+const DEVICE_CARDS: DeviceItem[] = [
+  {
+    id: "phone",
+    name: "Physical Phone Preview",
+    tag: "LAN Hot Reload",
+    subtitle: "Scan with your phone camera to test natively",
+    chips: ["QR Code Pairing", "Expo Go App", "Haptics Enabled"],
+    footer: "Local Wi-Fi network • 60 FPS",
+    Icon: Smartphone,
+    accentColor: "text-emerald-500",
+    accentBg: "bg-emerald-500/12",
+    borderGlow: "border-emerald-500/40 shadow-emerald-500/10",
+  },
+  {
+    id: "desktop",
+    name: "Desktop Web Preview",
+    tag: "Live Port :8081",
+    subtitle: "Real-time browser preview inside Caide Right Dock",
+    chips: ["Metro Bundler", "Fast Refresh 12ms", "Responsive Viewport"],
+    footer: "Dual display calculator running",
+    Icon: Monitor,
+    accentColor: "text-sky-500",
+    accentBg: "bg-sky-500/12",
+    borderGlow: "border-sky-500/40 shadow-sky-500/10",
+  },
+  {
+    id: "metro",
+    name: "Metro Compiler Stream",
+    tag: "Sub-Second Sync",
+    subtitle: "Live package watcher and bundle transformer",
+    chips: ["Bun runtime", "Babel & Hermes", "Asset Optimization"],
+    footer: "Zero compile bottlenecks",
+    Icon: Terminal,
+    accentColor: "text-amber-500",
+    accentBg: "bg-amber-500/12",
+    borderGlow: "border-amber-500/40 shadow-amber-500/10",
+  },
+  {
+    id: "diagnostics",
+    name: "Diagnostics Inspector",
+    tag: "0 Errors",
+    subtitle: "Instant detection of syntax and layout issues",
+    chips: ["TypeScript Strict", "ESLint Pass", "Console Log Stream"],
+    footer: "All health audits passing",
+    Icon: Activity,
+    accentColor: "text-purple-500",
+    accentBg: "bg-purple-500/12",
+    borderGlow: "border-purple-500/40 shadow-purple-500/10",
+  },
+];
 
 export function DeviceLabMockup() {
+  const [selectedId, setSelectedId] = useState("phone");
+  const [copied, setCopied] = useState(false);
+  const selected = DEVICE_CARDS.find((c) => c.id === selectedId) || DEVICE_CARDS[0]!;
+
+  const handleCopy = () => {
+    navigator.clipboard?.writeText("http://192.168.1.76:8081");
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
-    <div className="w-full overflow-hidden rounded-2xl border border-[var(--border-strong)] bg-[var(--card)] text-[var(--text-primary)] shadow-[0_20px_50px_-15px_rgba(15,23,42,0.18)]">
-      {/* Window Chrome Header */}
-      <div className="flex h-10 items-center justify-between border-b border-[var(--divide)] bg-[var(--mock-row)]/90 px-4 backdrop-blur-md">
-        <div className="flex items-center gap-2">
-          <span className="size-2.5 rounded-full bg-[#ff5f56] ring-1 ring-[#e0443e]/40" />
-          <span className="size-2.5 rounded-full bg-[#ffbd2e] ring-1 ring-[#dea123]/40" />
-          <span className="size-2.5 rounded-full bg-[#27c93f] ring-1 ring-[#1aab29]/40" />
-        </div>
-        <div className="inline-flex items-center gap-1.5 rounded-full border border-black/[0.06] dark:border-white/10 bg-black/[0.04] dark:bg-white/[0.05] px-3 py-0.5 font-mono text-[10.5px] font-medium text-[var(--text-secondary)]">
-          <AppWindow className="size-3 text-[var(--text-tertiary)]" />
-          <span>caide — devicelab</span>
-        </div>
-        <div className="flex items-center gap-1.5 font-mono text-[10.5px] text-emerald-600 dark:text-emerald-400 font-medium">
-          <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span>Metro :8081 Running</span>
-        </div>
+    <div className="w-full space-y-3.5">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {DEVICE_CARDS.map((card) => {
+          const isSelected = card.id === selectedId;
+          const IconComponent = card.Icon;
+
+          return (
+            <button
+              key={card.id}
+              type="button"
+              onClick={() => setSelectedId(card.id)}
+              className={`group relative flex flex-col justify-between rounded-2xl p-4 sm:p-5 text-left transition-all duration-200 cursor-pointer ${
+                isSelected
+                  ? `bg-gradient-to-b from-[#1c1d22] to-[#121316] text-white shadow-xl ${card.borderGlow} ring-1 ring-white/15`
+                  : "bg-white/80 dark:bg-white/[0.03] backdrop-blur-md text-[var(--text-primary)] border border-black/[0.07] dark:border-white/[0.08] shadow-xs hover:border-black/20 dark:hover:border-white/20 hover:bg-white dark:hover:bg-white/[0.05]"
+              }`}
+            >
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-2.5">
+                  <div
+                    className={`flex size-9 items-center justify-center rounded-xl transition-transform group-hover:scale-105 ${
+                      isSelected
+                        ? `${card.accentBg} ${card.accentColor} shadow-inner`
+                        : "bg-black/[0.04] dark:bg-white/[0.08] text-[var(--text-primary)]"
+                    }`}
+                  >
+                    <IconComponent className="size-5" />
+                  </div>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-medium tracking-wide ${
+                      isSelected
+                        ? "bg-white/10 text-white border border-white/15"
+                        : "bg-black/[0.04] dark:bg-white/[0.06] text-[var(--text-tertiary)]"
+                    }`}
+                  >
+                    {card.tag}
+                  </span>
+                </div>
+
+                <div
+                  className={`size-3 rounded-full flex items-center justify-center transition-all ${
+                    isSelected
+                      ? "bg-white ring-4 ring-white/20"
+                      : "border border-black/20 dark:border-white/20"
+                  }`}
+                >
+                  {isSelected && <div className="size-1 rounded-full bg-black" />}
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <div
+                  className={`text-[14.5px] sm:text-[15.5px] font-semibold tracking-tight ${isSelected ? "text-white" : "text-[var(--text-primary)]"}`}
+                >
+                  {card.name}
+                </div>
+                <div
+                  className={`mt-1 text-[12px] sm:text-[13px] leading-relaxed ${isSelected ? "text-slate-300" : "text-[var(--text-secondary)]"}`}
+                >
+                  {card.subtitle}
+                </div>
+              </div>
+
+              <div className="mt-3.5 flex flex-wrap gap-1.5">
+                {card.chips.map((chip) => (
+                  <span
+                    key={chip}
+                    className={`rounded-md px-2 py-0.5 text-[10.5px] font-mono flex items-center gap-1 ${
+                      isSelected
+                        ? "bg-white/10 text-slate-200"
+                        : "bg-black/[0.03] dark:bg-white/[0.05] text-[var(--text-tertiary)]"
+                    }`}
+                  >
+                    <Check className="size-2.5 text-emerald-400 shrink-0" />
+                    <span>{chip}</span>
+                  </span>
+                ))}
+              </div>
+
+              <div
+                className={`mt-4 text-[11px] font-mono ${isSelected ? "text-slate-400" : "text-[var(--text-tertiary)]"}`}
+              >
+                {card.footer}
+              </div>
+            </button>
+          );
+        })}
       </div>
 
-      <div className="p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-center gap-5">
-        {/* Device Frame (iPhone 16 Pro Style) */}
-        <div className="relative w-[180px] h-[340px] rounded-[34px] border-[5px] border-slate-800 bg-black p-2.5 shadow-xl flex flex-col justify-between shrink-0 ring-1 ring-white/20">
-          {/* Dynamic Island */}
-          <div className="mx-auto h-3 w-16 rounded-full bg-slate-900 flex items-center justify-center" />
-
-          {/* Running Mobile Calculator UI */}
-          <div className="flex-1 flex flex-col justify-between pt-3 pb-1 text-white select-none">
-            {/* Display */}
-            <div className="text-right px-2">
-              <div className="text-[11px] text-slate-400 font-mono">1,280 × 1.05</div>
-              <div className="text-2xl font-light tracking-tight text-white font-mono mt-0.5">
-                1,344
-              </div>
-            </div>
-
-            {/* Keypad */}
-            <div className="grid grid-cols-4 gap-1.5 text-[11px] font-medium text-center">
-              <span className="rounded-full bg-slate-700 py-1.5 text-slate-200">AC</span>
-              <span className="rounded-full bg-slate-700 py-1.5 text-slate-200">+/-</span>
-              <span className="rounded-full bg-slate-700 py-1.5 text-slate-200">%</span>
-              <span className="rounded-full bg-amber-600 py-1.5 text-white">÷</span>
-
-              <span className="rounded-full bg-slate-800 py-1.5 text-white">7</span>
-              <span className="rounded-full bg-slate-800 py-1.5 text-white">8</span>
-              <span className="rounded-full bg-slate-800 py-1.5 text-white">9</span>
-              <span className="rounded-full bg-amber-600 py-1.5 text-white">×</span>
-
-              <span className="rounded-full bg-slate-800 py-1.5 text-white">4</span>
-              <span className="rounded-full bg-slate-800 py-1.5 text-white">5</span>
-              <span className="rounded-full bg-slate-800 py-1.5 text-white">6</span>
-              <span className="rounded-full bg-amber-600 py-1.5 text-white">-</span>
-
-              <span className="rounded-full bg-slate-800 py-1.5 text-white">1</span>
-              <span className="rounded-full bg-slate-800 py-1.5 text-white">2</span>
-              <span className="rounded-full bg-slate-800 py-1.5 text-white">3</span>
-              <span className="rounded-full bg-amber-600 py-1.5 text-white">+</span>
-
-              <span className="col-span-2 rounded-full bg-slate-800 py-1.5 text-left pl-3 text-white">0</span>
-              <span className="rounded-full bg-slate-800 py-1.5 text-white">.</span>
-              <span className="rounded-full bg-amber-600 py-1.5 text-white">=</span>
-            </div>
+      {/* LAN Pairing Banner with Copy */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-white/70 dark:bg-white/[0.02] backdrop-blur-md px-4 py-3 text-[12px]">
+        <div className="flex items-center gap-2">
+          <div className="flex size-6 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+            <Wifi className="size-3.5" />
           </div>
-
-          {/* Home Bar */}
-          <div className="mx-auto h-1 w-20 rounded-full bg-white/40" />
+          <span className="text-[var(--text-secondary)] font-medium">
+            Phone Live Server:{" "}
+            <span className="font-mono text-[var(--text-primary)]">http://192.168.1.76:8081</span>
+          </span>
         </div>
 
-        {/* Floating Companion: Phone QR Code Dialog */}
-        <div className="flex-1 max-w-[280px] rounded-xl border border-[var(--divide)] bg-[var(--block-elevated)] p-4 shadow-sm space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 font-semibold text-[12.5px] text-[var(--text-primary)]">
-              <Smartphone className="size-4 text-sky-500" />
-              <span>Phone Preview</span>
-            </div>
-            <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">
-              Live LAN
-            </span>
-          </div>
-
-          {/* QR Code Graphic */}
-          <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-white border border-slate-200 shadow-inner">
-            <div className="grid grid-cols-7 gap-1 p-1 bg-white">
-              {Array.from({ length: 49 }).map((_, i) => (
-                <div
-                  key={i}
-                  className={`size-2 rounded-[1px] ${
-                    (i % 2 === 0 || i % 5 === 0 || i < 7 || i > 41 || i % 7 === 0)
-                      ? "bg-slate-900"
-                      : "bg-transparent"
-                  }`}
-                />
-              ))}
-            </div>
-            <span className="text-[10px] text-slate-500 font-mono mt-2">
-              Scan with mobile camera
-            </span>
-          </div>
-
-          {/* LAN IP URL */}
-          <div className="flex items-center justify-between rounded-lg border border-[var(--divide)] bg-[var(--card)] px-2.5 py-1.5 text-[11px] font-mono">
-            <span className="truncate text-[var(--text-secondary)]">http://192.168.1.76:8081</span>
-            <button type="button" className="text-[var(--accent-link)] hover:opacity-80">
-              <FiCopy className="size-3" />
-            </button>
-          </div>
-
-          <div className="text-[10px] text-[var(--text-tertiary)] text-center">
-            Both devices must be on the same local Wi-Fi network.
-          </div>
-        </div>
+        <button
+          type="button"
+          onClick={handleCopy}
+          className="flex items-center gap-1.5 rounded-lg border border-[var(--divide)] bg-[var(--card)] px-2.5 py-1 text-[11px] font-mono text-[var(--text-secondary)] shadow-xs hover:bg-[var(--mock-row)] transition-all cursor-pointer"
+        >
+          {copied ? (
+            <>
+              <Check className="size-3 text-emerald-500" />
+              <span className="text-emerald-500">Copied IP</span>
+            </>
+          ) : (
+            <>
+              <Copy className="size-3 text-[var(--accent-link)]" />
+              <span>Copy URL</span>
+            </>
+          )}
+        </button>
       </div>
     </div>
   );

@@ -1,137 +1,189 @@
 "use client";
 
+import { useState } from "react";
 import { ExpoIcon, FlutterIcon, NextjsIcon, NeonIcon } from "@/components/BrandIcons";
-import { FiFolder, FiGitBranch, FiMessageSquare, FiPlus, FiSearch, FiCheck, FiClock } from "react-icons/fi";
-import { AppWindow, Database, Sparkles } from "lucide-react";
+import { GitBranch, Radio, CheckCircle2, FolderGit2 } from "lucide-react";
+
+interface ProjectCard {
+  id: string;
+  name: string;
+  framework: string;
+  badge: string;
+  threadCount: string;
+  branch: string;
+  footer: string;
+  Icon: typeof ExpoIcon;
+  accentBg: string;
+  accentColor: string;
+  borderGlow: string;
+}
+
+const PROJECTS: ProjectCard[] = [
+  {
+    id: "expo",
+    name: "calculator-mobile-app",
+    framework: "React Native (Expo)",
+    badge: "SDK 52",
+    threadCount: "4 threads",
+    branch: "feat-haptics",
+    footer: "Metro :8081 • Live phone preview",
+    Icon: ExpoIcon,
+    accentBg: "bg-indigo-500/12",
+    accentColor: "text-indigo-500",
+    borderGlow: "border-indigo-500/40 shadow-indigo-500/10",
+  },
+  {
+    id: "flutter",
+    name: "crypto-portfolio-client",
+    framework: "Flutter Mobile",
+    badge: "v3.29",
+    threadCount: "2 threads",
+    branch: "main",
+    footer: "Device preview • APK binary ready",
+    Icon: FlutterIcon,
+    accentBg: "bg-[#02569B]/12",
+    accentColor: "text-[#02569B]",
+    borderGlow: "border-[#02569B]/40 shadow-[#02569B]/10",
+  },
+  {
+    id: "website",
+    name: "caide-marketing-portal",
+    framework: "Next.js Web App",
+    badge: "App Router",
+    threadCount: "3 threads",
+    branch: "feature/launch",
+    footer: "Vercel synced • Edge runtime",
+    Icon: NextjsIcon,
+    accentBg: "bg-slate-500/12",
+    accentColor: "text-[var(--text-primary)]",
+    borderGlow: "border-slate-500/40 shadow-slate-500/10",
+  },
+  {
+    id: "neon",
+    name: "neon-serverless-postgres",
+    framework: "Database Branch",
+    badge: "Neon CoW",
+    threadCount: "Isolated DB",
+    branch: "replica-calc",
+    footer: "Instant branching • 1-click restore",
+    Icon: NeonIcon,
+    accentBg: "bg-[#00E599]/12",
+    accentColor: "text-[#00E599]",
+    borderGlow: "border-[#00E599]/40 shadow-[#00E599]/10",
+  },
+];
 
 export function ProjectThreadsMockup() {
+  const [selectedId, setSelectedId] = useState("expo");
+  const selected = PROJECTS.find((p) => p.id === selectedId) || PROJECTS[0]!;
+
   return (
-    <div className="w-full overflow-hidden rounded-2xl border border-[var(--border-strong)] bg-[var(--card)] text-[var(--text-primary)] shadow-[0_20px_50px_-15px_rgba(15,23,42,0.18)]">
-      {/* Window Chrome Header */}
-      <div className="flex h-10 items-center justify-between border-b border-[var(--divide)] bg-[var(--mock-row)]/90 px-4 backdrop-blur-md">
-        <div className="flex items-center gap-2">
-          <span className="size-2.5 rounded-full bg-[#ff5f56] ring-1 ring-[#e0443e]/40" />
-          <span className="size-2.5 rounded-full bg-[#ffbd2e] ring-1 ring-[#dea123]/40" />
-          <span className="size-2.5 rounded-full bg-[#27c93f] ring-1 ring-[#1aab29]/40" />
-        </div>
-        <div className="inline-flex items-center gap-1.5 rounded-full border border-black/[0.06] dark:border-white/10 bg-black/[0.04] dark:bg-white/[0.05] px-3 py-0.5 font-mono text-[10.5px] font-medium text-[var(--text-secondary)]">
-          <AppWindow className="size-3 text-[var(--text-tertiary)]" />
-          <span>caide — workspace-isolation</span>
-        </div>
-        <div className="flex items-center gap-1.5 font-mono text-[10.5px] text-emerald-600 dark:text-emerald-400 font-medium">
-          <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          <span>3 Projects Active</span>
-        </div>
+    <div className="w-full space-y-3.5">
+      {/* 2x2 Grid of Tactile Project Cards */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {PROJECTS.map((project) => {
+          const isSelected = project.id === selectedId;
+          const IconComponent = project.Icon;
+
+          return (
+            <button
+              key={project.id}
+              type="button"
+              onClick={() => setSelectedId(project.id)}
+              className={`group relative flex flex-col justify-between rounded-2xl p-4 sm:p-5 text-left transition-all duration-200 cursor-pointer ${
+                isSelected
+                  ? `bg-gradient-to-b from-[#1c1d22] to-[#121316] text-white shadow-xl ${project.borderGlow} ring-1 ring-white/15`
+                  : "bg-white/80 dark:bg-white/[0.03] backdrop-blur-md text-[var(--text-primary)] border border-black/[0.07] dark:border-white/[0.08] shadow-xs hover:border-black/20 dark:hover:border-white/20 hover:bg-white dark:hover:bg-white/[0.05]"
+              }`}
+            >
+              {/* Header: Icon + Framework Badge + Dot */}
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-2.5">
+                  <div
+                    className={`flex size-9 items-center justify-center rounded-xl transition-transform group-hover:scale-105 ${
+                      isSelected
+                        ? `${project.accentBg} ${project.accentColor} shadow-inner`
+                        : "bg-black/[0.04] dark:bg-white/[0.08] text-[var(--text-primary)]"
+                    }`}
+                  >
+                    <IconComponent className="size-5" />
+                  </div>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-mono tracking-wide ${
+                      isSelected
+                        ? "bg-white/10 text-white border border-white/15"
+                        : "bg-black/[0.04] dark:bg-white/[0.06] text-[var(--text-tertiary)]"
+                    }`}
+                  >
+                    {project.badge}
+                  </span>
+                </div>
+
+                {/* Radio Indicator */}
+                <div
+                  className={`size-3 rounded-full flex items-center justify-center transition-all ${
+                    isSelected
+                      ? "bg-white ring-4 ring-white/20"
+                      : "border border-black/20 dark:border-white/20"
+                  }`}
+                >
+                  {isSelected && <div className="size-1 rounded-full bg-black" />}
+                </div>
+              </div>
+
+              {/* Title & Path */}
+              <div className="mt-4">
+                <div
+                  className={`text-[14.5px] sm:text-[15.5px] font-semibold tracking-tight ${isSelected ? "text-white" : "text-[var(--text-primary)]"}`}
+                >
+                  {project.name}
+                </div>
+                <div
+                  className={`mt-1 text-[12px] sm:text-[13px] leading-relaxed flex items-center gap-1.5 ${isSelected ? "text-slate-300" : "text-[var(--text-secondary)]"}`}
+                >
+                  <span>{project.framework}</span>
+                  <span>•</span>
+                  <span className="font-mono text-[11px]">{project.threadCount}</span>
+                </div>
+              </div>
+
+              {/* Footer Pill: Branch & Target */}
+              <div className="mt-4 flex items-center justify-between">
+                <div
+                  className={`text-[11px] font-mono flex items-center gap-1.5 ${isSelected ? "text-slate-400" : "text-[var(--text-tertiary)]"}`}
+                >
+                  <GitBranch className="size-3 shrink-0" />
+                  <span>{project.branch}</span>
+                </div>
+                <span
+                  className={`text-[10.5px] font-mono ${
+                    isSelected ? "text-emerald-400" : "text-emerald-600 dark:text-emerald-400"
+                  }`}
+                >
+                  Ready
+                </span>
+              </div>
+            </button>
+          );
+        })}
       </div>
 
-      <div className="p-4 sm:p-5 space-y-3">
-        {/* Quick Search & Actions */}
-        <div className="flex items-center justify-between gap-2 border-b border-[var(--divide)] pb-3">
-          <div className="flex items-center gap-2 text-[12px] text-[var(--text-tertiary)] bg-[var(--block-elevated)] px-2.5 py-1.5 rounded-lg border border-[var(--divide)] flex-1 max-w-[240px]">
-            <FiSearch className="size-3.5" />
-            <span>Search threads & branches...</span>
+      {/* Active Workspace Status Strip */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-white/70 dark:bg-white/[0.02] backdrop-blur-md px-4 py-3 text-[12px]">
+        <div className="flex items-center gap-2">
+          <div className="flex size-6 items-center justify-center rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400">
+            <FolderGit2 className="size-3.5" />
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="inline-flex items-center gap-1 rounded-lg border border-[var(--divide)] bg-[var(--card)] px-2 py-1 text-[11px] font-medium text-[var(--text-secondary)] shadow-xs">
-              <FiGitBranch className="size-3 text-[var(--accent-link)]" />
-              <span>neon-sync</span>
-            </span>
-            <button
-              type="button"
-              className="inline-flex items-center gap-1 rounded-lg bg-[var(--btn-primary-bg)] px-2.5 py-1 text-[11px] font-medium text-[var(--btn-primary-fg)] shadow-xs"
-            >
-              <FiPlus className="size-3" />
-              <span>New Thread</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Project 1: React Native Expo (Active) */}
-        <div className="rounded-xl border border-sky-500/30 bg-sky-500/[0.03] p-3 space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="flex size-6 items-center justify-center rounded-md bg-white dark:bg-black/40 shadow-xs border border-black/5 dark:border-white/10">
-                <ExpoIcon className="size-3.5" />
-              </div>
-              <span className="text-[13px] font-semibold text-[var(--text-primary)]">
-                calculator-mobile-app
-              </span>
-              <span className="rounded-md bg-sky-500/10 px-1.5 py-0.5 text-[10px] font-medium text-sky-700 dark:text-sky-300">
-                Expo SDK 52
-              </span>
-            </div>
-            <div className="flex items-center gap-1 font-mono text-[10.5px] text-emerald-600 dark:text-emerald-400">
-              <NeonIcon className="size-3" />
-              <span>branch: feat-haptics</span>
-            </div>
-          </div>
-
-          {/* Threads List */}
-          <div className="pl-3 border-l-2 border-sky-500/40 space-y-1.5 mt-2">
-            <div className="flex items-center justify-between rounded-lg bg-[var(--card)] px-2.5 py-1.5 border border-[var(--divide)] shadow-xs">
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="size-1.5 rounded-full bg-emerald-500 shrink-0" />
-                <span className="truncate text-[12px] font-medium text-[var(--text-primary)]">
-                  Implement dark calculator keypad & haptics
-                </span>
-              </div>
-              <span className="shrink-0 text-[10px] font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">
-                turn #4 active
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between rounded-lg px-2.5 py-1 text-[var(--text-secondary)] hover:bg-[var(--mock-row)] transition-colors">
-              <div className="flex items-center gap-2 min-w-0">
-                <FiCheck className="size-3 text-slate-400 shrink-0" />
-                <span className="truncate text-[11.5px]">
-                  AsyncStorage session history state
-                </span>
-              </div>
-              <span className="text-[10px] text-[var(--text-tertiary)]">22m ago</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Project 2: Flutter */}
-        <div className="rounded-xl border border-[var(--divide)] bg-[var(--block-elevated)] p-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="flex size-6 items-center justify-center rounded-md bg-white dark:bg-black/40 shadow-xs border border-black/5 dark:border-white/10">
-              <FlutterIcon className="size-3.5" />
-            </div>
-            <div>
-              <span className="text-[12.5px] font-medium text-[var(--text-primary)]">
-                crypto-portfolio-client
-              </span>
-              <div className="text-[10.5px] text-[var(--text-tertiary)] flex items-center gap-1 mt-0.5">
-                <FiClock className="size-2.5" />
-                <span>Thread: WebSocket orderbook stream • 2h ago</span>
-              </div>
-            </div>
-          </div>
-          <span className="rounded-full border border-[var(--divide)] bg-[var(--card)] px-2 py-0.5 text-[10px] text-[var(--text-secondary)] font-mono">
-            APK Ready
+          <span className="text-[var(--text-secondary)] font-medium">
+            Active Workspace:{" "}
+            <strong className="text-[var(--text-primary)]">{selected.name}</strong> (
+            {selected.footer})
           </span>
         </div>
 
-        {/* Project 3: Next.js Website */}
-        <div className="rounded-xl border border-[var(--divide)] bg-[var(--block-elevated)] p-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="flex size-6 items-center justify-center rounded-md bg-white dark:bg-black/40 shadow-xs border border-black/5 dark:border-white/10">
-              <NextjsIcon className="size-3.5" />
-            </div>
-            <div>
-              <span className="text-[12.5px] font-medium text-[var(--text-primary)]">
-                caide-marketing-portal
-              </span>
-              <div className="text-[10.5px] text-[var(--text-tertiary)] flex items-center gap-1 mt-0.5">
-                <Database className="size-2.5 text-cyan-500" />
-                <span>Neon Postgres Sync: prod-replica</span>
-              </div>
-            </div>
-          </div>
-          <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">
-            Vercel Synced
-          </span>
+        <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 text-[11px] font-mono">
+          <Radio className="size-3 animate-pulse" />
+          <span>Context Preserved Across Switches</span>
         </div>
       </div>
     </div>

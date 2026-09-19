@@ -191,9 +191,8 @@ function SettingsRouteView() {
   const routeSearch = useSearch({ strict: false }) as Record<string, unknown>;
   const activeSection = normalizeSettingsSection(routeSearch.section);
   const settingsTarget = typeof routeSearch.target === "string" ? routeSearch.target : null;
-  const activeSectionItem = SETTINGS_NAV_ITEMS.find((item) => item.id === activeSection)
-    ?? SETTINGS_NAV_ITEMS[0]!;
-
+  const activeSectionItem =
+    SETTINGS_NAV_ITEMS.find((item) => item.id === activeSection) ?? SETTINGS_NAV_ITEMS[0]!;
 
   const {
     applyPaletteTheme,
@@ -1293,28 +1292,44 @@ function SettingsRouteView() {
       case "behavior":
         return renderBehaviorPanel();
       case "providers":
-        return <ProvidersSettingsPanel />;
+        return (
+          <ProvidersSettingsPanel
+            settings={settings}
+            defaults={defaults}
+            updateSettings={updateSettings}
+            active={activeSection === "providers"}
+            resetEpoch={resetEpoch}
+          />
+        );
       case "skills":
         return <SkillsSettingsPanel />;
       case "integrations":
-        return <McpServersSettingsPanel />;
+        return <McpServersSettingsPanel active={activeSection === "integrations"} />;
       case "database":
-        return <DatabaseSettingsPanel />;
+        return <DatabaseSettingsPanel active={activeSection === "database"} />;
       case "notifications":
-        return <NotificationsSettingsPanel />;
+        return (
+          <NotificationsSettingsPanel
+            settings={settings}
+            defaults={defaults}
+            updateSettings={updateSettings}
+            active={activeSection === "notifications"}
+          />
+        );
       case "shortcuts":
         return <KeyboardShortcutsSettingsPanel />;
       case "worktrees":
-        return <WorktreesSettingsPanel />;
+        return <WorktreesSettingsPanel active={activeSection === "worktrees"} />;
       case "archived":
-        return <ArchivedSettingsPanel />;
+        return <ArchivedSettingsPanel active={activeSection === "archived"} />;
       case "advanced":
-        return <AdvancedSettingsPanel />;
+        return (
+          <AdvancedSettingsPanel active={activeSection === "advanced"} resetEpoch={resetEpoch} />
+        );
       default:
         return null;
     }
   };
-
 
   return (
     <div

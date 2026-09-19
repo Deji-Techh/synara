@@ -1,377 +1,183 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import {
-  ClaudeIcon,
-  OpenAIIcon,
-  DeepSeekIcon,
-  GeminiIcon,
-  GroqIcon,
-  OllamaIcon,
-  OpencodeIcon,
-} from "@/components/BrandIcons";
-import { FiChevronLeft, FiChevronRight, FiKey, FiCheckCircle, FiCpu, FiShield } from "react-icons/fi";
-import { AppWindow } from "lucide-react";
+import { useState } from "react";
+import { ClaudeIcon, OpenAIIcon, DeepSeekIcon, OllamaIcon } from "@/components/BrandIcons";
+import { Shield, Zap, Key, CheckCircle2 } from "lucide-react";
 
 interface ProviderItem {
   id: string;
   name: string;
-  shortName: string;
-  tagline: string;
-  category: string;
-  iconColor: string;
-  iconBg: string;
-  accentBorder: string;
+  subtitle: string;
+  tag: string;
+  models: string[];
+  accentColor: string;
+  accentBg: string;
+  borderGlow: string;
   Icon: typeof ClaudeIcon;
-  models: {
-    name: string;
-    description: string;
-    badge?: string;
-  }[];
-  bestFor: string;
-  contextWindow: string;
-  latency: string;
-  privacyNote: string;
-  keyPrefix: string;
+  stat: string;
 }
 
 const PROVIDERS: ProviderItem[] = [
   {
     id: "anthropic",
     name: "Anthropic Claude",
-    shortName: "Claude",
-    tagline: "Frontier reasoning & deep architectural turn execution",
-    category: "Thinking & Code Synthesis",
-    iconColor: "text-[#D97757]",
-    iconBg: "bg-[#D97757]/10",
-    accentBorder: "border-[#D97757]/30",
+    subtitle: "Frontier reasoning & deep turn execution",
+    tag: "Extended Thinking",
+    models: ["Claude 3.7 Sonnet", "Claude 3.5 Sonnet", "Claude 3.5 Haiku"],
+    accentColor: "text-[#D97757]",
+    accentBg: "bg-[#D97757]/12",
+    borderGlow: "border-[#D97757]/40 shadow-[#D97757]/10",
     Icon: ClaudeIcon,
-    models: [
-      { name: "Claude 3.7 Sonnet", description: "Hybrid thinking mode up to 64k tokens", badge: "Extended Thinking" },
-      { name: "Claude 3.5 Sonnet", description: "Benchmark standard for UI generation", badge: "Fast & Accurate" },
-      { name: "Claude 3.5 Haiku", description: "Sub-second diff verification & linting", badge: "Ultra Fast" },
-    ],
-    bestFor: "Complex multi-file refactoring & architecture",
-    contextWindow: "200k tokens",
-    latency: "Streaming (~85 tok/s)",
-    privacyNote: "Direct keys stored in OS SafeStorage",
-    keyPrefix: "sk-ant-api03-",
+    stat: "Up to 64k thinking tokens",
   },
   {
     id: "openai",
     name: "OpenAI",
-    shortName: "OpenAI",
-    tagline: "Precise contract adherence, JSON tool schemas & reasoning",
-    category: "Contract & Logic Precision",
-    iconColor: "text-[#10A37F]",
-    iconBg: "bg-[#10A37F]/10",
-    accentBorder: "border-[#10A37F]/30",
+    subtitle: "Precise code contracts & structured outputs",
+    tag: "High Reasoning",
+    models: ["o3-mini (High)", "o1", "GPT-4o"],
+    accentColor: "text-[#10A37F]",
+    accentBg: "bg-[#10A37F]/12",
+    borderGlow: "border-[#10A37F]/40 shadow-[#10A37F]/10",
     Icon: OpenAIIcon,
-    models: [
-      { name: "o3-mini", description: "High-reasoning code & mathematics specialist", badge: "Reasoning Low/Med/High" },
-      { name: "o1", description: "Full-depth chain of thought code audit", badge: "Deep Audit" },
-      { name: "GPT-4o", description: "Reliable multimodal UI analysis & generation", badge: "Multimodal" },
-    ],
-    bestFor: "Strict JSON contracts & deep test debugging",
-    contextWindow: "128k - 200k tokens",
-    latency: "Direct HTTP streaming",
-    privacyNote: "Zero proxy gateway or token surcharge",
-    keyPrefix: "sk-proj-",
+    stat: "Strict JSON schema adherence",
   },
   {
     id: "deepseek",
     name: "DeepSeek",
-    shortName: "DeepSeek",
-    tagline: "Unmatched performance-to-cost ratio with open weights",
-    category: "Cost Efficiency & Open Weights",
-    iconColor: "text-[#4D6BFE]",
-    iconBg: "bg-[#4D6BFE]/10",
-    accentBorder: "border-[#4D6BFE]/30",
+    subtitle: "Open weights with transparent chain of thought",
+    tag: "Open Weights",
+    models: ["DeepSeek-R1", "DeepSeek-V3"],
+    accentColor: "text-[#4D6BFE]",
+    accentBg: "bg-[#4D6BFE]/12",
+    borderGlow: "border-[#4D6BFE]/40 shadow-[#4D6BFE]/10",
     Icon: DeepSeekIcon,
-    models: [
-      { name: "DeepSeek-R1", description: "Full reasoning trace with open-weights parity", badge: "Full CoT" },
-      { name: "DeepSeek-V3", description: "Fast general-purpose coding assistant", badge: "MoE 671B" },
-    ],
-    bestFor: "High-volume generation & transparent reasoning",
-    contextWindow: "64k tokens",
-    latency: "Fast concurrent streaming",
-    privacyNote: "Direct API or local quantized inference",
-    keyPrefix: "sk-",
-  },
-  {
-    id: "gemini",
-    name: "Google Gemini",
-    shortName: "Gemini",
-    tagline: "Massive context memory for analyzing entire repositories",
-    category: "2M+ Infinite Context",
-    iconColor: "text-[#1BA1E3]",
-    iconBg: "bg-[#1BA1E3]/10",
-    accentBorder: "border-[#1BA1E3]/30",
-    Icon: GeminiIcon,
-    models: [
-      { name: "Gemini 2.5 Pro", description: "2 Million token context for whole-repo analysis", badge: "2M Context" },
-      { name: "Gemini 2.5 Flash", description: "Instantaneous responses for conversational planning", badge: "Sub-Second" },
-    ],
-    bestFor: "Entire codebase ingestion & large log inspection",
-    contextWindow: "2,000,000+ tokens",
-    latency: "Google DeepMind infrastructure",
-    privacyNote: "Stored locally in Caide keychain",
-    keyPrefix: "AIzaSy",
-  },
-  {
-    id: "groq",
-    name: "Groq (LPU Inference)",
-    shortName: "Groq",
-    tagline: "Unreal 500+ tokens per second on LPUs for instant turns",
-    category: "Extreme Speed (500+ tok/s)",
-    iconColor: "text-[#F54F35]",
-    iconBg: "bg-[#F54F35]/10",
-    accentBorder: "border-[#F54F35]/30",
-    Icon: GroqIcon,
-    models: [
-      { name: "Llama 3.3 70B Versatile", description: "Instantaneous turn streaming & planning", badge: "500+ Tok/s" },
-      { name: "DeepSeek-R1 Distill 70B", description: "Real-time reasoning at LPU speeds", badge: "Rapid CoT" },
-    ],
-    bestFor: "Interactive rapid iteration & zero-latency feedback",
-    contextWindow: "128k tokens",
-    latency: "500+ tokens/sec (Hardware LPU)",
-    privacyNote: "Direct BYOK connection to Groq Cloud",
-    keyPrefix: "gsk_",
+    stat: "Full reasoning trace exposed",
   },
   {
     id: "ollama",
-    name: "Ollama (Local Offline)",
-    shortName: "Ollama",
-    tagline: "100% private, zero-cost, air-gapped local GPU inference",
-    category: "100% Offline & Private",
-    iconColor: "text-[var(--text-primary)]",
-    iconBg: "bg-black/5 dark:bg-white/10",
-    accentBorder: "border-black/10 dark:border-white/20",
+    name: "Ollama Local",
+    subtitle: "100% private offline GPU inference",
+    tag: "100% Offline",
+    models: ["Qwen 2.5 Coder 32B", "DeepSeek-R1 14B/32B", "Llama 3.3 70B"],
+    accentColor: "text-purple-400",
+    accentBg: "bg-purple-500/12",
+    borderGlow: "border-purple-500/40 shadow-purple-500/10",
     Icon: OllamaIcon,
-    models: [
-      { name: "Qwen 2.5 Coder 32B", description: "Top-tier open coder running on Apple Silicon / RTX", badge: "Local GPU" },
-      { name: "DeepSeek-R1 14B / 32B", description: "Local reasoning model with complete privacy", badge: "Air-Gapped" },
-      { name: "Llama 3.3 8B / 70B", description: "Lightweight and versatile local assistant", badge: "Zero Cost" },
-    ],
-    bestFor: "Proprietary code, zero internet & zero token bills",
-    contextWindow: "Dynamic based on VRAM",
-    latency: "Local GPU (Apple Metal / NVIDIA CUDA)",
-    privacyNote: "Zero bytes leave your computer",
-    keyPrefix: "http://localhost:11434",
-  },
-  {
-    id: "custom",
-    name: "Custom OpenAI-Compatible",
-    shortName: "Custom",
-    tagline: "Connect vLLM, LM Studio, Together, OpenRouter, or LiteLLM",
-    category: "Self-Hosted & Enterprise",
-    iconColor: "text-[#EC4899]",
-    iconBg: "bg-[#EC4899]/10",
-    accentBorder: "border-[#EC4899]/30",
-    Icon: OpencodeIcon,
-    models: [
-      { name: "vLLM / TGI Endpoints", description: "Enterprise cluster deployments", badge: "Self-Hosted" },
-      { name: "OpenRouter & Together", description: "Any router or open marketplace endpoint", badge: "Aggregator" },
-    ],
-    bestFor: "Enterprise VPCs, custom fine-tunes & internal proxies",
-    contextWindow: "Custom endpoint defined",
-    latency: "Your server latency",
-    privacyNote: "Direct point-to-point connection",
-    keyPrefix: "https://your-custom-ai.internal/v1",
+    stat: "Zero bytes leave your machine",
   },
 ];
 
 export function ProviderCarousel() {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
-
-  const nextSlide = useCallback(() => {
-    setCurrentIndex((prev) => (prev + 1) % PROVIDERS.length);
-  }, []);
-
-  const prevSlide = useCallback(() => {
-    setCurrentIndex((prev) => (prev - 1 + PROVIDERS.length) % PROVIDERS.length);
-  }, []);
-
-  // Auto-advance every 5 seconds unless hovered
-  useEffect(() => {
-    if (isPaused) return;
-    const interval = setInterval(nextSlide, 5000);
-    return () => clearInterval(interval);
-  }, [isPaused, nextSlide]);
-
-  const active = PROVIDERS[currentIndex] ?? PROVIDERS[0]!;
-  const ActiveIcon = active.Icon;
+  const [selectedId, setSelectedId] = useState("anthropic");
+  const selected = PROVIDERS.find((p) => p.id === selectedId) || PROVIDERS[0]!;
 
   return (
-    <div
-      className="group relative flex w-full flex-col overflow-hidden rounded-2xl border border-[var(--border-strong)] bg-[var(--card)] text-[var(--text-primary)] shadow-[0_20px_50px_-15px_rgba(15,23,42,0.18)] transition-all"
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
-    >
-      {/* Top macOS-style Window Header */}
-      <div className="relative z-10 flex h-10 shrink-0 items-center justify-between border-b border-[var(--divide)] bg-[var(--mock-row)]/90 px-4 backdrop-blur-md">
-        {/* Window Traffic Lights */}
-        <div className="flex items-center gap-2">
-          <span className="size-2.5 rounded-full bg-[#ff5f56] ring-1 ring-[#e0443e]/40" />
-          <span className="size-2.5 rounded-full bg-[#ffbd2e] ring-1 ring-[#dea123]/40" />
-          <span className="size-2.5 rounded-full bg-[#27c93f] ring-1 ring-[#1aab29]/40" />
-        </div>
+    <div className="w-full space-y-3.5">
+      {/* 2x2 Grid of Tactile Provider Cards */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {PROVIDERS.map((provider) => {
+          const isSelected = provider.id === selectedId;
+          const IconComponent = provider.Icon;
 
-        {/* Center Pill */}
-        <div className="inline-flex items-center gap-1.5 rounded-full border border-black/[0.06] dark:border-white/10 bg-black/[0.04] dark:bg-white/[0.05] px-3 py-0.5 font-mono text-[10.5px] font-medium text-[var(--text-secondary)]">
-          <AppWindow className="size-3 text-[var(--text-tertiary)]" />
-          <span>caide — provider-hub</span>
-        </div>
-
-        {/* Right Status Indicator */}
-        <div className="flex items-center gap-1.5">
-          <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="font-mono text-[10.5px] text-emerald-600 dark:text-emerald-400 font-medium hidden sm:inline">
-            Direct BYOK
-          </span>
-        </div>
-      </div>
-
-      {/* Main Slide Card Area */}
-      <div className="p-4 sm:p-6 flex flex-col justify-between min-h-[350px]">
-        {/* Provider Brand Header */}
-        <div>
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div
-                className={`flex size-11 items-center justify-center rounded-xl ${active.iconBg} ${active.iconColor} ring-1 ring-black/5 dark:ring-white/10 shadow-sm`}
-              >
-                <ActiveIcon className="size-6" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h4 className="text-[17px] font-semibold tracking-tight text-[var(--text-primary)]">
-                    {active.name}
-                  </h4>
-                  <span className="rounded-full border border-black/10 dark:border-white/15 bg-black/5 dark:bg-white/10 px-2 py-0.5 text-[10px] font-medium text-[var(--text-secondary)]">
-                    {active.category}
+          return (
+            <button
+              key={provider.id}
+              type="button"
+              onClick={() => setSelectedId(provider.id)}
+              className={`group relative flex flex-col justify-between rounded-2xl p-4 sm:p-5 text-left transition-all duration-200 cursor-pointer ${
+                isSelected
+                  ? `bg-gradient-to-b from-[#1c1d22] to-[#121316] text-white shadow-xl ${provider.borderGlow} ring-1 ring-white/15`
+                  : "bg-white/80 dark:bg-white/[0.03] backdrop-blur-md text-[var(--text-primary)] border border-black/[0.07] dark:border-white/[0.08] shadow-xs hover:border-black/20 dark:hover:border-white/20 hover:bg-white dark:hover:bg-white/[0.05]"
+              }`}
+            >
+              {/* Top Header: Brand Squircle + Selection Pill */}
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-2.5">
+                  <div
+                    className={`flex size-9 items-center justify-center rounded-xl transition-transform group-hover:scale-105 ${
+                      isSelected
+                        ? `${provider.accentBg} ${provider.accentColor} shadow-inner`
+                        : "bg-black/[0.04] dark:bg-white/[0.08] text-[var(--text-primary)]"
+                    }`}
+                  >
+                    <IconComponent className="size-5" />
+                  </div>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-medium tracking-wide uppercase ${
+                      isSelected
+                        ? "bg-white/10 text-white border border-white/15"
+                        : "bg-black/[0.04] dark:bg-white/[0.06] text-[var(--text-tertiary)]"
+                    }`}
+                  >
+                    {provider.tag}
                   </span>
                 </div>
-                <p className="text-[12.5px] text-[var(--text-secondary)] mt-0.5">
-                  {active.tagline}
-                </p>
-              </div>
-            </div>
 
-            {/* Prev / Next Chevrons */}
-            <div className="flex items-center gap-1 shrink-0">
-              <button
-                type="button"
-                onClick={prevSlide}
-                aria-label="Previous provider"
-                className="inline-flex size-7 items-center justify-center rounded-lg border border-[var(--divide)] bg-[var(--card)] text-[var(--text-secondary)] transition-colors hover:bg-[var(--mock-row)] hover:text-[var(--text-primary)] cursor-pointer"
-              >
-                <FiChevronLeft className="size-4" />
-              </button>
-              <button
-                type="button"
-                onClick={nextSlide}
-                aria-label="Next provider"
-                className="inline-flex size-7 items-center justify-center rounded-lg border border-[var(--divide)] bg-[var(--card)] text-[var(--text-secondary)] transition-colors hover:bg-[var(--mock-row)] hover:text-[var(--text-primary)] cursor-pointer"
-              >
-                <FiChevronRight className="size-4" />
-              </button>
-            </div>
-          </div>
-
-          {/* Model Roster */}
-          <div className="mt-4 space-y-2">
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] flex items-center gap-1.5">
-              <FiCpu className="size-3" />
-              <span>Available Models in Turn Loop</span>
-            </div>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {active.models.map((model) => (
+                {/* Radio Dot */}
                 <div
-                  key={model.name}
-                  className="flex items-center justify-between rounded-xl border border-[var(--divide)] bg-[var(--block-elevated)] px-3 py-2 text-left"
+                  className={`size-3 rounded-full flex items-center justify-center transition-all ${
+                    isSelected
+                      ? "bg-white ring-4 ring-white/20"
+                      : "border border-black/20 dark:border-white/20"
+                  }`}
                 >
-                  <div className="min-w-0 pr-2">
-                    <div className="truncate text-[12.5px] font-medium text-[var(--text-primary)]">
-                      {model.name}
-                    </div>
-                    <div className="truncate text-[11px] text-[var(--text-tertiary)]">
-                      {model.description}
-                    </div>
-                  </div>
-                  {model.badge && (
-                    <span className="shrink-0 rounded-md bg-[var(--card)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--accent-link)] border border-[var(--divide)]">
-                      {model.badge}
-                    </span>
-                  )}
+                  {isSelected && <div className="size-1 rounded-full bg-black" />}
                 </div>
-              ))}
-            </div>
-          </div>
+              </div>
 
-          {/* Key Capabilities Matrix */}
-          <div className="mt-4 grid grid-cols-3 gap-2 rounded-xl border border-[var(--divide)] bg-[var(--mock-row)]/50 p-2.5 text-center">
-            <div>
-              <div className="text-[10px] uppercase font-semibold text-[var(--text-tertiary)]">
-                Context
+              {/* Title & Description */}
+              <div className="mt-4">
+                <div
+                  className={`text-[14.5px] sm:text-[15.5px] font-semibold tracking-tight ${isSelected ? "text-white" : "text-[var(--text-primary)]"}`}
+                >
+                  {provider.name}
+                </div>
+                <div
+                  className={`mt-1 text-[12px] sm:text-[13px] leading-relaxed ${isSelected ? "text-slate-300" : "text-[var(--text-secondary)]"}`}
+                >
+                  {provider.subtitle}
+                </div>
               </div>
-              <div className="mt-0.5 text-[12px] font-medium text-[var(--text-primary)] truncate">
-                {active.contextWindow}
-              </div>
-            </div>
-            <div>
-              <div className="text-[10px] uppercase font-semibold text-[var(--text-tertiary)]">
-                Speed
-              </div>
-              <div className="mt-0.5 text-[12px] font-medium text-[var(--text-primary)] truncate">
-                {active.latency}
-              </div>
-            </div>
-            <div>
-              <div className="text-[10px] uppercase font-semibold text-[var(--text-tertiary)]">
-                Best For
-              </div>
-              <div className="mt-0.5 text-[12px] font-medium text-[var(--text-primary)] truncate">
-                {active.bestFor}
-              </div>
-            </div>
-          </div>
-        </div>
 
-        {/* Bottom Key Storage Bar */}
-        <div className="mt-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-3 py-2 flex items-center justify-between text-[11.5px]">
-          <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-mono">
-            <FiKey className="size-3.5" />
-            <span className="truncate max-w-[200px] sm:max-w-none">
-              {active.keyPrefix}••••••••••••••••
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5 text-[var(--text-secondary)]">
-            <FiShield className="size-3 text-emerald-500" />
-            <span className="hidden sm:inline">Zero Gateway Markup</span>
-            <FiCheckCircle className="size-3.5 text-emerald-500" />
-          </div>
-        </div>
+              {/* Model Pills Preview */}
+              <div className="mt-4 flex flex-wrap gap-1.5">
+                {provider.models.map((model, idx) => (
+                  <span
+                    key={model}
+                    className={`rounded-md px-2 py-0.5 text-[10.5px] font-mono transition-colors ${
+                      isSelected
+                        ? idx === 0
+                          ? "bg-white/20 text-white font-medium shadow-xs"
+                          : "bg-white/8 text-slate-300"
+                        : "bg-black/[0.03] dark:bg-white/[0.05] text-[var(--text-tertiary)]"
+                    }`}
+                  >
+                    {model}
+                  </span>
+                ))}
+              </div>
+            </button>
+          );
+        })}
       </div>
 
-      {/* Quick Navigation Tabs Bar */}
-      <div className="flex items-center justify-between border-t border-[var(--divide)] bg-[var(--mock-row)] px-3 py-2 overflow-x-auto no-scrollbar gap-1">
-        {PROVIDERS.map((p, idx) => (
-          <button
-            key={p.id}
-            type="button"
-            onClick={() => setCurrentIndex(idx)}
-            className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-medium transition-all shrink-0 cursor-pointer ${
-              idx === currentIndex
-                ? "bg-[var(--card)] text-[var(--text-primary)] shadow-sm border border-[var(--divide)]"
-                : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] hover:bg-[var(--card)]/50"
-            }`}
-          >
-            <p.Icon className="size-3" />
-            <span>{p.shortName}</span>
-          </button>
-        ))}
+      {/* Active Provider Connection Banner */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-white/70 dark:bg-white/[0.02] backdrop-blur-md px-4 py-3 text-[12px]">
+        <div className="flex items-center gap-2">
+          <div className="flex size-6 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+            <Key className="size-3.5" />
+          </div>
+          <span className="text-[var(--text-secondary)] font-medium">
+            Active: <strong className="text-[var(--text-primary)]">{selected.name}</strong> •{" "}
+            {selected.stat}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 text-[11px] font-mono">
+          <CheckCircle2 className="size-3.5" />
+          <span>Direct BYOK • Stored in OS Keyring</span>
+        </div>
       </div>
     </div>
   );

@@ -84,12 +84,7 @@ export function NeonIcon({ className }: IconProps) {
 
 export function CaideIcon({ className }: IconProps) {
   return (
-    <svg
-      viewBox="0 0 390 490"
-      fill="currentColor"
-      className={className}
-      aria-hidden="true"
-    >
+    <svg viewBox="0 0 390 490" fill="currentColor" className={className} aria-hidden="true">
       <path d="M349 10 L377 11 L227 226 L175 405 L100 476 L167 227 L10 11 L83 12 L191 160 L179 197 L308 13 L348 11 Z" />
       <path d="M237 239 L333 375 L266 375 L217 305 L237 240 Z" />
     </svg>

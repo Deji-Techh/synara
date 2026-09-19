@@ -5,14 +5,7 @@ import Navbar from "@/components/Navbar";
 import SiteFooter from "@/components/SiteFooter";
 import { SiApple, SiLinux } from "react-icons/si";
 import { FaWindows } from "react-icons/fa";
-import {
-  ShieldCheck,
-  Cpu,
-  Smartphone,
-  Database,
-  ArrowRight,
-  CheckCircle2,
-} from "lucide-react";
+import { ShieldCheck, Cpu, Smartphone, Database, ArrowRight, CheckCircle2 } from "lucide-react";
 import { WhitelistModal } from "@/components/WhitelistModal";
 import Link from "next/link";
 

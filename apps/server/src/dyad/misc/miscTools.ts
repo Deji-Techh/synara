@@ -336,11 +336,12 @@ export function listGuideNames(): string[] {
   return [...GUIDE_NAMES];
 }
 
-
 const readGuideSchema = z.object({
-  guide: z.string().describe(
-    `Guide name. Implementation guides: ${GUIDE_NAMES.join(", ")}. UI-skill docs (references/templates/companions, fetched on demand instead of living in every prompt): see tool description for full list.`,
-  ),
+  guide: z
+    .string()
+    .describe(
+      `Guide name. Implementation guides: ${GUIDE_NAMES.join(", ")}. UI-skill docs (references/templates/companions, fetched on demand instead of living in every prompt): see tool description for full list.`,
+    ),
   framework: z
     .enum(["blank", "react-native", "flutter", "website"])
     .optional()
@@ -385,7 +386,6 @@ export const readGuideTool: ToolDef<z.infer<typeof readGuideSchema>> = new Proxy
     },
   },
 );
-
 
 export function executeReadGuide(input: z.infer<typeof readGuideSchema>): string {
   const parsed = readGuideSchema.parse(input);

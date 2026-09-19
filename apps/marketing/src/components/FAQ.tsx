@@ -26,66 +26,66 @@ export default function FAQ() {
             >
               Understand the boundary before you run the work.
             </h2>
-          <p className="mt-4 max-w-xl text-[15px] leading-[1.7] text-[var(--text-secondary)] sm:text-[16px]">
-            How frameworks, BYOK models, local SQLite, previews, database branching, and deployments
-            fit together.
-          </p>
-        </div>
+            <p className="mt-4 max-w-xl text-[15px] leading-[1.7] text-[var(--text-secondary)] sm:text-[16px]">
+              How frameworks, BYOK models, local SQLite, previews, database branching, and
+              deployments fit together.
+            </p>
+          </div>
 
-        <div className="mt-10 divide-y divide-[var(--divide)] border-y border-[var(--divide)] sm:mt-12">
-          {FAQ_ITEMS.map(({ question, answer }) => {
-            const isOpen = openQuestion === question;
-            const panelId = `faq-${question
-              .toLowerCase()
-              .replace(/[^a-z0-9]+/g, "-")
-              .replace(/(^-|-$)/g, "")}`;
-            const labelId = `${panelId}-label`;
+          <div className="mt-10 divide-y divide-[var(--divide)] border-y border-[var(--divide)] sm:mt-12">
+            {FAQ_ITEMS.map(({ question, answer }) => {
+              const isOpen = openQuestion === question;
+              const panelId = `faq-${question
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, "-")
+                .replace(/(^-|-$)/g, "")}`;
+              const labelId = `${panelId}-label`;
 
-            return (
-              <div key={question} className="group/faq">
-                <button
-                  type="button"
-                  aria-expanded={isOpen}
-                  aria-controls={panelId}
-                  onClick={() =>
-                    setOpenQuestion((current) => (current === question ? null : question))
-                  }
-                  className="flex min-h-14 w-full items-center justify-between gap-5 rounded-md py-4 text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-link)] focus-visible:ring-offset-4 focus-visible:ring-offset-[var(--page-bg)] sm:min-h-16 sm:py-5"
-                >
-                  <span
-                    id={labelId}
-                    className="text-[15px] font-medium leading-[1.45] text-[var(--text-primary)] transition-colors group-hover/faq:text-[var(--accent-link)] sm:text-[16px]"
+              return (
+                <div key={question} className="group/faq">
+                  <button
+                    type="button"
+                    aria-expanded={isOpen}
+                    aria-controls={panelId}
+                    onClick={() =>
+                      setOpenQuestion((current) => (current === question ? null : question))
+                    }
+                    className="flex min-h-14 w-full items-center justify-between gap-5 rounded-md py-4 text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-link)] focus-visible:ring-offset-4 focus-visible:ring-offset-[var(--page-bg)] sm:min-h-16 sm:py-5"
                   >
-                    {question}
-                  </span>
-                  <FiChevronDown
-                    aria-hidden="true"
-                    className={`size-5 shrink-0 text-[var(--text-tertiary)] transition-transform duration-200 motion-reduce:transition-none ${
-                      isOpen ? "rotate-180" : "rotate-0"
-                    }`}
-                  />
-                </button>
+                    <span
+                      id={labelId}
+                      className="text-[15px] font-medium leading-[1.45] text-[var(--text-primary)] transition-colors group-hover/faq:text-[var(--accent-link)] sm:text-[16px]"
+                    >
+                      {question}
+                    </span>
+                    <FiChevronDown
+                      aria-hidden="true"
+                      className={`size-5 shrink-0 text-[var(--text-tertiary)] transition-transform duration-200 motion-reduce:transition-none ${
+                        isOpen ? "rotate-180" : "rotate-0"
+                      }`}
+                    />
+                  </button>
 
-                {/* Synara smooth single-row grid interpolation 0fr -> 1fr */}
-                <div
-                  id={panelId}
-                  role="region"
-                  aria-labelledby={labelId}
-                  inert={!isOpen}
-                  className={`grid overflow-hidden transition-[grid-template-rows,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${
-                    isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
-                  }`}
-                >
-                  <div className="min-h-0">
-                    <p className="max-w-2xl pb-5 text-[14px] leading-[1.75] text-[var(--text-secondary)] sm:pb-6">
-                      {answer}
-                    </p>
+                  {/* Synara smooth single-row grid interpolation 0fr -> 1fr */}
+                  <div
+                    id={panelId}
+                    role="region"
+                    aria-labelledby={labelId}
+                    inert={!isOpen}
+                    className={`grid overflow-hidden transition-[grid-template-rows,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${
+                      isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+                    }`}
+                  >
+                    <div className="min-h-0">
+                      <p className="max-w-2xl pb-5 text-[14px] leading-[1.75] text-[var(--text-secondary)] sm:pb-6">
+                        {answer}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
         </ScrollReveal>
       </div>
     </section>

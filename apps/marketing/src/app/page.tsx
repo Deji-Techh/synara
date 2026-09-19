@@ -86,7 +86,9 @@ export default function Home() {
 
               {/* Trust Pill */}
               <div className="mt-4 flex items-center gap-2 text-[12px] font-medium text-blue-100/85">
-                <span>100% Free & Open Source • Bring Your Own Keys • Local-First Architecture</span>
+                <span>
+                  100% Free & Open Source • Bring Your Own Keys • Local-First Architecture
+                </span>
               </div>
             </ScrollReveal>
 
@@ -96,11 +98,11 @@ export default function Home() {
                 <div className="relative isolate overflow-hidden rounded-2xl border border-white/20 bg-slate-950/80 shadow-[0_25px_80px_-15px_rgba(0,0,0,0.5)] ring-1 ring-white/10 backdrop-blur-xl">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src="/screenshots/hero-app-workspace.png"
+                    src="/screenshots/caide-app-workspace.png"
                     alt="Caide Autonomous Studio: Real-time agent turn loop, prompt engineering, and live DeviceLab mobile preview"
                     className="w-full h-auto block object-cover rounded-2xl"
-                    width={2560}
-                    height={1397}
+                    width={3584}
+                    height={1956}
                   />
                 </div>
               </div>

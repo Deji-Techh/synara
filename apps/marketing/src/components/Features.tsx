@@ -1,6 +1,6 @@
 import { SplitShowcase } from "@/components/SplitShowcase";
 import { ScrollReveal } from "@/components/ScrollReveal";
-import { ProviderCarousel } from "@/components/ProviderCarousel";
+import { ModelPickerMockup } from "@/components/showcase/ModelPickerMockup";
 import {
   ClaudeIcon,
   OpenAIIcon,
@@ -149,30 +149,14 @@ export default function Features() {
               reverse
               prominentMedia
             >
-              <div className="w-full overflow-hidden rounded-2xl border border-[var(--border-strong)] bg-[var(--card)] shadow-[0_20px_50px_-15px_rgba(15,23,42,0.18)]">
-                {/* Window Chrome Header */}
-                <div className="flex h-10 items-center justify-between border-b border-[var(--divide)] bg-[var(--mock-row)]/90 px-4 backdrop-blur-md">
-                  <div className="flex items-center gap-2">
-                    <span className="size-2.5 rounded-full bg-[#ff5f56] ring-1 ring-[#e0443e]/40" />
-                    <span className="size-2.5 rounded-full bg-[#ffbd2e] ring-1 ring-[#dea123]/40" />
-                    <span className="size-2.5 rounded-full bg-[#27c93f] ring-1 ring-[#1aab29]/40" />
-                  </div>
-                  <div className="inline-flex items-center gap-1.5 rounded-full border border-black/[0.06] dark:border-white/10 bg-black/[0.04] dark:bg-white/[0.05] px-3 py-0.5 font-mono text-[10.5px] font-medium text-[var(--text-secondary)]">
-                    <span>caide — framework-scaffolding</span>
-                  </div>
-                  <span className="text-[10.5px] font-mono text-emerald-600 dark:text-emerald-400 font-medium">
-                    Immutable Stacks
-                  </span>
-                </div>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/screenshots/framework-creation.png"
-                  alt="Caide Framework Scaffolding: Blank, React Native Expo, Flutter, Next.js Website"
-                  className="w-full h-auto block object-cover"
-                  width={1356}
-                  height={747}
-                />
-              </div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/screenshots/framework-creation.png"
+                alt="Caide Framework Scaffolding: Blank, React Native Expo, Flutter, Next.js Website"
+                className="block h-auto w-full"
+                width={1356}
+                height={747}
+              />
             </SplitShowcase>
           </ScrollReveal>
         </div>
@@ -231,9 +215,8 @@ export default function Features() {
               title="Direct provider connections. Zero gateway limits."
               description="Configure your keys once in Caide secure storage. Switch between Claude 3.7 for deep refactoring, GPT-4o for complex JSON contracts, and local Ollama for offline rapid edits without ever being throttled."
               reverse={false}
-              prominentMedia
             >
-              <ProviderCarousel />
+              <ModelPickerMockup />
             </SplitShowcase>
           </ScrollReveal>
         </div>

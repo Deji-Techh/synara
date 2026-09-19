@@ -198,7 +198,7 @@ export function WhitelistModal({
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="Linus Torvalds"
-                      className="mt-1 w-full rounded-xl border border-[var(--divide)] bg-[var(--card)] px-3 py-1.5 text-[13px] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none transition-all sm:py-2 sm:text-[13.5px]"
+                      className="mt-1 w-full rounded-xl border border-[var(--divide)] bg-[var(--card)] px-3 py-2 text-[16px] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none transition-all sm:py-2 sm:text-[13.5px]"
                     />
                   </div>
 
@@ -212,7 +212,7 @@ export function WhitelistModal({
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="you@domain.com"
-                      className="mt-1 w-full rounded-xl border border-[var(--divide)] bg-[var(--card)] px-3 py-1.5 text-[13px] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none transition-all sm:py-2 sm:text-[13.5px]"
+                      className="mt-1 w-full rounded-xl border border-[var(--divide)] bg-[var(--card)] px-3 py-2 text-[16px] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none transition-all sm:py-2 sm:text-[13.5px]"
                     />
                   </div>
                 </div>
@@ -225,7 +225,7 @@ export function WhitelistModal({
                     <select
                       value={framework}
                       onChange={(e) => setFramework(e.target.value)}
-                      className="mt-1 w-full rounded-xl border border-[var(--divide)] bg-[var(--card)] px-3 py-1.5 text-[12.5px] text-[var(--text-primary)] focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none transition-all sm:py-2 sm:text-[13px]"
+                      className="mt-1 w-full rounded-xl border border-[var(--divide)] bg-[var(--card)] px-3 py-2 text-[16px] text-[var(--text-primary)] focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none transition-all sm:py-2 sm:text-[13px]"
                     >
                       <option value="react-native">React Native (Expo)</option>
                       <option value="flutter">Flutter Mobile</option>
@@ -242,7 +242,7 @@ export function WhitelistModal({
                     <select
                       value={role}
                       onChange={(e) => setRole(e.target.value)}
-                      className="mt-1 w-full rounded-xl border border-[var(--divide)] bg-[var(--card)] px-3 py-1.5 text-[12.5px] text-[var(--text-primary)] focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none transition-all sm:py-2 sm:text-[13px]"
+                      className="mt-1 w-full rounded-xl border border-[var(--divide)] bg-[var(--card)] px-3 py-2 text-[16px] text-[var(--text-primary)] focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none transition-all sm:py-2 sm:text-[13px]"
                     >
                       <option value="fullstack">Full-Stack Engineer</option>
                       <option value="mobile">Mobile Developer</option>
@@ -260,15 +260,25 @@ export function WhitelistModal({
                   <select
                     value={preferredModel}
                     onChange={(e) => setPreferredModel(e.target.value)}
-                    className="mt-1 w-full rounded-xl border border-[var(--divide)] bg-[var(--card)] px-3 py-1.5 text-[12.5px] text-[var(--text-primary)] focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none transition-all sm:py-2 sm:text-[13px]"
+                    className="mt-1 w-full rounded-xl border border-[var(--divide)] bg-[var(--card)] px-3 py-2 text-[16px] text-[var(--text-primary)] focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none transition-all sm:py-2 sm:text-[13px]"
                   >
-                    <option value="claude">Anthropic Claude (3.7 Sonnet / Thinking)</option>
-                    <option value="openai">OpenAI (GPT-4o / o3-mini)</option>
+                    <option value="anthropic">Anthropic Claude (3.7 Sonnet / 3.5 Sonnet)</option>
+                    <option value="openai">OpenAI (GPT-4o / o1 / o3-mini)</option>
+                    <option value="google">Google Gemini (2.5 Pro / Flash)</option>
                     <option value="deepseek">DeepSeek (R1 / V3)</option>
-                    <option value="gemini">Google Gemini (2.5 Pro / Flash)</option>
                     <option value="groq">Groq (Llama 3.3 70B fast LPUs)</option>
-                    <option value="ollama">Ollama (100% Offline Local Inference)</option>
-                    <option value="custom">Custom OpenAI Compatible Server</option>
+                    <option value="ollama">Ollama (100% Offline Local)</option>
+                    <option value="lmstudio">LM Studio (Local Server)</option>
+                    <option value="openrouter">OpenRouter (Unified Multi-Model)</option>
+                    <option value="xai">xAI (Grok 2 / Grok 3)</option>
+                    <option value="mistral">Mistral AI (Codestral / Large)</option>
+                    <option value="together">Together AI</option>
+                    <option value="fireworks">Fireworks AI</option>
+                    <option value="cohere">Cohere (Command R+)</option>
+                    <option value="azure">Azure OpenAI</option>
+                    <option value="bedrock">AWS Bedrock</option>
+                    <option value="opencodeZen">OpenCode Zen (Free Catalog)</option>
+                    <option value="custom">Custom (OpenAI-compatible / vLLM)</option>
                   </select>
                 </div>
 
@@ -282,7 +292,7 @@ export function WhitelistModal({
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder="e.g. Cross-platform mobile app with instant live DeviceLab preview..."
-                    className="mt-1 w-full rounded-xl border border-[var(--divide)] bg-[var(--card)] px-3 py-1.5 text-[12.5px] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none transition-all resize-none sm:py-2 sm:text-[13px]"
+                    className="mt-1 w-full rounded-xl border border-[var(--divide)] bg-[var(--card)] px-3 py-2 text-[16px] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 focus:outline-none transition-all resize-none sm:py-2 sm:text-[13px]"
                   />
                 </div>
 

@@ -463,14 +463,20 @@ body {
  * Framed inside each SplitShowcase, MultiProjectShowcase, and Hero card.
  */
 .shot-card-bg {
+  background-image: url("/hero-bg.jpg");
+  background-position: 50%;
+  background-size: cover;
+}
+
+.dark .shot-card-bg {
   background-image:
     linear-gradient(
-      color-mix(in oklab, var(--block-elevated) 8%, transparent),
-      color-mix(in oklab, var(--block-elevated) 8%, transparent)
+      color-mix(in oklab, var(--block-elevated) 40%, transparent),
+      color-mix(in oklab, var(--block-elevated) 40%, transparent)
     ),
     url("/hero-bg.jpg");
+  background-position: 50%;
   background-size: cover;
-  background-position: center 35%;
 }
 
 /*
