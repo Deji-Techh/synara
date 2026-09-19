@@ -1,0 +1,35 @@
+---
+title: Flutter Mobile
+description: High-performance cross-platform Flutter mobile applications with Dart and Caide.
+---
+
+# Flutter Mobile
+
+Caide provides dedicated support for building multi-platform applications using Google Flutter and Dart.
+
+---
+
+## Toolchain & Verification
+
+When you select the Flutter framework:
+
+1. **Health Checks**: Caide verifies your environment for `flutter`, `dart`, Android Studio, and Xcode command line tools.
+2. **Scaffold Architecture**: Creates clean Flutter project structures with state management (Riverpod, Bloc, or Provider) and Material 3 / Cupertino design tokens.
+3. **Daemon Runner**: Caide manages the `flutter run` daemon in the background with interactive hot-reload signals (`r` key trigger).
+4. **Dart Analyze Diagnostics**: Dart static analysis runs automatically following file changes, providing structured error feedback directly to the turn runner.
+
+---
+
+## Previewing Flutter Apps
+
+- **DeviceLab Web Target**: Flutter web build renders directly inside the DeviceLab mobile frame for rapid iteration.
+- **Physical Device / Simulator Runner**: Launch Android emulators or iOS simulators from within Caide’s platform tools menu to test high-FPS animations and gestures natively.
+
+---
+
+## Production Builds
+
+Trigger native release packaging directly from Caide’s Publish panel:
+
+- Android APK / Android App Bundle (`flutter build appbundle --release`)
+- iOS IPA bundle (`flutter build ipa --release`)

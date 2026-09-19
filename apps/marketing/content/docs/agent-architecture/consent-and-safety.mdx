@@ -1,0 +1,52 @@
+---
+title: Tool Consent & Safety
+description: Granular execution approvals, shell blocklists, and checkpoint rollbacks.
+---
+
+# Tool Consent & Safety
+
+Caide rejects the notion that an autonomous agent should execute unchecked shell commands or wipe project directories without supervision. We implement a multi-layered safety boundary to ensure you stay in total control.
+
+---
+
+## 1. Explicit Consent Gates
+
+By default, Caide requires explicit user consent before executing any high-risk action:
+
+| Tool Action                  | Consent Required             |
+| ---------------------------- | ---------------------------- |
+| **Read Files & Search Code** | No (Safe)                    |
+| **Edit Existing Files**      | Configurable (Default: Auto) |
+| **Shell Command Execution**  | **Yes (Default: Prompt)**    |
+| **Database Migrations**      | **Yes (Default: Prompt)**    |
+| **MCP External Tools**       | **Yes (Default: Prompt)**    |
+| **Package Installations**    | **Yes (Default: Prompt)**    |
+
+When a tool requires approval, the chat stream renders an interactive **Approval Card**:
+
+- Highlights the exact command line or SQL query.
+- Explains the agent's stated rationale.
+- Shows the target working directory.
+- Features **Approve**, **Reject**, or **Edit Command** options.
+
+---
+
+## 2. Shell Command Blocklists
+
+Certain commands pose catastrophic risks to developers' machines (e.g. wiping root, modifying global SSH keys, altering firewall rules). Caide enforces an immutable internal blocklist:
+
+- Recursive deletion commands targeting root or system directories (`rm -rf /`, `rm -rf ~`).
+- Fork bombs and memory exhaustion loops.
+- Modifications to sensitive platform credentials (`~/.ssh`, `~/.aws/credentials`, `/etc/shadow`).
+- Blind privilege escalation (`sudo`, `doas`) without explicit interactive terminal handoff.
+
+If the model attempts to invoke a blocked pattern, the turn runner rejects the call immediately and advises the model to use safer alternatives.
+
+---
+
+## 3. Version Checkpoints & 1-Click Rollback
+
+Before every turn begins and after every tool commit:
+
+1. Caide records a snapshot in its internal Git version tree.
+2. If the agent makes an unwanted edit, click **Restore Checkpoint** in the top navigation bar to immediately restore your project files and database state to the exact condition prior to that turn.

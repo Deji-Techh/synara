@@ -1,0 +1,513 @@
+@import "tailwindcss";
+@import "fumadocs-ui/css/neutral.css";
+@import "fumadocs-ui/css/preset.css";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* Light mode only — serene ethereal lake palette */
+:root {
+  --page-bg: #faf8f5;
+  --text-primary: #171412;
+  --text-secondary: #574f47;
+  --text-tertiary: #756c64;
+  --sidebar-section-color: #3d352e;
+  --block-elevated: #f1ece4;
+  --mock-surface: #e7e1d7;
+  --mock-row: color-mix(in oklab, var(--text-primary) 5%, transparent);
+  --mock-row-strong: color-mix(in oklab, var(--text-primary) 9%, transparent);
+  --divide: color-mix(in oklab, var(--text-primary) 10%, transparent);
+  --border-strong: color-mix(in oklab, var(--text-primary) 22%, transparent);
+  --accent-link: #d97706;
+  --accent-link-hover: #b45309;
+  --glow-a: color-mix(in oklab, #f59e0b 22%, transparent);
+  --glow-b: color-mix(in oklab, #d97706 16%, transparent);
+  --btn-primary-bg: #171412;
+  --btn-primary-fg: #faf8f5;
+  --btn-primary-hover: #26211d;
+  --surface-border: var(--divide);
+  --surface-muted: var(--text-secondary);
+  --chat-feed-bg: #f4ede3;
+  --chat-user-bubble: #e8ded1;
+  --chat-input-surface: #eae0d3;
+  --chat-file-card-bg: #f8f3eb;
+
+  --background: var(--page-bg);
+  --foreground: var(--text-primary);
+  --card: #ffffff;
+  --card-foreground: var(--text-primary);
+  --popover: #ffffff;
+  --popover-foreground: var(--text-primary);
+  --primary: var(--text-primary);
+  --primary-foreground: var(--page-bg);
+  --secondary: var(--mock-row);
+  --secondary-foreground: var(--text-primary);
+  --muted: var(--mock-row);
+  --muted-foreground: var(--text-secondary);
+  --accent: var(--mock-row);
+  --accent-foreground: var(--text-primary);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: var(--divide);
+  --input: var(--divide);
+  --ring: var(--border-strong);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+/* Fumadocs Theme Overrides */
+:root {
+  --color-fd-background: var(--page-bg);
+  --color-fd-foreground: var(--text-primary);
+  --color-fd-muted: var(--mock-row);
+  --color-fd-muted-foreground: var(--text-secondary);
+  --color-fd-popover: var(--popover);
+  --color-fd-popover-foreground: var(--text-primary);
+  --color-fd-card: var(--card);
+  --color-fd-card-foreground: var(--text-primary);
+  --color-fd-border: var(--divide);
+  --color-fd-primary: var(--text-primary);
+  --color-fd-primary-foreground: var(--page-bg);
+  --color-fd-secondary: var(--mock-row);
+  --color-fd-secondary-foreground: var(--text-primary);
+  --color-fd-accent: var(--mock-row);
+  --color-fd-accent-foreground: var(--text-primary);
+  --color-fd-ring: var(--border-strong);
+  --color-fd-overlay: color-mix(in oklab, #1f1914 45%, transparent);
+  --fd-layout-width: 90rem;
+  --fd-nav-height: 3.25rem;
+}
+
+@media (min-width: 48rem) {
+  #nd-docs-layout:has([data-sidebar-placeholder]) {
+    --fd-sidebar-width: 15rem;
+  }
+}
+
+@media (min-width: 80rem) {
+  #nd-docs-layout:has(#nd-toc) {
+    --fd-toc-width: 13.75rem;
+  }
+}
+
+#nd-docs-layout {
+  background: var(--page-bg);
+}
+
+#nd-sidebar,
+#nd-toc {
+  background: transparent;
+}
+
+#nd-sidebar-mobile {
+  background: var(--page-bg);
+}
+
+:is(#nd-sidebar, #nd-sidebar-mobile) :is(a, button) {
+  font-size: 0.8125rem;
+  border-radius: 0.625rem;
+}
+
+:is(#nd-sidebar, #nd-sidebar-mobile) a {
+  padding-block: 0.3125rem;
+}
+
+:is(#nd-sidebar, #nd-sidebar-mobile) a[data-active="true"] {
+  font-weight: 500;
+}
+
+:is(#nd-sidebar, #nd-sidebar-mobile) button[data-state] {
+  display: none;
+}
+
+:is(#nd-sidebar, #nd-sidebar-mobile) div[data-state]::before,
+:is(#nd-sidebar, #nd-sidebar-mobile) a[data-active="true"]::before {
+  display: none;
+}
+
+:is(#nd-sidebar, #nd-sidebar-mobile) div[data-state] a {
+  padding-inline-start: 0.5rem !important;
+}
+
+:is(#nd-sidebar, #nd-sidebar-mobile) p {
+  margin-top: 1.375rem;
+  margin-bottom: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--sidebar-section-color);
+}
+
+:is(#nd-sidebar, #nd-sidebar-mobile) p:first-child {
+  margin-top: 0.5rem;
+}
+
+#nd-toc svg,
+[data-toc-popover-content] svg {
+  display: none;
+}
+
+#nd-toc a,
+[data-toc-popover-content] a {
+  font-size: 0.78125rem;
+  padding-block: 0.25rem;
+  padding-inline-start: 0 !important;
+}
+
+#toc-title {
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+#nd-docs-layout article {
+  padding-top: 2.25rem;
+  padding-bottom: 3rem;
+  gap: 0.625rem;
+}
+
+#nd-docs-layout article > h1 {
+  font-size: 1.625rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+
+#nd-docs-layout article > h1 + p {
+  font-size: 0.9375rem;
+  margin-bottom: 0.875rem;
+}
+
+#nd-docs-layout .prose {
+  font-size: 0.875rem;
+  line-height: 1.7;
+}
+
+#nd-docs-layout article > .prose {
+  flex: 0 0 auto;
+}
+
+#nd-docs-layout .prose > :first-child {
+  margin-top: 0;
+}
+
+#nd-docs-layout .prose :is(h1, h2, h3, h4, h5, h6) {
+  letter-spacing: -0.02em;
+}
+
+#nd-docs-layout .prose h2 {
+  font-size: 1.25rem;
+  margin-top: 2.25rem;
+  margin-bottom: 0.75rem;
+}
+
+#nd-docs-layout .prose h3 {
+  font-size: 1.0625rem;
+  margin-top: 1.75rem;
+  margin-bottom: 0.5rem;
+}
+
+#nd-docs-layout .prose :is(p, ul, ol) {
+  margin-block: 0.75rem;
+}
+
+#nd-docs-layout .prose li {
+  margin-block: 0.1875rem;
+}
+
+#nd-docs-layout .prose li::marker {
+  color: var(--text-tertiary);
+}
+
+#nd-docs-layout .prose a:not([data-card], .not-prose a) {
+  font-weight: 500;
+  text-decoration-line: underline;
+  text-decoration-color: color-mix(in oklab, var(--text-primary) 30%, transparent);
+  text-underline-offset: 3px;
+  transition: text-decoration-color 150ms ease;
+}
+
+#nd-docs-layout .prose a:not([data-card], .not-prose a):hover {
+  text-decoration-color: currentColor;
+}
+
+#nd-docs-layout .prose :not(pre) > code {
+  background: var(--mock-row-strong);
+  border: none;
+  border-radius: 0.375rem;
+  padding: 0.125rem 0.375rem;
+  font-size: 0.85em;
+  font-family: var(--font-mono, monospace);
+}
+
+#nd-docs-layout figure.shiki {
+  border-radius: 0.75rem;
+  border-color: var(--divide);
+  box-shadow: 0 4px 16px -4px rgba(0, 0, 0, 0.06);
+  margin-block: 1.25rem;
+}
+
+#nd-docs-layout .prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-block: 1.5rem;
+  font-size: 0.8125rem;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  border: 1px solid var(--divide);
+}
+
+#nd-docs-layout .prose th {
+  background: var(--block-elevated);
+  padding: 0.625rem 0.875rem;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 1px solid var(--divide);
+}
+
+#nd-docs-layout .prose td {
+  padding: 0.625rem 0.875rem;
+  border-bottom: 1px solid var(--divide);
+}
+
+#nd-docs-layout .prose tr:last-child td {
+  border-bottom: none;
+}
+
+#nd-docs-layout .prose tr:nth-child(even) td {
+  background: color-mix(in oklab, var(--mock-row) 40%, transparent);
+}
+
+#nd-docs-layout .prose blockquote {
+  border-left: 3px solid var(--accent-link);
+  background: color-mix(in oklab, var(--accent-link) 6%, transparent);
+  border-radius: 0 0.625rem 0.625rem 0;
+  padding: 0.75rem 1rem;
+  margin-block: 1.25rem;
+  font-style: normal;
+}
+
+:is(#nd-sidebar, #nd-sidebar-mobile) a[data-active="true"] {
+  font-weight: 600;
+  color: var(--accent-link) !important;
+  background: color-mix(in oklab, var(--accent-link) 10%, transparent) !important;
+}
+
+:is(#nd-sidebar, #nd-sidebar-mobile) a:hover:not([data-active="true"]) {
+  background: var(--mock-row);
+}
+
+#nd-docs-layout .prose .docs-step > :first-child {
+  margin-top: 0;
+}
+
+#nd-docs-layout .prose .docs-step > :last-child {
+  margin-bottom: 0;
+}
+
+#nd-docs-layout .prose .docs-step > :is(h2, h3):first-child {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+#nd-docs-layout .docs-meta p {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-geist-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 5.5rem;
+}
+
+html,
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  overflow-x: clip;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html,
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+  }
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--accent-link) 30%, transparent);
+  color: inherit;
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-rise-in {
+  animation: rise-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes section-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(217, 119, 6, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(217, 119, 6, 0.08);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(217, 119, 6, 0);
+  }
+}
+
+.section-target-highlight {
+  animation: section-pulse 1.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  border-radius: 1rem;
+}
+
+/* Card hover lift & glow transitions */
+.card-hover-lift {
+  transition:
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.3s ease;
+}
+.card-hover-lift:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px -8px rgba(15, 23, 42, 0.12);
+  border-color: color-mix(in oklab, var(--accent-link) 35%, var(--divide));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-rise-in,
+  .section-target-highlight,
+  .card-hover-lift {
+    animation: none;
+    transform: none;
+  }
+}
+
+/*
+ * Showcase card backdrop with classical Greek temple colonnade.
+ * Framed inside each SplitShowcase, MultiProjectShowcase, and Hero card.
+ */
+.shot-card-bg {
+  background-image:
+    linear-gradient(
+      color-mix(in oklab, var(--block-elevated) 8%, transparent),
+      color-mix(in oklab, var(--block-elevated) 8%, transparent)
+    ),
+    url("/hero-bg.jpg");
+  background-size: cover;
+  background-position: center 35%;
+}
+
+/*
+ * Page backdrop for the serene lake image at the top of the hero.
+ * Positioned cleanly above the page background (z-0) and beneath page content (z-10).
+ */
+.page-backdrop {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  z-index: 0;
+  height: 680px;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.page-backdrop-fade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    transparent 28%,
+    color-mix(in oklab, var(--page-bg) 18%, transparent) 50%,
+    color-mix(in oklab, var(--page-bg) 65%, transparent) 75%,
+    var(--page-bg) 100%
+  );
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}

@@ -1,0 +1,45 @@
+---
+title: Provider Setup & BYOK
+description: Connect Anthropic, OpenAI, DeepSeek, Google Gemini, Groq, or custom endpoints.
+---
+
+# Provider Setup & BYOK
+
+Caide operates under a strict **Bring Your Own Key (BYOK)** model. You pay nothing to Caide for model usage; all API interactions communicate directly with your chosen AI provider using your own credentials.
+
+---
+
+## Supported Providers & Recommended Models
+
+| Provider          | Recommended Models                             | Strengths                                                                 |
+| ----------------- | ---------------------------------------------- | ------------------------------------------------------------------------- |
+| **Anthropic**     | `claude-3-7-sonnet`, `claude-3-5-sonnet`       | Best-in-class multi-file refactoring, hybrid reasoning, extended thinking |
+| **OpenAI**        | `gpt-4o`, `o3-mini`, `o1`                      | Complex JSON schema validation, rapid multi-tool calling                  |
+| **DeepSeek**      | `deepseek-reasoner` (R1), `deepseek-chat` (V3) | Extraordinary algorithmic logic, math performance, budget efficiency      |
+| **Google Gemini** | `gemini-2.5-pro`, `gemini-2.5-flash`           | 1M+ token context windows, lightning multimodal image/audio reasoning     |
+| **Groq**          | `llama-3.3-70b-versatile`                      | Ultra-fast inference on LPUs (500+ tokens/sec) for instant small edits    |
+| **Ollama**        | Any local GGUF model                           | 100% private, offline inference with zero internet connectivity           |
+
+---
+
+## Credential Security & Encryption
+
+When you paste an API key into Caide:
+
+1. The key is never logged to disk in plaintext.
+2. The key is encrypted via the host operating system's native cryptographic vault:
+   - **macOS**: Apple Keychain Services (`kSecClassGenericPassword`)
+   - **Linux**: libsecret / Secret Service API
+   - **Windows**: DPAPI (Data Protection API)
+3. The key is decrypted only in memory when preparing an outbound HTTPS request directly to the provider endpoint.
+
+---
+
+## Custom OpenAI-Compatible Endpoints
+
+You can connect any custom self-hosted inference server (such as vLLM, LM Studio, LocalAI, or llama.cpp server):
+
+1. Navigate to **Settings** → **Providers** → **Custom Endpoint**.
+2. Set the **Base URL** (e.g. `http://localhost:8000/v1` or `http://192.168.1.50:1234/v1`).
+3. Set the model identifier and optional authorization header.
+4. Caide routes chat completions and tool calls through the standard OpenAI API specification.

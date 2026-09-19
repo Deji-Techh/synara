@@ -1,0 +1,43 @@
+---
+title: Product Overview
+description: Deep architectural breakdown of Caide's local-first engine and workspace model.
+---
+
+# Product Overview
+
+Caide is a native developer studio that converges autonomous AI agent capabilities with strict software engineering discipline.
+
+Unlike raw chat interfaces that guess code changes in a vacuum, Caide executes inside a sandboxed local environment equipped with dedicated dev-servers, real-time filesystem watchers, language server protocol (LSP) diagnostics, and interactive device simulators.
+
+---
+
+## The Three Core Pillars
+
+### 1. The Autonomous Turn Loop
+
+Every user prompt initiates a structured "turn" inside Caide:
+
+- **Context Assembly**: Relevant files, symbols, Git status, and active project rules are assembled into the model context.
+- **Architecture Alignment**: For complex multi-file features, Caide drafts an **App Blueprint** detailing screens, state models, and route structures before touching files.
+- **Execution & Consent Gates**: The agent invokes tools (file edits, shell commands, database migrations). High-risk operations pause execution until you grant explicit consent.
+- **Live Verification**: As files are modified, background watchers trigger hot-reloading in the Right Dock, and diagnostics verify that no syntax or type errors were introduced.
+
+### 2. Immutable Frameworks
+
+When initializing a project, you choose one of four immutable framework targets:
+
+- **React Native (Expo)**: Spins up the Metro bundler on port 8081, exposes an interactive iPhone/Android frame in DeviceLab, and generates a mobile QR code for testing on physical devices.
+- **Flutter**: Integrates Dart analysis, `flutter run` hot reloading, and native mobile build pipelines.
+- **Website (Next.js / Vite)**: Boots live SSR/SPA preview servers with proxy tunnels and 1-click Vercel deployments.
+- **Blank**: An unconstrained environment ideal for Node.js, Bun, Python, Go microservices, or custom architectures.
+
+Locking the framework prevents cross-stack hallucinations and allows Caide's prompts and verifiers to operate with specialized precision.
+
+### 3. Bring Your Own Keys (BYOK) & Local First
+
+Caide has no paid subscriptions, no monthly tokens quota, and no middleman proxy:
+
+- **Direct Provider Connections**: Prompts stream directly from your machine to Anthropic, OpenAI, DeepSeek, Google Gemini, or Groq.
+- **100% Offline with Ollama**: Run open-weights models (such as Llama 3.3 or DeepSeek R1 distillations) locally on your machine with zero external network connectivity.
+- **Encrypted Local Storage**: API keys are encrypted using native OS safeStorage (Keychain on macOS, Secret Service on Linux, DPAPI on Windows).
+- **SQLite Persistence**: Thread histories, versions, and goal trees are saved in a local SQLite database via Drizzle ORM.
