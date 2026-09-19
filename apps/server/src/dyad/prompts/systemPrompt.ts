@@ -622,14 +622,9 @@ export const constructSystemPrompt = ({
   // Framework isolation: an explicit AI_RULES.md always wins; otherwise the
   // framework's own stack rules apply so donor React-isms never leak across.
   const resolvedRules =
-    aiRules ??
-    defaultAiRulesForFramework(caideFramework, DEFAULT_AI_RULES) ??
-    DEFAULT_AI_RULES;
+    aiRules ?? defaultAiRulesForFramework(caideFramework, DEFAULT_AI_RULES) ?? DEFAULT_AI_RULES;
 
-  systemPrompt = systemPrompt.replace(
-    "[[AI_RULES]]",
-    resolvedRules + web3Suffix + appSkillSuffix,
-  );
+  systemPrompt = systemPrompt.replace("[[AI_RULES]]", resolvedRules + web3Suffix + appSkillSuffix);
 
   if (themePrompt) {
     systemPrompt += "\n\n" + themePrompt;
@@ -711,15 +706,11 @@ export const getSystemPromptForChatMode = ({
   // Vite-only paragraph in every build-mode prompt. Supabase-connected apps
   // also skip the nudge — Edge Functions cover the same use case and offering
   // both layers confuses the model.
-  const shouldAppendNitroNudge =
-    frameworkType === "vite" && !hasSupabaseProject;
+  const shouldAppendNitroNudge = frameworkType === "vite" && !hasSupabaseProject;
   const target: AppTarget = appTarget ?? "mobile";
   const uiSkillPack = buildUiSkillPack(target, caideFramework);
   const buildPrompt =
-    BUILD_SYSTEM_PROMPT_BASE.replace(
-      "[[PLATFORM_UI_SKILL_PACK]]",
-      () => uiSkillPack,
-    )
+    BUILD_SYSTEM_PROMPT_BASE.replace("[[PLATFORM_UI_SKILL_PACK]]", () => uiSkillPack)
       // Keep the platform contract near the top, right after the role block,
       // so it is never diluted by the rest of the prompt.
       .replace("[[PLATFORM_CONTRACT]]", () => buildPlatformPrompt(target, caideFramework)) +
@@ -751,8 +742,9 @@ export const getSystemPromptForChatMode = ({
     (enableTurboEditsV2 ? `\n\n${TURBO_EDITS_V2_SYSTEM_PROMPT}` : "");
   // Blank projects get orientation only — never UI quality contracts (F0).
   // Other frameworks get the shared core plus their stack appendix (F1).
-  const withQuality =
-    buildPrompt.replace("[[DESIGN_QUALITY_CONTRACT]]", () => buildDesignQualityContract(caideFramework));
+  const withQuality = buildPrompt.replace("[[DESIGN_QUALITY_CONTRACT]]", () =>
+    buildDesignQualityContract(caideFramework),
+  );
   return withQuality;
 };
 
@@ -762,9 +754,7 @@ export const readAiRules = async (dyadAppPath: string) => {
     const aiRules = await fs.promises.readFile(aiRulesPath, "utf8");
     return aiRules;
   } catch (error) {
-    console.info(
-      `Error reading AI_RULES.md, fallback to default AI rules: ${error}`,
-    );
+    console.info(`Error reading AI_RULES.md, fallback to default AI rules: ${error}`);
     return DEFAULT_AI_RULES;
   }
 };

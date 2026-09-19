@@ -17,10 +17,16 @@ describe("first run", () => {
   it("offers the move prompt only for transient macOS installs", () => {
     const base = { platform: "darwin" as const, isDevelopment: false };
     expect(
-      shouldOfferMoveToApplications({ ...base, execPath: "/Volumes/CAIDE/CAIDE.app/Contents/MacOS/CAIDE" }),
+      shouldOfferMoveToApplications({
+        ...base,
+        execPath: "/Volumes/CAIDE/CAIDE.app/Contents/MacOS/CAIDE",
+      }),
     ).toBe(true);
     expect(
-      shouldOfferMoveToApplications({ ...base, execPath: "/Applications/CAIDE.app/Contents/MacOS/CAIDE" }),
+      shouldOfferMoveToApplications({
+        ...base,
+        execPath: "/Applications/CAIDE.app/Contents/MacOS/CAIDE",
+      }),
     ).toBe(false);
     expect(
       shouldOfferMoveToApplications({

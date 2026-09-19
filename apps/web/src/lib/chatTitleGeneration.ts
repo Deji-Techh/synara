@@ -84,8 +84,7 @@ export function usePendingChatThreadTitle(thread: {
   readonly parentThreadId?: ThreadId | null;
   readonly latestUserMessageAt?: string | null;
 }): { pending: boolean; revealed: boolean } {
-  const isStorePending =
-    useChatTitleStore((store) => store.pendingThreadIds[thread.id]) === true;
+  const isStorePending = useChatTitleStore((store) => store.pendingThreadIds[thread.id]) === true;
   const revealedAt = useChatTitleStore((store) => store.revealedAtByThreadId[thread.id]);
   const pending =
     isStorePending ||
@@ -116,7 +115,10 @@ export function resolveChatNumberForThread(
 
 // Map a generation result onto the final title: a usable model title wins,
 // anything generic/empty degrades to the deterministic `Chat N` fallback.
-export function resolveFinalChatTitle(generatedTitle: string | null | undefined, chatNumber: number): string {
+export function resolveFinalChatTitle(
+  generatedTitle: string | null | undefined,
+  chatNumber: number,
+): string {
   const sanitized =
     generatedTitle && generatedTitle.trim().length > 0
       ? sanitizeGeneratedThreadTitle(generatedTitle)

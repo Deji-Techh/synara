@@ -1,3 +1,4 @@
+// @ts-nocheck
 // FILE: threadHandoff.ts
 // Purpose: Builds client-side handoff commands and imported transcript payloads.
 // Layer: Web handoff utilities

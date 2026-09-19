@@ -25,16 +25,43 @@ describe("dyad tool catalog (m2)", () => {
     expect(TOOL_CATALOG.length).toBeGreaterThanOrEqual(48);
     const names = new Set(TOOL_CATALOG.map((t) => t.name));
     for (const expected of [
-      "write_file", "search_replace", "multi_replace", "copy_file",
-      "delete_file", "rename_file", "add_dependency", "execute_sql",
-      "read_file", "list_files", "grep", "code_search", "explore_code",
-      "get_supabase_project_info", "set_chat_summary", "add_integration",
-      "read_logs", "web_search", "web_fetch", "generate_image",
-      "update_todos", "run_type_checks", "run_command", "git_status",
-      "git_commit", "run_tests", "capture_screenshot", "read_guide",
-      "planning_questionnaire", "write_plan", "exit_plan",
-      "write_app_blueprint", "search_mcp_tools", "get_mcp_tool_schema",
-      "execute_sandbox_script", "spawn_subagent", "execute_fork_skill",
+      "write_file",
+      "search_replace",
+      "multi_replace",
+      "copy_file",
+      "delete_file",
+      "rename_file",
+      "add_dependency",
+      "execute_sql",
+      "read_file",
+      "list_files",
+      "grep",
+      "code_search",
+      "explore_code",
+      "get_supabase_project_info",
+      "set_chat_summary",
+      "add_integration",
+      "read_logs",
+      "web_search",
+      "web_fetch",
+      "generate_image",
+      "update_todos",
+      "run_type_checks",
+      "run_command",
+      "git_status",
+      "git_commit",
+      "run_tests",
+      "capture_screenshot",
+      "read_guide",
+      "planning_questionnaire",
+      "write_plan",
+      "exit_plan",
+      "write_app_blueprint",
+      "search_mcp_tools",
+      "get_mcp_tool_schema",
+      "execute_sandbox_script",
+      "spawn_subagent",
+      "execute_fork_skill",
       "update_goal_state",
     ]) {
       expect(names, expected).toContain(expected);
@@ -52,7 +79,9 @@ describe("dyad tool catalog (m2)", () => {
   });
 
   it("carries zero Pro/engine gating", () => {
-    expect(JSON.stringify(TOOL_CATALOG)).not.toMatch(/isDyadPro|usesEngineEndpoint|gateway|subscription|Pro-only/i);
+    expect(JSON.stringify(TOOL_CATALOG)).not.toMatch(
+      /isDyadPro|usesEngineEndpoint|gateway|subscription|Pro-only/i,
+    );
     // Formerly Pro-gated tools are cataloged as available (backend pending).
     for (const name of ["web_search", "web_fetch", "generate_image", "code_search"]) {
       expect(shouldIncludeTool(name)).toBe(true);

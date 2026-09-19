@@ -1,8 +1,26 @@
 ---
-title: Blank Managed
-description: Custom, unconstrained project scaffolding.
+title: Blank / Custom Stack
+description: Unconstrained environment for backend services, CLI utilities, and custom polyglot stacks.
 ---
 
-# Blank Managed
+# Blank / Custom Stack
 
-Blank projects are unmanaged directories where you can instruct Caide to build custom backends, CLI tools, scripts, or custom architectures from scratch.
+The Blank framework target provides an open, unconstrained workspace directory for projects that do not fit into standard mobile or web frontend templates.
+
+---
+
+## When to Use Blank
+
+- **Backend API Services**: Express, Fastify, Hono, NestJS, Go (Gin/Fiber), Python (FastAPI/Flask), or Rust (Axum).
+- **CLI Tools & Utilities**: Command-line developer utilities, script automations, or terminal apps.
+- **Database & Data Pipelines**: Standalone SQL migrations, ETL scripts, or web scrapers.
+- **Polyglot Monorepos**: Multi-package workspaces combining microservices in different languages.
+
+---
+
+## Agent Behavior in Blank Projects
+
+In Blank projects, Caide does not enforce predefined frontend preview stages or bundle configurations:
+
+- **Autonomous Architecture Proposal**: The agent examines your prompt and proposes an optimal directory structure, package configuration, and runtime environment.
+- **Flexible Dev Server Management**: You can instruct the agent to run any local process (e.g. `bun run start`, `go run main.go`, `python -m uvicorn main:app`) and route output to the integrated terminal and console.

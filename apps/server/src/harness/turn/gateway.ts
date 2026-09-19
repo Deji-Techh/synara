@@ -530,9 +530,8 @@ export class TurnGateway {
     // pass through untouched. Best-effort — never fail a turn on it.
     let prompt = request.prompt;
     try {
-      const { promptContentMap, replacePromptReference } = await import(
-        "../../dyad/knowledge/promptLibrary.ts"
-      );
+      const { promptContentMap, replacePromptReference } =
+        await import("../../dyad/knowledge/promptLibrary.ts");
       prompt = replacePromptReference(prompt, await promptContentMap(request.appPath));
     } catch {
       // library unreadable; send the raw prompt

@@ -1,5 +1,7 @@
-import type { ComponentType } from "react";
-import { Camera, CheckCircle2, Layers, Sparkles, Monitor, AppWindow } from "lucide-react";
+"use client";
+
+import { useState } from "react";
+import { Camera, CheckCircle2, Layers, AppWindow } from "lucide-react";
 
 export interface ScreenshotPlaceholderProps {
   badge: string;
@@ -24,6 +26,11 @@ export function ScreenshotPlaceholder({
   className = "",
   windowTitle,
 }: ScreenshotPlaceholderProps) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const webPath = targetPath.startsWith("/public/")
+    ? targetPath.replace("/public/", "/")
+    : targetPath;
+
   const displayWindowTitle =
     windowTitle || `caide — ${badge.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
 
@@ -53,84 +60,100 @@ export function ScreenshotPlaceholder({
         </div>
       </div>
 
-      {/* Main Studio Canvas Area with Realistic IDE Wireframe Silhouette */}
-      <div className="relative flex flex-1 items-center justify-center overflow-hidden p-3 sm:p-6 bg-[#f8fafc]/50">
-        {/* Subtle Background Architectural IDE Silhouette */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 grid grid-cols-12 opacity-35 select-none"
-        >
-          {/* Left Sidebar Pane (Cols 1-3) */}
-          <div className="col-span-3 flex flex-col gap-2.5 border-r border-black/[0.06] bg-black/[0.015] p-3">
-            <div className="h-3 w-16 rounded bg-slate-300" />
-            <div className="mt-2 space-y-2">
-              <div className="h-5 w-full rounded-md bg-slate-200/80" />
-              <div className="h-5 w-4/5 rounded-md bg-slate-200/50" />
-              <div className="h-5 w-5/6 rounded-md bg-slate-200/50" />
-              <div className="h-5 w-3/4 rounded-md bg-slate-200/50" />
+      {/* Main Studio Canvas Area */}
+      <div className="relative flex flex-1 items-center justify-center overflow-hidden bg-[#f8fafc]/50">
+        {!imageFailed ? (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={webPath}
+              alt={title}
+              onError={() => setImageFailed(true)}
+              className="h-full w-full object-cover object-top"
+            />
+          </>
+        ) : null}
+
+        {imageFailed && (
+          <div className="relative flex size-full items-center justify-center p-3 sm:p-6">
+            {/* Subtle Background Architectural IDE Silhouette */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 grid grid-cols-12 opacity-35 select-none"
+            >
+              {/* Left Sidebar Pane (Cols 1-3) */}
+              <div className="col-span-3 flex flex-col gap-2.5 border-r border-black/[0.06] bg-black/[0.015] p-3">
+                <div className="h-3 w-16 rounded bg-slate-300" />
+                <div className="mt-2 space-y-2">
+                  <div className="h-5 w-full rounded-md bg-slate-200/80" />
+                  <div className="h-5 w-4/5 rounded-md bg-slate-200/50" />
+                  <div className="h-5 w-5/6 rounded-md bg-slate-200/50" />
+                  <div className="h-5 w-3/4 rounded-md bg-slate-200/50" />
+                </div>
+              </div>
+
+              {/* Center Chat / Turn Stream (Cols 4-8) */}
+              <div className="col-span-6 flex flex-col justify-between p-3">
+                <div className="space-y-3">
+                  <div className="ml-auto h-7 w-3/5 rounded-xl bg-sky-500/15" />
+                  <div className="h-14 w-4/5 rounded-xl border border-black/5 bg-slate-100" />
+                </div>
+                <div className="h-8 w-full rounded-lg border border-black/5 bg-slate-100/60" />
+              </div>
+
+              {/* Right Live Preview Stage (Cols 9-12) */}
+              <div className="col-span-3 flex items-center justify-center border-l border-black/[0.06] bg-black/[0.015] p-2">
+                <div className="h-4/5 w-4/5 rounded-xl border border-black/10 bg-white/70" />
+              </div>
+            </div>
+
+            {/* Floating High-Contrast White Information Card */}
+            <div className="relative z-10 mx-auto flex w-full max-w-[92%] flex-col items-center rounded-xl border border-slate-200/90 bg-white/98 p-4 text-center shadow-[0_15px_35px_-5px_rgba(15,23,42,0.12)] backdrop-blur-md transition-transform duration-300 group-hover:scale-[1.01] sm:max-w-md sm:p-6">
+              {/* Cerulean Blue Badge Pill */}
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-sky-500/25 bg-sky-500/10 px-3 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-sky-700 sm:text-[11px]">
+                <Camera className="size-3" />
+                <span>{badge}</span>
+              </div>
+
+              {/* Title */}
+              <h4 className="mt-2.5 text-[15px] font-semibold tracking-tight text-slate-900 sm:text-[17px]">
+                {title}
+              </h4>
+
+              {/* Description */}
+              <p className="mt-1.5 text-[12px] leading-relaxed text-slate-600 sm:text-[13px]">
+                {description}
+              </p>
+
+              {/* Required Visual Elements Pills */}
+              {checklist.length > 0 && (
+                <div className="mt-3.5 flex flex-wrap items-center justify-center gap-1.5">
+                  {checklist.map((item, idx) => (
+                    <span
+                      key={idx}
+                      className="inline-flex items-center gap-1 rounded-md border border-slate-200/80 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-700"
+                    >
+                      <CheckCircle2 className="size-3 text-sky-600" />
+                      <span>{item}</span>
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Footer Target File Spec */}
+              <div className="mt-4 flex w-full flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3 text-[10.5px] font-mono text-slate-500">
+                <div className="flex items-center gap-1 truncate">
+                  <Layers className="size-3 text-slate-400" />
+                  <span className="truncate">{targetPath.replace("/public/", "")}</span>
+                </div>
+                <div className="inline-flex items-center gap-1 font-sans text-[11px] font-medium text-sky-600">
+                  <span className="size-1.5 rounded-full bg-sky-500" />
+                  <span>Retina Capture Ready</span>
+                </div>
+              </div>
             </div>
           </div>
-
-          {/* Center Chat / Turn Stream (Cols 4-8) */}
-          <div className="col-span-6 flex flex-col justify-between p-3">
-            <div className="space-y-3">
-              <div className="ml-auto h-7 w-3/5 rounded-xl bg-sky-500/15" />
-              <div className="h-14 w-4/5 rounded-xl border border-black/5 bg-slate-100" />
-            </div>
-            <div className="h-8 w-full rounded-lg border border-black/5 bg-slate-100/60" />
-          </div>
-
-          {/* Right Live Preview Stage (Cols 9-12) */}
-          <div className="col-span-3 flex items-center justify-center border-l border-black/[0.06] bg-black/[0.015] p-2">
-            <div className="h-4/5 w-4/5 rounded-xl border border-black/10 bg-white/70" />
-          </div>
-        </div>
-
-        {/* Floating High-Contrast White Information Card */}
-        <div className="relative z-10 mx-auto flex w-full max-w-[92%] flex-col items-center rounded-xl border border-slate-200/90 bg-white/98 p-4 text-center shadow-[0_15px_35px_-5px_rgba(15,23,42,0.12)] backdrop-blur-md transition-transform duration-300 group-hover:scale-[1.01] sm:max-w-md sm:p-6">
-          {/* Cerulean Blue Badge Pill */}
-          <div className="inline-flex items-center gap-1.5 rounded-full border border-sky-500/25 bg-sky-500/10 px-3 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-sky-700 sm:text-[11px]">
-            <Camera className="size-3" />
-            <span>{badge}</span>
-          </div>
-
-          {/* Title */}
-          <h4 className="mt-2.5 text-[15px] font-semibold tracking-tight text-slate-900 sm:text-[17px]">
-            {title}
-          </h4>
-
-          {/* Description */}
-          <p className="mt-1.5 text-[12px] leading-relaxed text-slate-600 sm:text-[13px]">
-            {description}
-          </p>
-
-          {/* Required Visual Elements Pills */}
-          {checklist.length > 0 && (
-            <div className="mt-3.5 flex flex-wrap items-center justify-center gap-1.5">
-              {checklist.map((item, idx) => (
-                <span
-                  key={idx}
-                  className="inline-flex items-center gap-1 rounded-md border border-slate-200/80 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-700"
-                >
-                  <CheckCircle2 className="size-3 text-sky-600" />
-                  <span>{item}</span>
-                </span>
-              ))}
-            </div>
-          )}
-
-          {/* Footer Target File Spec */}
-          <div className="mt-4 flex w-full flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3 text-[10.5px] font-mono text-slate-500">
-            <div className="flex items-center gap-1 truncate">
-              <Layers className="size-3 text-slate-400" />
-              <span className="truncate">{targetPath.replace("/public/", "")}</span>
-            </div>
-            <div className="inline-flex items-center gap-1 font-sans text-[11px] font-medium text-sky-600">
-              <Sparkles className="size-3" />
-              <span>Retina Capture Ready</span>
-            </div>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );

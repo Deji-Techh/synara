@@ -73,8 +73,14 @@ describe("review barrier", () => {
   });
 
   it("detects UI touches and tracks evidence-miss streaks (item 1)", () => {
-    expect(diffTouchesUi("diff --git a/src/screens/Home.tsx b/src/screens/Home.tsx\n+++ b/src/screens/Home.tsx")).toBe(true);
-    expect(diffTouchesUi("diff --git a/src/db/schema.ts b/src/db/schema.ts\n+++ b/src/db/schema.ts")).toBe(false);
+    expect(
+      diffTouchesUi(
+        "diff --git a/src/screens/Home.tsx b/src/screens/Home.tsx\n+++ b/src/screens/Home.tsx",
+      ),
+    ).toBe(true);
+    expect(
+      diffTouchesUi("diff --git a/src/db/schema.ts b/src/db/schema.ts\n+++ b/src/db/schema.ts"),
+    ).toBe(false);
     expect(diffTouchesUi("")).toBe(false);
     const sid = `s-ev-${Date.now()}`;
     expect(getEvidenceMissStreak(sid)).toBe(0);

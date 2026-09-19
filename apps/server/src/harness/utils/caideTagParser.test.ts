@@ -22,11 +22,14 @@ describe("function-tag tool call recovery", () => {
   });
 
   it("handles quoted and attribute forms", () => {
-    expect(parseFunctionTagCalls('<function="read_file"><parameter="path">a.ts</parameter></function>')[0].name).toBe(
-      "read_file",
-    );
     expect(
-      parseFunctionTagCalls('<function name="grep"><parameter=pattern>x</parameter></function>')[0].args,
+      parseFunctionTagCalls(
+        '<function="read_file"><parameter="path">a.ts</parameter></function>',
+      )[0].name,
+    ).toBe("read_file");
+    expect(
+      parseFunctionTagCalls('<function name="grep"><parameter=pattern>x</parameter></function>')[0]
+        .args,
     ).toEqual({ pattern: "x" });
   });
 
@@ -39,7 +42,9 @@ describe("function-tag tool call recovery", () => {
 
   it("ignores malformed blocks", () => {
     expect(parseFunctionTagCalls("no tags here")).toEqual([]);
-    expect(parseFunctionTagCalls("<function=write_file><parameter=path>a.ts</parameter>")).toEqual([]);
+    expect(parseFunctionTagCalls("<function=write_file><parameter=path>a.ts</parameter>")).toEqual(
+      [],
+    );
     expect(parseFunctionTagCalls("<function=> <parameter=x>y</parameter></function>")).toEqual([]);
   });
 
@@ -51,7 +56,9 @@ describe("function-tag tool call recovery", () => {
   });
 
   it("dyad-write tags still parse for write_file mapping", () => {
-    const tags = getCaideWriteTags('<dyad-write path="src/A.tsx" description="d">hello</dyad-write>');
+    const tags = getCaideWriteTags(
+      '<dyad-write path="src/A.tsx" description="d">hello</dyad-write>',
+    );
     expect(tags).toEqual([{ path: "src/A.tsx", content: "hello", description: "d" }]);
   });
 });

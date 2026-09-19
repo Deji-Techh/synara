@@ -28,13 +28,22 @@ describe("databaseSettingsStore", () => {
     );
     expect(
       validateConnection({ id: "b", name: "PROD", databaseUrl: "postgres://u@h/db" }, [
-        { id: "a", name: "prod", provider: "supabase", databaseUrl: "postgres://u@h/db", enabled: true, createdAt: 0 },
+        {
+          id: "a",
+          name: "prod",
+          provider: "supabase",
+          databaseUrl: "postgres://u@h/db",
+          enabled: true,
+          createdAt: 0,
+        },
       ]),
     ).toContain('Another connection is already named "PROD".');
     expect(validateConnection({ id: "a", name: "x", databaseUrl: "mysql://h" }, [])).toContain(
       "DATABASE_URL must be a postgres:// connection string.",
     );
-    expect(validateNetwork({ id: "a", name: "", chainKind: "evm", chainId: "", rpcUrl: "x" }, [])).toEqual([
+    expect(
+      validateNetwork({ id: "a", name: "", chainKind: "evm", chainId: "", rpcUrl: "x" }, []),
+    ).toEqual([
       "Name is required.",
       "A valid http(s) RPC URL is required.",
       "Chain ID is required (e.g. 1, 137, solana-mainnet).",
@@ -44,7 +53,12 @@ describe("databaseSettingsStore", () => {
   it("validates project scope and matches workspaces slash-insensitively", () => {
     expect(
       validateConnection(
-        { id: "a", name: "x", databaseUrl: "postgres://u@h/db", scope: { type: "project", workspaceRoot: " " } },
+        {
+          id: "a",
+          name: "x",
+          databaseUrl: "postgres://u@h/db",
+          scope: { type: "project", workspaceRoot: " " },
+        },
         [],
       ),
     ).toContain("Project scope needs a workspace root.");
@@ -60,6 +74,8 @@ describe("databaseSettingsStore", () => {
     };
     expect(connectionMatchesWorkspace(bound, "/work/app")).toBe(true);
     expect(connectionMatchesWorkspace(bound, "/work/other")).toBe(false);
-    expect(connectionMatchesWorkspace({ ...bound, scope: { type: "global" as const } }, "/work/app")).toBe(false);
+    expect(
+      connectionMatchesWorkspace({ ...bound, scope: { type: "global" as const } }, "/work/app"),
+    ).toBe(false);
   });
 });

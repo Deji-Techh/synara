@@ -40,9 +40,7 @@ export async function runMigrations(): Promise<void> {
   }
 
   // Find already-applied migrations
-  const applied = await pool.query(
-    "SELECT filename FROM _schema_migrations ORDER BY id",
-  );
+  const applied = await pool.query("SELECT filename FROM _schema_migrations ORDER BY id");
   const appliedSet = new Set(applied.rows.map((r) => r.filename as string));
 
   let count = 0;
@@ -54,10 +52,7 @@ export async function runMigrations(): Promise<void> {
     try {
       await client.query("BEGIN");
       await client.query(sql);
-      await client.query(
-        "INSERT INTO _schema_migrations (filename) VALUES ($1)",
-        [file],
-      );
+      await client.query("INSERT INTO _schema_migrations (filename) VALUES ($1)", [file]);
       await client.query("COMMIT");
       console.log(`✓ Applied migration: ${file}`);
       count++;

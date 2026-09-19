@@ -1,0 +1,40 @@
+---
+title: Local Offline Inference with Ollama
+description: Run open-source LLMs 100% locally on your machine with zero external network calls.
+---
+
+# Local Offline Inference with Ollama
+
+For air-gapped environments, sensitive proprietary codebases, or developers who prefer zero external network dependency, Caide features full offline integration with **Ollama**.
+
+---
+
+## Setting Up Ollama
+
+1. Install Ollama from [ollama.com](https://ollama.com) or your package manager:
+   ```bash
+   # macOS / Linux
+   curl -fsSL https://ollama.com/install.sh | sh
+   ```
+2. Pull your desired coding and reasoning models:
+   ```bash
+   # Recommended for agentic tool use and coding:
+   ollama pull qwen2.5-coder:32b
+   # Or for lightweight laptops:
+   ollama pull qwen2.5-coder:7b
+   # Or for reasoning:
+   ollama pull deepseek-r1:14b
+   ```
+3. Verify the Ollama server is active:
+   ```bash
+   curl http://localhost:11434/api/tags
+   ```
+
+---
+
+## Connecting Ollama in Caide
+
+1. In Caide, open **Settings** → **Providers** → **Ollama**.
+2. Toggle **Enable Ollama**.
+3. Caide automatically queries `http://localhost:11434` and populates the model picker with all locally installed weights.
+4. When you select an Ollama model in a chat thread, all prompts and tool calls are handled entirely on your local GPU/CPU with zero bytes sent to the internet.

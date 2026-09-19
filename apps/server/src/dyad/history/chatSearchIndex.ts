@@ -101,7 +101,12 @@ export function indexSessionLines(sessionId: string): number {
 
 function ftsQuery(keywords: string[]): string {
   const terms = keywords
-    .map((k) => k.toLowerCase().replace(/[^a-z0-9]+/g, "").trim())
+    .map((k) =>
+      k
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "")
+        .trim(),
+    )
     .filter((k) => k.length > 1)
     .slice(0, 10);
   if (terms.length === 0) return "";

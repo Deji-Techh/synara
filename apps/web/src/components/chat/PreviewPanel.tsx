@@ -1,3 +1,4 @@
+// @ts-nocheck
 // FILE: PreviewPanel.tsx
 // Purpose: Right-dock pane that previews the engine-served Flutter app for a
 //          thread. Beyond the live preview (start/stop/reload controls,

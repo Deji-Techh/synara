@@ -27,8 +27,11 @@ export interface PlanRecord {
 
 export function slugifyPlanTitle(title: string): string {
   return (
-    title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) ||
-    "plan"
+    title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 60) || "plan"
   );
 }
 
@@ -50,7 +53,14 @@ function frontmatter(record: PlanRecord): string {
 }
 
 /** Parse `---` frontmatter; returns null when missing/invalid (donor validatePlanId parity: id required). */
-export function parsePlanFile(content: string): { id: string; title: string; status: PlanStatus; createdAt: number; acceptedAt?: number; body: string } | null {
+export function parsePlanFile(content: string): {
+  id: string;
+  title: string;
+  status: PlanStatus;
+  createdAt: number;
+  acceptedAt?: number;
+  body: string;
+} | null {
   const match = /^---\n([\s\S]*?)\n---\n?([\s\S]*)$/.exec(content);
   if (!match) return null;
   const fields: Record<string, string> = {};
@@ -66,7 +76,8 @@ export function parsePlanFile(content: string): { id: string; title: string; sta
     return null;
   }
   if (typeof id !== "string" || id.length === 0 || id.length > 128) return null;
-  const status = fields.status === "accepted" || fields.status === "superseded" ? fields.status : "draft";
+  const status =
+    fields.status === "accepted" || fields.status === "superseded" ? fields.status : "draft";
   let title = "Untitled plan";
   try {
     const parsed = JSON.parse(fields.title ?? "");
@@ -79,7 +90,8 @@ export function parsePlanFile(content: string): { id: string; title: string; sta
     title,
     status,
     createdAt: Number(fields.createdAt) || 0,
-    acceptedAt: fields.acceptedAt !== undefined ? Number(fields.acceptedAt) || undefined : undefined,
+    acceptedAt:
+      fields.acceptedAt !== undefined ? Number(fields.acceptedAt) || undefined : undefined,
     body: match[2],
   };
 }
@@ -168,7 +180,10 @@ export function getLastPresentedPlan(sessionId: string): PlanRecord | undefined 
  * is the caller's job (await markPlanFileAccepted) so tool results are
  * deterministic.
  */
-export function recordPlanAccepted(sessionId: string, acceptedAt = Date.now()): PlanRecord | undefined {
+export function recordPlanAccepted(
+  sessionId: string,
+  acceptedAt = Date.now(),
+): PlanRecord | undefined {
   const presented = lastPresented.get(sessionId);
   if (!presented) return undefined;
   const record: PlanRecord = { ...presented, status: "accepted", acceptedAt };

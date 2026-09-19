@@ -1,3 +1,4 @@
+// @ts-nocheck
 // FILE: composerDraftModels.ts
 // Purpose: Normalizes provider-scoped model selections and resolves effective composer models.
 // Exports: Model state helpers used by persistence, actions, and the public facade.

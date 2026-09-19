@@ -7,9 +7,7 @@ import {
 } from "@caide/contracts";
 import { deepMerge, type DeepPartial } from "./Struct";
 
-type ModelSelectionPatchInput = NonNullable<
-  ServerSettingsPatch["textGenerationModelSelection"]
->;
+type ModelSelectionPatchInput = NonNullable<ServerSettingsPatch["textGenerationModelSelection"]>;
 
 function shouldReplaceModelSelection(patch: ModelSelectionPatchInput | undefined): boolean {
   return Boolean(patch && (patch.provider !== undefined || patch.model !== undefined));

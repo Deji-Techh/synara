@@ -42,7 +42,10 @@ function handler(req: http.IncomingMessage, res: http.ServerResponse): void {
   if (url.pathname === "/projects/p1/branches/b1/auth/email_and_password" && req.method === "GET") {
     return json(200, emailConfig);
   }
-  if (url.pathname === "/projects/p1/branches/b1/auth/email_and_password" && req.method === "PATCH") {
+  if (
+    url.pathname === "/projects/p1/branches/b1/auth/email_and_password" &&
+    req.method === "PATCH"
+  ) {
     let body = "";
     req.on("data", (c) => {
       body += c;

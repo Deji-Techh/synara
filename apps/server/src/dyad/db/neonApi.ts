@@ -65,7 +65,12 @@ export async function listNeonProjects(input: {
   signal?: AbortSignal;
 }): Promise<NeonProject[]> {
   if (!input.apiKey.trim()) throw new NeonApiError("Neon API key is required.");
-  const data = (await neonFetch(input.baseUrl ?? NEON_API_BASE_URL, input.apiKey, "/projects", input.signal)) as {
+  const data = (await neonFetch(
+    input.baseUrl ?? NEON_API_BASE_URL,
+    input.apiKey,
+    "/projects",
+    input.signal,
+  )) as {
     projects?: Array<{ id: string; name: string; created_at?: string }>;
   };
   return (data.projects ?? []).map((p) => ({ id: p.id, name: p.name, createdAt: p.created_at }));
@@ -108,7 +113,11 @@ async function neonPost(
     const res = await fetch(`${baseUrl.replace(/\/+$/, "")}${path}`, {
       method: "POST",
       signal: controller.signal,
-      headers: { accept: "application/json", "content-type": "application/json", authorization: `Bearer ${apiKey}` },
+      headers: {
+        accept: "application/json",
+        "content-type": "application/json",
+        authorization: `Bearer ${apiKey}`,
+      },
       body: JSON.stringify(body),
     });
     if (!res.ok) {
@@ -183,7 +192,10 @@ export async function createNeonProject(input: {
       },
     },
     input.signal,
-  )) as { project?: { id?: string; name?: string }; connection_uris?: Array<{ connection_uri?: string }> };
+  )) as {
+    project?: { id?: string; name?: string };
+    connection_uris?: Array<{ connection_uri?: string }>;
+  };
   const id = data.project?.id ?? "";
   if (!id) throw new NeonApiError("Neon API returned no project id.");
   const connectionUri = data.connection_uris?.map((u) => u.connection_uri).find(Boolean);

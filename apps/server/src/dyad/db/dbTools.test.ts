@@ -51,7 +51,10 @@ describe("dyad db tools transplant (m4)", () => {
   });
 
   it("classifies SQL for consent: schema vs data vs danger", () => {
-    expect(sqlConsentInfo("select * from todos")).toEqual({ mutatesSchema: false, deletesData: false });
+    expect(sqlConsentInfo("select * from todos")).toEqual({
+      mutatesSchema: false,
+      deletesData: false,
+    });
     expect(sqlConsentInfo("create table t (id int)").mutatesSchema).toBe(true);
     expect(sqlConsentInfo("delete from todos").deletesData).toBe(true);
     expect(checkSqlDanger("drop table users").severity).toBe("critical");
@@ -171,7 +174,10 @@ describe("dyad db tools transplant (m4)", () => {
         } as Response;
       }
       if (u.includes("/branches")) {
-        return { ok: true, json: async () => ({ branch: { id: "b1", name: "development" } }) } as Response;
+        return {
+          ok: true,
+          json: async () => ({ branch: { id: "b1", name: "development" } }),
+        } as Response;
       }
       throw new Error(`unexpected ${u}`);
     });
@@ -198,7 +204,9 @@ describe("dyad db tools transplant (m4)", () => {
   it("writeEnvLocalDatabaseUrl appends, replaces, and verifies", () => {
     const dir = appDir();
     expect(writeEnvLocalDatabaseUrl(dir, "postgres://a")).toBe(true);
-    expect(fs.readFileSync(path.join(dir, ".env.local"), "utf8")).toBe('DATABASE_URL="postgres://a"\n');
+    expect(fs.readFileSync(path.join(dir, ".env.local"), "utf8")).toBe(
+      'DATABASE_URL="postgres://a"\n',
+    );
     expect(writeEnvLocalDatabaseUrl(dir, "postgres://b")).toBe(true);
     const text = fs.readFileSync(path.join(dir, ".env.local"), "utf8");
     expect(text).toBe('DATABASE_URL="postgres://b"\n');

@@ -34,7 +34,12 @@ function transportLabel(t: McpTransportKind): string {
 function OAuthConnectButton(props: {
   server: McpServerConfig;
   statusByServer: Record<string, { state: string; authorizeUrl?: string; message?: string }>;
-  onStart: (input: { serverId: string; serverUrl: string; clientId?: string; scope?: string }) => void;
+  onStart: (input: {
+    serverId: string;
+    serverUrl: string;
+    clientId?: string;
+    scope?: string;
+  }) => void;
   onReset: (serverId: string) => void;
 }) {
   const status = props.statusByServer[props.server.id] ?? { state: "idle" };
@@ -127,7 +132,10 @@ export function McpServersSettingsPanel(props: { active: boolean }) {
     const server: McpServerConfig = {
       ...draft,
       name: draft.name.trim(),
-      args: draftArgs.split(/\s+/).map((a) => a.trim()).filter(Boolean),
+      args: draftArgs
+        .split(/\s+/)
+        .map((a) => a.trim())
+        .filter(Boolean),
       createdAt: Date.now(),
     };
     persist([...servers, server]);
@@ -142,7 +150,11 @@ export function McpServersSettingsPanel(props: { active: boolean }) {
     void copyTextToClipboard(payload).then(
       () => toastManager.add({ type: "success", title: "MCP configuration copied" }),
       () =>
-        toastManager.add({ type: "error", title: "Could not copy", description: "Clipboard access failed." }),
+        toastManager.add({
+          type: "error",
+          title: "Could not copy",
+          description: "Clipboard access failed.",
+        }),
     );
   };
 
@@ -155,12 +167,16 @@ export function McpServersSettingsPanel(props: { active: boolean }) {
       if (problems.length > 0) throw new Error(problems[0]);
       persist(parsed.servers);
       if (parsed.prefs) persistPrefs({ autoApproveSafe: parsed.prefs.autoApproveSafe !== false });
-      toastManager.add({ type: "success", title: `${parsed.servers.length} MCP server(s) imported` });
+      toastManager.add({
+        type: "success",
+        title: `${parsed.servers.length} MCP server(s) imported`,
+      });
     } catch (error) {
       toastManager.add({
         type: "error",
         title: "Could not import",
-        description: error instanceof Error ? error.message : "Clipboard did not contain MCP configuration.",
+        description:
+          error instanceof Error ? error.message : "Clipboard did not contain MCP configuration.",
       });
     }
   };
@@ -177,14 +193,22 @@ export function McpServersSettingsPanel(props: { active: boolean }) {
             <Button size="xs" variant="ghost" onClick={exportJson}>
               Export
             </Button>
-            <Button size="xs" variant="outline" onClick={() => setAdding((v) => !v)} aria-expanded={adding}>
+            <Button
+              size="xs"
+              variant="outline"
+              onClick={() => setAdding((v) => !v)}
+              aria-expanded={adding}
+            >
               Add server
               <DisclosureChevron open={adding} className="ml-1 size-3.5" />
             </Button>
           </div>
         }
       >
-        <DisclosureRegion open={adding} contentClassName="mt-3 space-y-3 border-t border-border/70 pt-3">
+        <DisclosureRegion
+          open={adding}
+          contentClassName="mt-3 space-y-3 border-t border-border/70 pt-3"
+        >
           <SettingsRow
             title="Name"
             description="How this server appears in consent prompts and tool names (server__tool)."
@@ -210,7 +234,9 @@ export function McpServersSettingsPanel(props: { active: boolean }) {
                     onClick={() => setDraft({ ...draft, transport: t })}
                     className={cn(
                       "rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
-                      draft.transport === t ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground",
+                      draft.transport === t
+                        ? "bg-muted text-foreground"
+                        : "text-muted-foreground hover:text-foreground",
                     )}
                   >
                     {transportLabel(t)}
@@ -250,7 +276,9 @@ export function McpServersSettingsPanel(props: { active: boolean }) {
             <>
               <SettingsRow
                 title="URL"
-                description={draft.transport === "oauth" ? "MCP endpoint URL." : "SSE endpoint URL."}
+                description={
+                  draft.transport === "oauth" ? "MCP endpoint URL." : "SSE endpoint URL."
+                }
                 control={
                   <Input
                     className="w-full sm:w-64"
@@ -291,7 +319,9 @@ export function McpServersSettingsPanel(props: { active: boolean }) {
         </DisclosureRegion>
       </SettingsSection>
 
-      <SettingsSection title={`Connected servers (${servers.filter((s) => s.enabled).length}/${servers.length})`}>
+      <SettingsSection
+        title={`Connected servers (${servers.filter((s) => s.enabled).length}/${servers.length})`}
+      >
         {servers.length === 0 ? (
           <SettingsListRow
             title="No MCP servers"
@@ -326,7 +356,9 @@ export function McpServersSettingsPanel(props: { active: boolean }) {
                       {transportLabel(server.transport)}
                     </span>
                     {problems.length > 0 ? (
-                      <span className="shrink-0 text-[10.5px] text-destructive">Needs attention</span>
+                      <span className="shrink-0 text-[10.5px] text-destructive">
+                        Needs attention
+                      </span>
                     ) : null}
                   </button>
                   <Switch
@@ -357,7 +389,11 @@ export function McpServersSettingsPanel(props: { active: boolean }) {
                           key={c}
                           type="button"
                           onClick={() =>
-                            persist(servers.map((s) => (s.id === server.id ? { ...s, defaultConsent: c } : s)))
+                            persist(
+                              servers.map((s) =>
+                                s.id === server.id ? { ...s, defaultConsent: c } : s,
+                              ),
+                            )
                           }
                           className={cn(
                             "rounded-md px-2.5 py-1 text-xs font-medium capitalize transition-colors",
@@ -413,7 +449,9 @@ export function McpServersSettingsPanel(props: { active: boolean }) {
           title="Using MCP tools"
           description="In normal chat the agent searches tools itself. With / commands, pick a server explicitly."
           control={
-            <span className="font-mono text-[11px] text-muted-foreground">/mcp &lt;server&gt; &lt;tool&gt;</span>
+            <span className="font-mono text-[11px] text-muted-foreground">
+              /mcp &lt;server&gt; &lt;tool&gt;
+            </span>
           }
         />
       </SettingsSection>

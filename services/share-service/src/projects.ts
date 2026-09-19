@@ -12,9 +12,9 @@ function httpError(status: number, message: string): Error & { status: number } 
   return Object.assign(new Error(message), { status });
 }
 
-async function requireAuth(
-  req: { header(name: string): string | undefined },
-): Promise<{ id: string; email: string; name: string | null }> {
+async function requireAuth(req: {
+  header(name: string): string | undefined;
+}): Promise<{ id: string; email: string; name: string | null }> {
   const user = await authenticateSession(req);
   if (!user) throw httpError(401, "Authentication required");
   return user;
@@ -28,10 +28,22 @@ async function requireAuth(
  *   - 4 bytes: content length (uint32 BE)
  *   - N bytes: file content (utf-8)
  */
-function parseCaidepkg(
-  buffer: Buffer,
-): Array<{ path: string; name: string; extension: string; content: string; size: number; fileType: "file" | "directory" }> {
-  const files: Array<{ path: string; name: string; extension: string; content: string; size: number; fileType: "file" | "directory" }> = [];
+function parseCaidepkg(buffer: Buffer): Array<{
+  path: string;
+  name: string;
+  extension: string;
+  content: string;
+  size: number;
+  fileType: "file" | "directory";
+}> {
+  const files: Array<{
+    path: string;
+    name: string;
+    extension: string;
+    content: string;
+    size: number;
+    fileType: "file" | "directory";
+  }> = [];
   let offset = 0;
 
   while (offset + 8 <= buffer.length) {
@@ -95,9 +107,16 @@ function parseCaidepkg(
 /**
  * Try to decompress gzip; if it's not gzip, use as-is (raw concatenated format).
  */
-async function extractPackage(
-  raw: Buffer,
-): Promise<Array<{ path: string; name: string; extension: string; content: string; size: number; fileType: "file" | "directory" }>> {
+async function extractPackage(raw: Buffer): Promise<
+  Array<{
+    path: string;
+    name: string;
+    extension: string;
+    content: string;
+    size: number;
+    fileType: "file" | "directory";
+  }>
+> {
   if (raw.length >= 2 && raw[0] === 0x1f && raw[1] === 0x8b) {
     const { gunzip } = await import("node:zlib");
     const decompressed = await new Promise<Buffer>((resolve, reject) => {
@@ -326,10 +345,9 @@ export function registerProjectRoutes(app: Express): void {
         [user.id, shareRow.id],
       );
       if (existing.rows[0]) {
-        const project = await pool.query(
-          `SELECT * FROM user_projects WHERE id = $1`,
-          [existing.rows[0].id],
-        );
+        const project = await pool.query(`SELECT * FROM user_projects WHERE id = $1`, [
+          existing.rows[0].id,
+        ]);
         const row = project.rows[0];
         res.json({
           id: row.id,
@@ -364,15 +382,7 @@ export function registerProjectRoutes(app: Express): void {
         `INSERT INTO user_projects
            (id, user_id, share_id, name, description, file_count, total_size)
          VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        [
-          projectId,
-          user.id,
-          shareRow.id,
-          shareRow.project_name,
-          null,
-          fileCount,
-          totalSize,
-        ],
+        [projectId, user.id, shareRow.id, shareRow.project_name, null, fileCount, totalSize],
       );
 
       // Insert files in a transaction

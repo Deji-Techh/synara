@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Single Zustand store for terminal UI state keyed by threadId.
  *

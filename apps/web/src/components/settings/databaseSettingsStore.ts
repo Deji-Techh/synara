@@ -110,7 +110,10 @@ export function normalizeScopeRoot(root: string): string {
 }
 
 /** True when a project-scoped connection belongs to the given workspace. */
-export function connectionMatchesWorkspace(connection: DbConnection, workspaceRoot: string): boolean {
+export function connectionMatchesWorkspace(
+  connection: DbConnection,
+  workspaceRoot: string,
+): boolean {
   return (
     connection.scope?.type === "project" &&
     !!connection.scope.workspaceRoot &&
@@ -131,8 +134,10 @@ export function validateNetwork(
   ) {
     problems.push(`Another network is already named "${input.name!.trim()}".`);
   }
-  if (!/^https?:\/\//.test(input.rpcUrl ?? "")) problems.push("A valid http(s) RPC URL is required.");
-  if (!(input.chainId ?? "").trim()) problems.push("Chain ID is required (e.g. 1, 137, solana-mainnet).");
+  if (!/^https?:\/\//.test(input.rpcUrl ?? ""))
+    problems.push("A valid http(s) RPC URL is required.");
+  if (!(input.chainId ?? "").trim())
+    problems.push("Chain ID is required (e.g. 1, 137, solana-mainnet).");
   return problems;
 }
 

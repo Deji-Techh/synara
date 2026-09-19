@@ -92,7 +92,8 @@ describe("ShareCard", () => {
     expect(markup).toContain("9am–5pm");
   });
 
-  it("omits spotlight and footer gracefully without data", () => {    const bare = {
+  it("omits spotlight and footer gracefully without data", () => {
+    const bare = {
       ...stats,
       mostWorkedProject: null,
       mostUsedFramework: null,

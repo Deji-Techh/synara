@@ -32,16 +32,26 @@ export async function duckDuckGoSearch(query: string, signal?: AbortSignal): Pro
     AbstractText?: string;
     AbstractURL?: string;
     Heading?: string;
-    RelatedTopics?: Array<{ Text?: string; FirstURL?: string; Name?: string; Topics?: Array<{ Text?: string; FirstURL?: string }> }>;
+    RelatedTopics?: Array<{
+      Text?: string;
+      FirstURL?: string;
+      Name?: string;
+      Topics?: Array<{ Text?: string; FirstURL?: string }>;
+    }>;
   };
   const hits: SearchHit[] = [];
   if (data.AbstractText && data.AbstractURL) {
-    hits.push({ title: data.Heading || data.AbstractText.slice(0, 80), url: data.AbstractURL, snippet: data.AbstractText });
+    hits.push({
+      title: data.Heading || data.AbstractText.slice(0, 80),
+      url: data.AbstractURL,
+      snippet: data.AbstractText,
+    });
   }
   for (const topic of data.RelatedTopics ?? []) {
     if (topic.Topics) {
       for (const sub of topic.Topics) {
-        if (sub.Text && sub.FirstURL) hits.push({ title: sub.Text.slice(0, 80), url: sub.FirstURL, snippet: sub.Text });
+        if (sub.Text && sub.FirstURL)
+          hits.push({ title: sub.Text.slice(0, 80), url: sub.FirstURL, snippet: sub.Text });
       }
     } else if (topic.Text && topic.FirstURL) {
       hits.push({ title: topic.Text.slice(0, 80), url: topic.FirstURL, snippet: topic.Text });

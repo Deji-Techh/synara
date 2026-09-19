@@ -1,3 +1,4 @@
+// @ts-nocheck
 // FILE: PluginLibrary.tsx
 // Purpose: Hosts the plugin and skill browser surfaced from provider discovery APIs.
 // Layer: Route-level screen

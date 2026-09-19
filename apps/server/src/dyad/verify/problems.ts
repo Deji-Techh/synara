@@ -55,7 +55,9 @@ function getStringMatchedPreconditionKind(message: string): TypeCheckPreconditio
   return undefined;
 }
 
-export function getTypeCheckPreconditionKind(error: unknown): TypeCheckPreconditionKind | undefined {
+export function getTypeCheckPreconditionKind(
+  error: unknown,
+): TypeCheckPreconditionKind | undefined {
   if (error instanceof TypeCheckPreconditionError) return error.kind;
   const message = error instanceof Error ? error.message : String(error ?? "Unknown error");
   return getStringMatchedPreconditionKind(message);

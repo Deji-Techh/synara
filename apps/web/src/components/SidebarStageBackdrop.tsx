@@ -90,22 +90,40 @@ export function NightlySkyArt({ compact = false }: { compact?: boolean }) {
           gradientTransform="translate(216 28) rotate(137) scale(160 120)"
           gradientUnits="userSpaceOnUse"
         >
-          <stop style={{ stopColor: "var(--stage-night-glow-highlight, #7c5ce8)" }} stopOpacity="0.45" />
+          <stop
+            style={{ stopColor: "var(--stage-night-glow-highlight, #7c5ce8)" }}
+            stopOpacity="0.45"
+          />
           <stop
             offset="0.5"
             style={{ stopColor: "var(--stage-night-glow-secondary, #43337a)" }}
             stopOpacity="0.2"
           />
-          <stop offset="1" style={{ stopColor: "var(--stage-night-bottom, #1a162b)" }} stopOpacity="0" />
+          <stop
+            offset="1"
+            style={{ stopColor: "var(--stage-night-bottom, #1a162b)" }}
+            stopOpacity="0"
+          />
         </radialGradient>
-        <linearGradient id={cloudId} x1="0" y1="40" x2="288" y2="256" gradientUnits="userSpaceOnUse">
+        <linearGradient
+          id={cloudId}
+          x1="0"
+          y1="40"
+          x2="288"
+          y2="256"
+          gradientUnits="userSpaceOnUse"
+        >
           <stop style={{ stopColor: "var(--stage-night-highlight, #9980fa)" }} stopOpacity="0.5" />
           <stop
             offset="0.48"
             style={{ stopColor: "var(--stage-night-secondary, #7555e8)" }}
             stopOpacity="0.55"
           />
-          <stop offset="1" style={{ stopColor: "var(--stage-night-tertiary, #5f3dc4)" }} stopOpacity="0" />
+          <stop
+            offset="1"
+            style={{ stopColor: "var(--stage-night-tertiary, #5f3dc4)" }}
+            stopOpacity="0"
+          />
         </linearGradient>
         <filter id={softId} x="-24" y="-24" width="336" height="300" filterUnits="userSpaceOnUse">
           <feGaussianBlur stdDeviation="5" />

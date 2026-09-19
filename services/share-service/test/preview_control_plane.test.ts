@@ -4,21 +4,14 @@ import path from "node:path";
 import test from "node:test";
 
 const root = path.resolve(import.meta.dirname, "..");
-const source = (relative: string) =>
-  fs.readFileSync(path.join(root, relative), "utf8");
+const source = (relative: string) => fs.readFileSync(path.join(root, relative), "utf8");
 
 test("desktop clients never receive worker infrastructure secrets", () => {
   const control = source("src/preview_control_plane.ts");
   assert.match(control, /authenticateDevice/);
   assert.match(control, /signLease/);
-  assert.doesNotMatch(
-    control,
-    /config\.PREVIEW_LEASE_SIGNING_SECRET[^;]*res\.json/,
-  );
-  assert.doesNotMatch(
-    control,
-    /config\.PREVIEW_WORKER_BOOTSTRAP_TOKEN[^;]*res\.json/,
-  );
+  assert.doesNotMatch(control, /config\.PREVIEW_LEASE_SIGNING_SECRET[^;]*res\.json/);
+  assert.doesNotMatch(control, /config\.PREVIEW_WORKER_BOOTSTRAP_TOKEN[^;]*res\.json/);
 });
 
 test("preview sessions enforce per-device concurrency and daily quotas", () => {

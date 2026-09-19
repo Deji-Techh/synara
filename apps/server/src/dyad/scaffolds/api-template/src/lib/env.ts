@@ -5,9 +5,7 @@ const envSchema = z.object({
   NEON_AUTH_SECRET: z.string().min(32),
   NEON_AUTH_URL: z.string().url().default("http://localhost:3001"),
   PORT: z.coerce.number().int().positive().default(3001),
-  NODE_ENV: z
-    .enum(["development", "staging", "production", "test"])
-    .default("development"),
+  NODE_ENV: z.enum(["development", "staging", "production", "test"]).default("development"),
   /** Deploy target label for logs/telemetry. staging mirrors production
    * config with dev data; keep secrets per environment (.env.staging). */
   APP_ENV: z.string().default("development"),

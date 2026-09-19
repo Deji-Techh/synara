@@ -29,7 +29,12 @@ function ensureSocket(
 
 export function useMcpOAuth(): {
   statusByServer: Record<string, McpOAuthStatus>;
-  start: (input: { serverId: string; serverUrl: string; clientId?: string; scope?: string }) => void;
+  start: (input: {
+    serverId: string;
+    serverUrl: string;
+    clientId?: string;
+    scope?: string;
+  }) => void;
   reset: (serverId: string) => void;
 } {
   const [statusByServer, setStatusByServer] = useState<Record<string, McpOAuthStatus>>({});

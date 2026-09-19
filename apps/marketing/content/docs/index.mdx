@@ -5,12 +5,34 @@ description: The local-first desktop and web workspace for building production a
 
 # Caide Documentation
 
-Caide is an open-source, local-first workspace for turning prompts into production full-stack software. It unifies chats, blueprints, tool execution, live device preview, and production builds into a single focused window.
+Caide is an open-source, local-first workspace for turning prompts into production full-stack software. It unifies chats, architecture blueprints, tool execution, live multi-device previews, and production builds into a single focused window.
 
-## Core Features
+---
 
-- **Immutable Frameworks**: Start with Blank, React Native (Expo), Flutter, or Website (Next.js / Vite). Scaffolding, prompts, and build adapters adapt to your stack.
-- **BYOK Multi-Model Hub**: Connect directly to Anthropic, OpenAI, DeepSeek, Google Gemini, Groq, or run completely offline with Ollama. Zero subscriptions or token markups.
-- **App Blueprints & Surveys**: Review and approve architectural blueprints and state schemas before code generation begins.
-- **LiveLab & DeviceLab**: Preview running applications across responsive mobile frames (iPhone, Android, Tablet, Desktop) with hot-reload and live console logs.
-- **Neon Database Branching**: Instant copy-on-write database branches per thread for safe migration testing.
+## Architectural Philosophy
+
+Caide is engineered from the ground up to replace fragmented AI developer tools with an integrated local environment:
+
+1. **V1 Faithful Engine + V2 High-Craft UI**: The agent turn engine, tool execution loops, consent gates, safeStorage encrypted credentials, and local SQLite persistence run with full fidelity, presented through a responsive, modern interface.
+2. **100% Local-First Boundary**: Your code, git history, thread messages, and execution traces live strictly on your machine. Zero cloud telemetry, zero remote log tracking.
+3. **True BYOK (Bring Your Own Key)**: Zero monthly subscription tiers, zero token markups, and zero artificial rate limits. Connect directly to frontier model providers (Anthropic, OpenAI, DeepSeek, Google Gemini, Groq) or run 100% offline with local Ollama instances.
+4. **Immutable Framework Boundaries**: Stack selection is locked in at creation (React Native Expo, Flutter, Next.js / Website, or Blank). Toolchain verifiers, live dev servers, and prompts adapt specifically to your chosen framework.
+5. **Architectural Alignment First**: Before destructive code modifications touch disk, Caide presents interactive App Blueprints and 3-question design surveys to align on technical tradeoffs.
+6. **Live Multi-Device Stage**: Inspect running applications in real time with DeviceLab (iPhone 16 Pro, Google Pixel, iPad, Desktop) featuring hot reload, physical device QR codes, and live console streaming.
+7. **Copy-on-Write Database Branching**: Connect Neon serverless Postgres to spin up isolated database branches per thread, allowing the agent to test schema migrations without jeopardizing staging data.
+
+---
+
+## Navigating the Documentation
+
+- [Product Overview](/docs/getting-started/overview) — Core architecture, design decisions, and system breakdown.
+- [Installation & Access](/docs/getting-started/installation) — Release status, platform support, and early access whitelist.
+- [Quickstart Guide](/docs/getting-started/quickstart) — Build and preview your first project in under 5 minutes.
+- [Agent Modes & Turn Loop](/docs/agent-architecture/modes-and-turns) — Build mode, Ask mode, Plan mode, and cancel chain semantics.
+- [Tool Consent & Safety](/docs/agent-architecture/consent-and-safety) — Approval gates, command blocklists, and version checkpoints.
+- [Framework Toolchains](/docs/frameworks/react-native) — React Native Expo, Flutter, Next.js, and Blank.
+- [Model Hub & BYOK](/docs/models/providers-and-byok) — Connecting API keys, local Ollama setups, and custom endpoints.
+- [LiveLab & DeviceLab](/docs/preview-devicelab/overview) — Multi-device previewing, console streaming, and problem diagnostics.
+- [Neon Database Branching](/docs/database/neon-branching) — Serverless Postgres copy-on-write branching per thread.
+- [MCP Integrations](/docs/integrations/mcp) — Model Context Protocol servers, stdio & SSE tools.
+- [Local Storage & Privacy](/docs/persistence/local-storage) — SQLite schemas, context compaction, and privacy boundary.

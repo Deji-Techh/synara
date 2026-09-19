@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { FiChevronDown } from "react-icons/fi";
 import { FAQ_ITEMS } from "@/data/faqs";
+import { ScrollReveal } from "@/components/ScrollReveal";
 
 export default function FAQ() {
   const [openQuestion, setOpenQuestion] = useState<string | null>(null);
@@ -14,16 +15,17 @@ export default function FAQ() {
       className="scroll-mt-20 border-t border-[var(--divide)] py-16 sm:py-24"
     >
       <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
-        <div className="max-w-2xl">
-          <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--accent-link)]">
-            Product Questions
-          </p>
-          <h2
-            id="faq-heading"
-            className="mt-3 text-[1.65rem] font-medium leading-[1.12] tracking-[-0.035em] text-[var(--text-primary)] sm:text-[2rem]"
-          >
-            Understand the boundary before you run the work.
-          </h2>
+        <ScrollReveal>
+          <div className="max-w-2xl">
+            <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--accent-link)]">
+              Product Questions
+            </p>
+            <h2
+              id="faq-heading"
+              className="mt-3 text-[1.65rem] font-medium leading-[1.12] tracking-[-0.035em] text-[var(--text-primary)] sm:text-[2rem]"
+            >
+              Understand the boundary before you run the work.
+            </h2>
           <p className="mt-4 max-w-xl text-[15px] leading-[1.7] text-[var(--text-secondary)] sm:text-[16px]">
             How frameworks, BYOK models, local SQLite, previews, database branching, and deployments
             fit together.
@@ -84,6 +86,7 @@ export default function FAQ() {
             );
           })}
         </div>
+        </ScrollReveal>
       </div>
     </section>
   );

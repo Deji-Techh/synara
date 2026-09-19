@@ -122,7 +122,9 @@ export const CaideLogoMark: React.FC = () => {
             {fw.icon ? (
               <Img src={staticFile(fw.icon)} style={{ width: "14px", height: "14px" }} />
             ) : (
-              <span style={{ fontSize: "11px", color: CAIDE_THEME.colors.subtleForeground }}>✦</span>
+              <span style={{ fontSize: "11px", color: CAIDE_THEME.colors.subtleForeground }}>
+                ✦
+              </span>
             )}
             <span>{fw.name}</span>
           </div>

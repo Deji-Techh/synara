@@ -106,7 +106,12 @@ export function MobileQrBranch(props: {
             </Button>
           </div>
           <div className="flex w-full items-center gap-2">
-            <Button size="sm" variant="ghost" className="h-7 flex-1 text-xs" onClick={() => void load()}>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 flex-1 text-xs"
+              onClick={() => void load()}
+            >
               Refresh
             </Button>
           </div>

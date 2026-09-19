@@ -14,18 +14,14 @@ export function applyTextChanges(
   for (const change of ordered) {
     const end = change.rangeOffset + change.rangeLength;
     if (change.rangeOffset > next.length || end > next.length) {
-      throw Object.assign(
-        new Error("Text edit range is outside the current file"),
-        { status: 409 },
-      );
+      throw Object.assign(new Error("Text edit range is outside the current file"), {
+        status: 409,
+      });
     }
     next = next.slice(0, change.rangeOffset) + change.text + next.slice(end);
   }
   if (Buffer.byteLength(next) > maxFileBytes) {
-    throw Object.assign(
-      new Error("Collaborative file exceeds the size limit"),
-      { status: 413 },
-    );
+    throw Object.assign(new Error("Collaborative file exceeds the size limit"), { status: 413 });
   }
   return next;
 }

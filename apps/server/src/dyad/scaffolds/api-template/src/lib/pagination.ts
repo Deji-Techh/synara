@@ -22,12 +22,7 @@ const MAX_PAGE_SIZE = 100;
 
 export const PaginationQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
-  pageSize: z.coerce
-    .number()
-    .int()
-    .positive()
-    .max(MAX_PAGE_SIZE)
-    .default(DEFAULT_PAGE_SIZE),
+  pageSize: z.coerce.number().int().positive().max(MAX_PAGE_SIZE).default(DEFAULT_PAGE_SIZE),
 });
 
 export interface PaginationParams {

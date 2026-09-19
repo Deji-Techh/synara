@@ -36,7 +36,11 @@ describe("dyad plan store", () => {
 
   it("writes draft files, lists them, and marks acceptance", async () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "caide-planstore-"));
-    const record = await writePlanFile(dir, { title: "Auth System", summary: "Login.", plan: "## Steps" }, 777);
+    const record = await writePlanFile(
+      dir,
+      { title: "Auth System", summary: "Login.", plan: "## Steps" },
+      777,
+    );
     expect(record.status).toBe("draft");
     expect(record.file).toMatch(/auth-system-777\.md$/);
     expect(await listPlanFiles(dir)).toEqual(["auth-system-777.md"]);

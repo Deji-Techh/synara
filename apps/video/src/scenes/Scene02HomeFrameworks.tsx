@@ -20,18 +20,14 @@ export const Scene02HomeFrameworks: React.FC = () => {
   // 2. Click at frame 50
   // 3. Move to "Create App" button (X: 1140, Y: 685) from frame 60 to 90
   // 4. Click at frame 95
-  const cursorX = interpolate(
-    frame,
-    [0, 15, 45, 60, 90, 120],
-    [300, 450, 840, 840, 1140, 1140],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
-  );
-  const cursorY = interpolate(
-    frame,
-    [0, 15, 45, 60, 90, 120],
-    [500, 520, 550, 550, 685, 685],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
-  );
+  const cursorX = interpolate(frame, [0, 15, 45, 60, 90, 120], [300, 450, 840, 840, 1140, 1140], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const cursorY = interpolate(frame, [0, 15, 45, 60, 90, 120], [500, 520, 550, 550, 685, 685], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
 
   const isClick1 = frame >= 48 && frame <= 56;
   const isClick2 = frame >= 92 && frame <= 100;

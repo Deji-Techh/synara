@@ -5,10 +5,10 @@ import {
   GeminiIcon,
   GroqIcon,
   OllamaIcon,
-  OpencodeIcon,
   ExpoIcon,
   FlutterIcon,
   NextjsIcon,
+  SupabaseIcon,
 } from "@/components/BrandIcons";
 
 const marks = [
@@ -27,19 +27,19 @@ const marks = [
   {
     name: "DeepSeek R1",
     Icon: DeepSeekIcon,
-    className: "text-blue-500",
+    className: "text-[#4D6BFE]",
     rotation: "-rotate-[3deg]",
   },
   {
     name: "Google Gemini",
     Icon: GeminiIcon,
-    className: "text-amber-500",
+    className: "text-[#1BA1E3]",
     rotation: "rotate-[3deg]",
   },
   {
     name: "Groq",
     Icon: GroqIcon,
-    className: "text-orange-500",
+    className: "text-[#F54F35]",
     rotation: "-rotate-[4deg]",
   },
   {
@@ -49,28 +49,28 @@ const marks = [
     rotation: "rotate-[5deg]",
   },
   {
-    name: "OpenCode Zen",
-    Icon: OpencodeIcon,
-    className: "text-[var(--text-primary)]",
-    rotation: "-rotate-[2deg]",
-  },
-  {
     name: "Expo (React Native)",
     Icon: ExpoIcon,
     className: "text-[var(--text-primary)]",
-    rotation: "rotate-[4deg]",
+    rotation: "-rotate-[2deg]",
   },
   {
     name: "Flutter",
     Icon: FlutterIcon,
     className: "text-[#02569B]",
-    rotation: "-rotate-[5deg]",
+    rotation: "rotate-[4deg]",
   },
   {
     name: "Next.js",
     Icon: NextjsIcon,
     className: "text-[var(--text-primary)]",
-    rotation: "rotate-[3deg]",
+    rotation: "-rotate-[3deg]",
+  },
+  {
+    name: "Supabase",
+    Icon: SupabaseIcon,
+    className: "text-[#3ECF8E]",
+    rotation: "rotate-[5deg]",
   },
 ] as const;
 

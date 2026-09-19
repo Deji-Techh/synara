@@ -36,7 +36,10 @@ export function htmlToText(html: string): { title: string; text: string } {
     .replace(/<header[\s\S]*?<\/header>/gi, " ")
     .replace(/<footer[\s\S]*?<\/footer>/gi, " ")
     .replace(/<[^>]+>/g, " ");
-  body = decodeEntities(body).replace(/[ \t]+/g, " ").replace(/\n\s*\n\s*\n+/g, "\n\n").trim();
+  body = decodeEntities(body)
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n\s*\n\s*\n+/g, "\n\n")
+    .trim();
   return { title: decodeEntities(title), text: body };
 }
 
@@ -78,9 +81,23 @@ export async function fetchPage(url: string, signal?: AbortSignal): Promise<Fetc
     const raw = new TextDecoder().decode(buf.slice(0, WEB_FETCH_MAX_BYTES));
     if (/html/i.test(contentType) || /^\s*</.test(raw)) {
       const { title, text } = htmlToText(raw);
-      return { url, status: res.status, contentType, title, text: text.slice(0, 60_000), truncated };
+      return {
+        url,
+        status: res.status,
+        contentType,
+        title,
+        text: text.slice(0, 60_000),
+        truncated,
+      };
     }
-    return { url, status: res.status, contentType, title: "", text: raw.slice(0, 60_000), truncated };
+    return {
+      url,
+      status: res.status,
+      contentType,
+      title: "",
+      text: raw.slice(0, 60_000),
+      truncated,
+    };
   } catch (err) {
     if (err instanceof WebFetchError) throw err;
     throw new WebFetchError(
@@ -106,7 +123,11 @@ export const webFetchTool = defineTool({
   execute: async (args, ctx) => {
     const parsed = webFetchSchema.parse(args);
     const page = await fetchPage(parsed.url, ctx.signal);
-    const head = [`# ${page.title || parsed.url}`, `(${page.status}${page.truncated ? ", truncated" : ""})`, ""].join("\n");
+    const head = [
+      `# ${page.title || parsed.url}`,
+      `(${page.status}${page.truncated ? ", truncated" : ""})`,
+      "",
+    ].join("\n");
     return `${head}${page.text}`;
   },
   presentCall: (args: any) => `Fetch ${args.url}`,

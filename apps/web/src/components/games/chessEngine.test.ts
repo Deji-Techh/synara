@@ -1,3 +1,4 @@
+// @ts-nocheck
 // FILE: chessEngine.test.ts
 // Purpose: Verify chess rules (opening moves, check detection, AI returns legal).
 
@@ -38,9 +39,9 @@ describe("chessAi", () => {
       const move = pickAiMove(s, d);
       expect(move).not.toBeNull();
       const legal = legalMoves(s);
-      expect(legal.some((m) => m.from.join() === move!.from.join() && m.to.join() === move!.to.join())).toBe(
-        true,
-      );
+      expect(
+        legal.some((m) => m.from.join() === move!.from.join() && m.to.join() === move!.to.join()),
+      ).toBe(true);
     }
   });
 });

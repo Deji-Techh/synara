@@ -58,7 +58,8 @@ export function clearEvidenceMissStreak(sessionId?: string): void {
 }
 
 /** Diff paths that count as UI touches for the evidence gate. */
-const UI_TOUCH_PATTERN = /\.(tsx|jsx|dart|css|scss|less|vue|svelte)$|[\/](screens|pages|components|widgets|views|app|lib)[\/]/i;
+const UI_TOUCH_PATTERN =
+  /\.(tsx|jsx|dart|css|scss|less|vue|svelte)$|[\/](screens|pages|components|widgets|views|app|lib)[\/]/i;
 
 export function diffTouchesUi(diff: string): boolean {
   const paths = new Set<string>();
@@ -87,7 +88,9 @@ async function gitStatus(appPath: string): Promise<string | null> {
 }
 
 function clamp(n: unknown, fallback: number): number {
-  return typeof n === "number" && Number.isFinite(n) ? Math.min(100, Math.max(0, Math.round(n))) : fallback;
+  return typeof n === "number" && Number.isFinite(n)
+    ? Math.min(100, Math.max(0, Math.round(n)))
+    : fallback;
 }
 
 /** Parse reviewer output (exported for tests). */
@@ -109,7 +112,8 @@ export function parseVerdict(text: string): ReviewVerdict {
           .filter((i) => i && typeof i.detail === "string")
           .slice(0, 20)
           .map((i) => ({
-            severity: i.severity === "blocker" || i.severity === "major" ? i.severity : "minor" as const,
+            severity:
+              i.severity === "blocker" || i.severity === "major" ? i.severity : ("minor" as const),
             file: typeof i.file === "string" ? i.file.slice(0, 300) : "",
             detail: (i.detail as string).slice(0, 500),
             suggestion: typeof i.suggestion === "string" ? i.suggestion.slice(0, 500) : "",
@@ -129,7 +133,8 @@ export function parseVerdict(text: string): ReviewVerdict {
 /** Serialize structured issues for the verifier_result event (string[] contract). */
 export function formatIssuesForEvent(issues: ReviewIssue[]): string[] {
   return issues.map(
-    (i) => `[${i.severity}]${i.file ? ` ${i.file}` : ""} — ${i.detail}${i.suggestion ? ` → ${i.suggestion}` : ""}`,
+    (i) =>
+      `[${i.severity}]${i.file ? ` ${i.file}` : ""} — ${i.detail}${i.suggestion ? ` → ${i.suggestion}` : ""}`,
   );
 }
 
@@ -178,7 +183,10 @@ export async function runReviewBarrier(deps: ReviewBarrierDeps): Promise<ReviewV
   const evidenceRefs = (deps.evidence ?? []).map((e) => e.trim()).filter(Boolean);
   const missingEvidence = touchedUi && evidenceRefs.length === 0;
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort("review-timeout"), deps.timeoutMs ?? REVIEW_TIMEOUT_MS);
+  const timer = setTimeout(
+    () => controller.abort("review-timeout"),
+    deps.timeoutMs ?? REVIEW_TIMEOUT_MS,
+  );
   const onAbort = () => controller.abort(deps.signal?.reason ?? "cancelled");
   deps.signal?.addEventListener("abort", onAbort, { once: true });
   // Headless lint evidence for the reviewer (best-effort; skipped on abort).
@@ -186,19 +194,23 @@ export async function runReviewBarrier(deps: ReviewBarrierDeps): Promise<ReviewV
   // output (dirty) from failures without (aborted / could not run).
   let lintEvidence = "Lint: not run.";
   try {
-    const lint = (await lintProjectTool.execute({}, {
-      signal: controller.signal,
-      appPath: deps.appPath,
-      sessionId: deps.sessionId,
-      toolId: "review-lint",
-    })) as { clean?: boolean; stdout?: string; stderr?: string };
+    const lint = (await lintProjectTool.execute(
+      {},
+      {
+        signal: controller.signal,
+        appPath: deps.appPath,
+        sessionId: deps.sessionId,
+        toolId: "review-lint",
+      },
+    )) as { clean?: boolean; stdout?: string; stderr?: string };
     const output = `${lint.stdout ?? ""}\n${lint.stderr ?? ""}`.trim().slice(-3000);
     lintEvidence = lint.clean ? "Lint: clean." : `Lint: DIRTY.\n${output}`;
   } catch (err) {
-    const out = `${(err as { stdout?: unknown })?.stdout ?? ""}\n${(err as { stderr?: unknown })?.stderr ?? ""}`.trim().slice(-3000);
-    lintEvidence = out
-      ? `Lint: DIRTY.\n${out}`
-      : "Lint: unavailable (aborted or failed to run).";
+    const out =
+      `${(err as { stdout?: unknown })?.stdout ?? ""}\n${(err as { stderr?: unknown })?.stderr ?? ""}`
+        .trim()
+        .slice(-3000);
+    lintEvidence = out ? `Lint: DIRTY.\n${out}` : "Lint: unavailable (aborted or failed to run).";
   }
   try {
     const result = await runSubagentLoop({
@@ -221,8 +233,10 @@ export async function runReviewBarrier(deps: ReviewBarrierDeps): Promise<ReviewV
       verdict.issues.unshift({
         severity: "blocker",
         file: "",
-        detail: "missing visual evidence: UI files changed but no screenshots were captured (call screenshot, then re-verify)",
-        suggestion: "Run the app preview, capture screenshots of every touched screen, then request review again.",
+        detail:
+          "missing visual evidence: UI files changed but no screenshots were captured (call screenshot, then re-verify)",
+        suggestion:
+          "Run the app preview, capture screenshots of every touched screen, then request review again.",
       });
     }
     return verdict;

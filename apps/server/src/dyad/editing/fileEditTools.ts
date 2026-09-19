@@ -24,14 +24,14 @@ export class FileEditValidationError extends Error {
 // --- search_replace (donor schema + description verbatim) ---
 
 const searchReplaceBlockSchema = z.object({
-  old_string: z.string().describe("The text block to replace (same uniqueness rules as old_string)."),
+  old_string: z
+    .string()
+    .describe("The text block to replace (same uniqueness rules as old_string)."),
   new_string: z.string().describe("The edited text (must differ from old_string)."),
 });
 
 const searchReplaceSchema = z.object({
-  file_path: z
-    .string()
-    .describe("The path to the file you want to search and replace in."),
+  file_path: z.string().describe("The path to the file you want to search and replace in."),
   old_string: z
     .string()
     .describe(
@@ -39,19 +39,14 @@ const searchReplaceSchema = z.object({
     ),
   new_string: z
     .string()
-    .describe(
-      "The edited text to replace the old_string (must be different from the old_string)",
-    ),
+    .describe("The edited text to replace the old_string (must be different from the old_string)"),
   edits: z
     .array(searchReplaceBlockSchema)
     .optional()
     .describe(
       "Additional SEARCH/REPLACE blocks applied atomically in the same call (all succeed or none is written). Prefer batching several targeted edits here over multiple tool calls.",
     ),
-  description: z
-    .string()
-    .optional()
-    .describe("Brief description of the changes you are making."),
+  description: z.string().optional().describe("Brief description of the changes you are making."),
 });
 
 export const searchReplaceTool = defineTool({
@@ -98,7 +93,9 @@ export async function executeSearchReplace(
   ];
   for (const [i, b] of blocks.entries()) {
     if (b.old_string === b.new_string) {
-      throw new FileEditValidationError(`Block ${i + 1}: old_string and new_string must be different`);
+      throw new FileEditValidationError(
+        `Block ${i + 1}: old_string and new_string must be different`,
+      );
     }
   }
   const fullPath = safeJoinAppPath(appPath, parsed.file_path);
@@ -142,12 +139,14 @@ function identifyFailingBlocks(
   if (blocks.length < 2) return [];
   const bad: number[] = [];
   for (const [i, b] of blocks.entries()) {
-    const single =
-      `<<<<<<< SEARCH\n${escapeSearchReplaceMarkers(b.old_string)}\n=======\n${escapeSearchReplaceMarkers(b.new_string)}\n>>>>>>> REPLACE`;
+    const single = `<<<<<<< SEARCH\n${escapeSearchReplaceMarkers(b.old_string)}\n=======\n${escapeSearchReplaceMarkers(b.new_string)}\n>>>>>>> REPLACE`;
     const r = applySearchReplace(original, single);
     if (!r.success) bad.push(i + 1);
   }
-  if (bad.length === 0) return ["All blocks match alone — they conflict with each other in sequence; reorder or widen context."];
+  if (bad.length === 0)
+    return [
+      "All blocks match alone — they conflict with each other in sequence; reorder or widen context.",
+    ];
   return [`Failing block${bad.length === 1 ? "" : "s"}: ${bad.join(", ")} of ${blocks.length}.`];
 }
 
@@ -164,7 +163,9 @@ const multiReplaceSchema = z.object({
   chunks: z
     .array(replacementChunkSchema)
     .min(1)
-    .describe("A list of chunks to replace in the file. Start and end lines are 1-indexed and inclusive."),
+    .describe(
+      "A list of chunks to replace in the file. Start and end lines are 1-indexed and inclusive.",
+    ),
 });
 
 export const multiReplaceTool = defineTool({
@@ -199,7 +200,12 @@ export async function executeMultiReplace(
   const chunks = [...parsed.chunks].sort((a, b) => a.startLine - b.startLine);
   for (let i = 0; i < chunks.length; i++) {
     const c = chunks[i];
-    if (!Number.isInteger(c.startLine) || !Number.isInteger(c.endLine) || c.startLine < 1 || c.endLine < c.startLine) {
+    if (
+      !Number.isInteger(c.startLine) ||
+      !Number.isInteger(c.endLine) ||
+      c.startLine < 1 ||
+      c.endLine < c.startLine
+    ) {
       throw new FileEditValidationError(
         `Invalid chunk ${i + 1}: startLine/endLine must be 1-indexed with startLine <= endLine`,
       );
@@ -235,9 +241,14 @@ export async function executeMultiReplace(
 const copyFileSchema = z.object({
   from: z
     .string()
-    .describe("The source file or folder path (an absolute path inside the workspace, a ~ path, or a path relative to the app root)"),
+    .describe(
+      "The source file or folder path (an absolute path inside the workspace, a ~ path, or a path relative to the app root)",
+    ),
   to: z.string().describe("The destination file or directory path relative to the app root"),
-  description: z.string().optional().describe("Brief description of why the file or folder is being copied"),
+  description: z
+    .string()
+    .optional()
+    .describe("Brief description of why the file or folder is being copied"),
 });
 
 export const copyFileTool = defineTool({

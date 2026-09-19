@@ -2764,7 +2764,10 @@ diffs-container {
   box-shadow: 0 14px 36px -12px rgb(0 0 0 / 55%);
   -webkit-backdrop-filter: blur(28px) saturate(140%);
   backdrop-filter: blur(28px) saturate(140%);
-  transition: background-color 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
+  transition:
+    background-color 200ms ease,
+    border-color 200ms ease,
+    box-shadow 200ms ease;
 }
 
 [data-chat-composer-footer="true"] {
@@ -2773,7 +2776,9 @@ diffs-container {
 
 [data-chat-composer-main-surface="true"]:focus-within {
   border-color: color-mix(in srgb, var(--primary, #6366f1) 40%, rgba(255, 255, 255, 0.12));
-  box-shadow: 0 16px 40px -12px rgb(0 0 0 / 65%), 0 0 0 1px color-mix(in srgb, var(--primary, #6366f1) 30%, transparent);
+  box-shadow:
+    0 16px 40px -12px rgb(0 0 0 / 65%),
+    0 0 0 1px color-mix(in srgb, var(--primary, #6366f1) 30%, transparent);
 }
 
 .chat-composer-context-strip {

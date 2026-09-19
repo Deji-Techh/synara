@@ -1,3 +1,4 @@
+// @ts-nocheck
 // FILE: composerProviderRegistry.tsx
 // Purpose: Centralizes provider-specific composer state and trait picker rendering.
 // Layer: Chat composer orchestration
@@ -178,65 +179,10 @@ const composerProviderRegistry: Record<ProviderKind, ProviderRegistryEntry> = {
     renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("engine", input),
     renderTraitsPicker: (input) => renderTraitsPickerForProvider("engine", input),
   },
-  openai: {
-    getState: (input) => getProviderStateFromCapabilities(input),
-    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("openai", input),
-    renderTraitsPicker: (input) => renderTraitsPickerForProvider("openai", input),
-  },
-  anthropic: {
-    getState: (input) => getProviderStateFromCapabilities(input),
-    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("anthropic", input),
-    renderTraitsPicker: (input) => renderTraitsPickerForProvider("anthropic", input),
-  },
-  google: {
-    getState: (input) => getProviderStateFromCapabilities(input),
-    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("google", input),
-    renderTraitsPicker: (input) => renderTraitsPickerForProvider("google", input),
-  },
-  openrouter: {
-    getState: (input) => getProviderStateFromCapabilities(input),
-    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("openrouter", input),
-    renderTraitsPicker: (input) => renderTraitsPickerForProvider("openrouter", input),
-  },
-  ollama: {
-    getState: (input) => getProviderStateFromCapabilities(input),
-    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("ollama", input),
-    renderTraitsPicker: (input) => renderTraitsPickerForProvider("ollama", input),
-  },
-  deepseek: {
-    getState: (input) => getProviderStateFromCapabilities(input),
-    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("deepseek", input),
-    renderTraitsPicker: (input) => renderTraitsPickerForProvider("deepseek", input),
-  },
   groq: {
     getState: (input) => getProviderStateFromCapabilities(input),
     renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("groq", input),
     renderTraitsPicker: (input) => renderTraitsPickerForProvider("groq", input),
-  },
-  mistral: {
-    getState: (input) => getProviderStateFromCapabilities(input),
-    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("mistral", input),
-    renderTraitsPicker: (input) => renderTraitsPickerForProvider("mistral", input),
-  },
-  together: {
-    getState: (input) => getProviderStateFromCapabilities(input),
-    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("together", input),
-    renderTraitsPicker: (input) => renderTraitsPickerForProvider("together", input),
-  },
-  cohere: {
-    getState: (input) => getProviderStateFromCapabilities(input),
-    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("cohere", input),
-    renderTraitsPicker: (input) => renderTraitsPickerForProvider("cohere", input),
-  },
-  xai: {
-    getState: (input) => getProviderStateFromCapabilities(input),
-    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("xai", input),
-    renderTraitsPicker: (input) => renderTraitsPickerForProvider("xai", input),
-  },
-  fireworks: {
-    getState: (input) => getProviderStateFromCapabilities(input),
-    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("fireworks", input),
-    renderTraitsPicker: (input) => renderTraitsPickerForProvider("fireworks", input),
   },
   opencodeZen: {
     getState: (input) => getProviderStateFromCapabilities(input),

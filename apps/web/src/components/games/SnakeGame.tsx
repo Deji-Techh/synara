@@ -32,11 +32,13 @@ export function SnakeGame() {
   );
   const [score, setScore] = useState(() => useGameShellStore.getState().snakeRun?.score ?? 0);
   const [alive, setAlive] = useState(() => useGameShellStore.getState().snakeRun?.alive ?? true);
-  const [paused, setPaused] = useState(
-    () => (useGameShellStore.getState().snakeRun ? true : false),
+  const [paused, setPaused] = useState(() =>
+    useGameShellStore.getState().snakeRun ? true : false,
   );
   const dirRef = useRef<SnakePoint>(useGameShellStore.getState().snakeRun?.dir ?? { x: 1, y: 0 });
-  const pendingDir = useRef<SnakePoint>(useGameShellStore.getState().snakeRun?.dir ?? { x: 1, y: 0 });
+  const pendingDir = useRef<SnakePoint>(
+    useGameShellStore.getState().snakeRun?.dir ?? { x: 1, y: 0 },
+  );
   const stateRef = useRef({ cells, food, alive, paused });
   stateRef.current = { cells, food, alive, paused };
 

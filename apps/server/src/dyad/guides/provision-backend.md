@@ -7,6 +7,7 @@ Do NOT use for frontend-only apps.
 ## Detection
 
 The app needs a backend when the user's request mentions any of:
+
 - user accounts, login, signup, authentication
 - saving, storing, persisting data
 - posts, messages, comments, likes, feeds
@@ -123,6 +124,7 @@ export const posts = pgTable("posts", {
 ```
 
 After adding tables, generate migrations:
+
 ```
 npm --prefix api run db:generate
 ```
@@ -181,6 +183,7 @@ export { postRoutes };
 ```
 
 Register the routes in `api/src/app.ts`:
+
 ```ts
 import { postRoutes } from "./routes/posts";
 app.route("/api", postRoutes);
@@ -193,10 +196,7 @@ Add a typed API client in the frontend app:
 ```ts
 const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
 
-async function api<T>(
-  path: string,
-  options?: RequestInit & { token?: string },
-): Promise<T> {
+async function api<T>(path: string, options?: RequestInit & { token?: string }): Promise<T> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(options?.headers as Record<string, string>),

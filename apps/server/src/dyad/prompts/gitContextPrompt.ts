@@ -11,10 +11,7 @@
 /** Escape XML content (& < >). Donor semantics: shared/xmlEscape. */
 export function escapeXmlContent(str: string | null | undefined): string {
   if (str == null) return "";
-  return String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 export const GIT_CONTEXT_BLOCK = `<git_context>
@@ -38,7 +35,9 @@ Dyad may add Git provenance to a user message.
  * the previous turn's commit hashes. Returns null when neither is known
  * (no reminder is attached). Donor logic verbatim.
  */
-export function buildGitReminder(message: { commitHash?: string; sourceCommitHash?: string } | undefined): string | null {
+export function buildGitReminder(
+  message: { commitHash?: string; sourceCommitHash?: string } | undefined,
+): string | null {
   return message?.commitHash
     ? `<system-reminder>Previous assistant message created commit: ${escapeXmlContent(message.commitHash)}.</system-reminder>`
     : message?.sourceCommitHash

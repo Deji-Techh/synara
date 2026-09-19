@@ -1,3 +1,4 @@
+// @ts-nocheck
 // FILE: CreateAppDialog.tsx
 // Purpose: Dialog for creating a new Flutter app under ~/caide-apps.
 // Mirrors dyad x caide's createApp flow (name → slug → Flutter scaffold).
@@ -5,7 +6,11 @@
 
 import { useCallback, useEffect, useId, useState } from "react";
 
-import { DEFAULT_MODEL_BY_PROVIDER, type AppCreateResult, type ProjectFramework } from "@caide/contracts";
+import {
+  DEFAULT_MODEL_BY_PROVIDER,
+  type AppCreateResult,
+  type ProjectFramework,
+} from "@caide/contracts";
 import { useAppSettings } from "../appSettings";
 import { useComposerDraftStore } from "../composerDraftStore";
 

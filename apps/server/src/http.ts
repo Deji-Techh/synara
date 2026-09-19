@@ -494,9 +494,7 @@ export const binaryUploadEffectRouteLayer = Layer.mergeAll(
       if (name.length === 0 || name.length > 255 || /[\u0000\r\n]/u.test(name)) {
         return fail("Attachment name is invalid.", 400);
       }
-      const buffer = yield* request.arrayBuffer.pipe(
-        Effect.catchCause(() => Effect.succeed(null)),
-      );
+      const buffer = yield* request.arrayBuffer.pipe(Effect.catchCause(() => Effect.succeed(null)));
       if (!buffer || buffer.byteLength === 0) {
         return fail("Attachment is empty.", 400);
       }

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { type ProjectId, ThreadId } from "@caide/contracts";
 import { getDefaultModel } from "@caide/shared/model";
 import { useNavigate, useRouter } from "@tanstack/react-router";

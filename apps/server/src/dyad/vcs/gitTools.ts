@@ -76,7 +76,9 @@ function ensureRepo(stdout: string, stderr: string, exitCode: number): void {
   // Only the message identifies a non-repo: exit 128 also means bad
   // revision / missing path, which callers report in their own words.
   if (/not a git repository|not a git repo/i.test(`${stdout}\n${stderr}`)) {
-    throw new GitToolError("Not a git repository — run `git init` first or pick a project workspace");
+    throw new GitToolError(
+      "Not a git repository — run `git init` first or pick a project workspace",
+    );
   }
   void exitCode;
 }
@@ -152,7 +154,10 @@ export async function executeGitStatus(appPath: string, signal?: AbortSignal): P
 // --- git_diff (donor schema + description verbatim) ---
 
 const gitDiffSchema = z.object({
-  staged: z.boolean().optional().describe("If true, show staged (index) diff instead of working tree diff"),
+  staged: z
+    .boolean()
+    .optional()
+    .describe("If true, show staged (index) diff instead of working tree diff"),
   path: z.string().optional().describe("Limit diff to this relative file or directory path"),
 });
 
@@ -204,7 +209,13 @@ export async function executeGitDiff(
 // --- git_log (donor schema + description verbatim) ---
 
 const gitLogSchema = z.object({
-  limit: z.number().min(1).max(50).optional().default(10).describe("Number of recent commits to show (default 10, max 50)"),
+  limit: z
+    .number()
+    .min(1)
+    .max(50)
+    .optional()
+    .default(10)
+    .describe("Number of recent commits to show (default 10, max 50)"),
 });
 
 export const gitLogTool = defineTool({
@@ -247,7 +258,9 @@ const gitCommitSchema = z.object({
     .boolean()
     .optional()
     .default(true)
-    .describe("Stage all modified/deleted/added files before committing (default true). Set to false to commit only already-staged files."),
+    .describe(
+      "Stage all modified/deleted/added files before committing (default true). Set to false to commit only already-staged files.",
+    ),
 });
 
 export const gitCommitTool = defineTool({
@@ -259,7 +272,8 @@ Returns the commit hash of the new commit.`,
   schema: gitCommitSchema,
   readOnly: false,
   modifiesState: true,
-  execute: async (args, ctx) => executeGitCommit(gitCommitSchema.parse(args), ctx.appPath, ctx.signal),
+  execute: async (args, ctx) =>
+    executeGitCommit(gitCommitSchema.parse(args), ctx.appPath, ctx.signal),
   presentCall: (args: any) => `git commit -m "${args.message}"`,
 });
 
@@ -283,7 +297,9 @@ export async function executeGitCommit(
       throw new GitToolError("Nothing to commit — working tree clean");
     }
     ensureRepo(commit.stdout, commit.stderr, commit.exitCode);
-    throw new GitToolError(`git commit failed (exit ${commit.exitCode}):\n${commit.stderr || commit.stdout}`);
+    throw new GitToolError(
+      `git commit failed (exit ${commit.exitCode}):\n${commit.stderr || commit.stdout}`,
+    );
   }
   const rev = await runGit(["rev-parse", "HEAD"], appPath, signal);
   const hash = rev.stdout.trim();

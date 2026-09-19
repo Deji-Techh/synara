@@ -1,12 +1,35 @@
 ---
-title: Neon Database Branching
-description: Zero-risk database migrations with instant branching.
+title: Neon Serverless Database Branching
+description: Isolated copy-on-write Postgres branches per feature thread for risk-free migrations.
 ---
 
-# Neon Serverless Postgres Branching
+# Neon Serverless Database Branching
 
-Caide connects directly to Neon to provision instant, copy-on-write database branches for your development threads:
+One of the greatest hazards of autonomous AI coding is running unverified database migrations against shared staging or production databases. Caide solves this through first-class integration with **Neon serverless Postgres**.
 
-- Each feature thread can get its own database branch.
-- Safe schema migration experiments without affecting production data.
-- Instant rollback if a migration fails.
+---
+
+## What is Database Branching?
+
+Neon’s copy-on-write architecture allows creating a full snapshot of your Postgres database in under 2 seconds. The branch has its own isolated compute and storage, containing a full copy of the schema and data without duplicating disk usage.
+
+---
+
+## How Caide Uses Database Branches
+
+When you connect a Neon database project to Caide:
+
+1. **Thread-Level Isolation**: When you start a new feature thread (e.g. `feature/user-auth-profiles`), Caide provisions a dedicated Neon database branch named `caide-thread-[id]`.
+2. **Safe Migration Testing**: When the agent modifies Drizzle, Prisma, or raw SQL migrations, the migration script executes strictly against the isolated branch.
+3. **Data Verification**: You can test queries, verify foreign keys, and seed mock records without touching your main branch.
+4. **Merge or Rollback**:
+   - If the feature succeeds: Caide provides the exact migration diff to apply to your production branch during deployment.
+   - If the turn fails: Simply discard the thread, and Caide cleans up the ephemeral database branch automatically.
+
+---
+
+## Connecting Your Neon Project
+
+1. Go to **Settings** → **Database** → **Neon**.
+2. Authenticate with your Neon account via OAuth or enter your Neon API key.
+3. Select your project. Caide automatically injects the dynamically generated branch connection string (`DATABASE_URL`) into your application runtime environment.

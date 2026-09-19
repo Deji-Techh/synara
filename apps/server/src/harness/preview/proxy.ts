@@ -24,7 +24,14 @@ export class ProxyStartError extends Error {
   }
 }
 
-const WORKER_PATH = path.join(import.meta.dirname ?? "", "..", "..", "dyad", "preview", "proxy_server.cjs");
+const WORKER_PATH = path.join(
+  import.meta.dirname ?? "",
+  "..",
+  "..",
+  "dyad",
+  "preview",
+  "proxy_server.cjs",
+);
 
 interface ProxyHandle {
   worker: Worker;

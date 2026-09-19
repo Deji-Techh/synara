@@ -39,9 +39,7 @@ export function AccountBalance() {
     return (
       <div className="text-sm">
         <span className="text-muted-foreground">Balance: </span>
-        <span className="font-mono font-medium">
-          {solBalance.toFixed(4)} SOL
-        </span>
+        <span className="font-mono font-medium">{solBalance.toFixed(4)} SOL</span>
       </div>
     );
   }

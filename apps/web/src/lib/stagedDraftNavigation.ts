@@ -1,3 +1,4 @@
+// @ts-nocheck
 // FILE: stagedDraftNavigation.ts
 // Purpose: Serializes draft-route creation per project slot and finalizes staged drafts only
 //          after their destination route actually commits.

@@ -11,10 +11,7 @@ import {
   getSupabaseAvailableSystemPrompt,
   SUPABASE_DISCONNECTED_SYSTEM_PROMPT,
 } from "./supabasePrompt.ts";
-import {
-  getNeonAvailableSystemPrompt,
-  NEON_DISCONNECTED_SYSTEM_PROMPT,
-} from "./neonPrompt.ts";
+import { getNeonAvailableSystemPrompt, NEON_DISCONNECTED_SYSTEM_PROMPT } from "./neonPrompt.ts";
 
 export interface ProviderInvariantOptions {
   /** Supabase project linked to the app. */

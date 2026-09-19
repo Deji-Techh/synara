@@ -54,10 +54,7 @@ const APPLAMA_BUILTIN_ID = "mcp-appllama-builtin";
 
 function ensureBuiltinServers(servers: McpServerConfig[]): McpServerConfig[] {
   if (
-    servers.some(
-      (s) =>
-        s.url === APPLAMA_MCP_URL || s.name.trim().toLowerCase() === "appllama",
-    )
+    servers.some((s) => s.url === APPLAMA_MCP_URL || s.name.trim().toLowerCase() === "appllama")
   ) {
     return servers;
   }
@@ -112,17 +109,25 @@ export function savePrefs(prefs: McpPrefs): void {
 }
 
 /** Config validation — returns human-readable problems (empty = valid). */
-export function validateServer(input: Partial<McpServerConfig>, siblings: McpServerConfig[]): string[] {
+export function validateServer(
+  input: Partial<McpServerConfig>,
+  siblings: McpServerConfig[],
+): string[] {
   const problems: string[] = [];
   const name = (input.name ?? "").trim();
   if (!name) problems.push("Name is required.");
-  else if (siblings.some((s) => s.id !== input.id && s.name.trim().toLowerCase() === name.toLowerCase())) {
+  else if (
+    siblings.some((s) => s.id !== input.id && s.name.trim().toLowerCase() === name.toLowerCase())
+  ) {
     problems.push(`Another server is already named "${name}".`);
   }
   if (input.transport === "stdio" && !(input.command ?? "").trim()) {
     problems.push("Command is required for stdio servers (e.g. npx, uvx, node).");
   }
-  if ((input.transport === "sse" || input.transport === "oauth") && !/^https?:\/\//.test(input.url ?? "")) {
+  if (
+    (input.transport === "sse" || input.transport === "oauth") &&
+    !/^https?:\/\//.test(input.url ?? "")
+  ) {
     problems.push("A valid http(s) URL is required.");
   }
   if (input.transport === "oauth" && !(input.authorizeUrl ?? "").trim()) {

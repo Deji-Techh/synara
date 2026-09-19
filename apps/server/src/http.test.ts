@@ -527,10 +527,9 @@ describe("production Effect HTTP routes", () => {
       const missing = await fetch(`${origin}/api/attachments/download?id=nope-not-real`);
       expect(missing.status).toBe(404);
 
-      const cancel = await fetch(
-        `${origin}${ATTACHMENT_CANCEL_ROUTE_PATH}?threadId=thread-1`,
-        { method: "POST" },
-      );
+      const cancel = await fetch(`${origin}${ATTACHMENT_CANCEL_ROUTE_PATH}?threadId=thread-1`, {
+        method: "POST",
+      });
       expect(cancel.status).toBe(200);
     });
   });

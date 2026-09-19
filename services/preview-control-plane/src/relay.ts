@@ -14,17 +14,11 @@ import crypto from "node:crypto";
 import { randomUUID } from "node:crypto";
 import type { IncomingMessage, OutgoingHttpHeaders, ServerResponse, Server } from "node:http";
 import type { Duplex } from "node:stream";
-import express, {
-  type Express,
-  type NextFunction,
-  type Request,
-  type Response,
-} from "express";
+import express, { type Express, type NextFunction, type Request, type Response } from "express";
 import { Pool } from "pg";
 import { WebSocket, WebSocketServer, type RawData } from "ws";
 
-const hash = (value: string) =>
-  crypto.createHash("sha256").update(value).digest("hex");
+const hash = (value: string) => crypto.createHash("sha256").update(value).digest("hex");
 const token = () => crypto.randomBytes(32).toString("base64url");
 
 const TUNNEL_LIFETIME_SECONDS = 2 * 60 * 60;
@@ -66,10 +60,9 @@ async function installation(pool: Pool, req: express.Request) {
     [hash(access)],
   );
   if (!result.rows[0]) return null;
-  await pool.query(
-    `UPDATE preview_installations SET last_seen_at=now() WHERE id=$1`,
-    [result.rows[0].id],
-  );
+  await pool.query(`UPDATE preview_installations SET last_seen_at=now() WHERE id=$1`, [
+    result.rows[0].id,
+  ]);
   return result.rows[0] as {
     id: string;
     plan: string;
@@ -103,9 +96,7 @@ function makePreviewCookie(tunnelId: string): string {
 
 function previewCookieTunnelId(cookieHeader: string | undefined): string | null {
   if (!cookieHeader) return null;
-  const match = cookieHeader.match(
-    new RegExp(`(?:^|;)\\s*${PREVIEW_COOKIE_NAME}=([^;]+)`),
-  );
+  const match = cookieHeader.match(new RegExp(`(?:^|;)\\s*${PREVIEW_COOKIE_NAME}=([^;]+)`));
   if (!match) return null;
   try {
     return decodeURIComponent(match[1]);
@@ -130,9 +121,7 @@ export function installTunnelRoutes(app: Express, pool: Pool): void {
   app.post("/v1/tunnels", json, async (req, res) => {
     const user = await installation(pool, req);
     if (!user) {
-      res
-        .status(401)
-        .json({ error: "CAIDE installation authentication required" });
+      res.status(401).json({ error: "CAIDE installation authentication required" });
       return;
     }
     const appId = Number(req.body?.appId);
@@ -194,9 +183,7 @@ export function installTunnelRoutes(app: Express, pool: Pool): void {
   app.get("/v1/tunnels/:id", async (req, res) => {
     const user = await installation(pool, req);
     if (!user) {
-      res
-        .status(401)
-        .json({ error: "CAIDE installation authentication required" });
+      res.status(401).json({ error: "CAIDE installation authentication required" });
       return;
     }
     const result = await pool.query(
@@ -214,9 +201,7 @@ export function installTunnelRoutes(app: Express, pool: Pool): void {
   app.delete("/v1/tunnels/:id", async (req, res) => {
     const user = await installation(pool, req);
     if (!user) {
-      res
-        .status(401)
-        .json({ error: "CAIDE installation authentication required" });
+      res.status(401).json({ error: "CAIDE installation authentication required" });
       return;
     }
     const result = await pool.query(
@@ -249,10 +234,7 @@ async function lookupTunnel(pool: Pool, publicToken: string) {
 }
 
 function tunnelAvailable(row: Record<string, unknown>): boolean {
-  return (
-    row.status === "online" &&
-    new Date(row.expires_at as string).getTime() > Date.now()
-  );
+  return row.status === "online" && new Date(row.expires_at as string).getTime() > Date.now();
 }
 
 function sendFrame(ws: WebSocket, obj: Record<string, unknown>): void {
@@ -261,12 +243,7 @@ function sendFrame(ws: WebSocket, obj: Record<string, unknown>): void {
   }
 }
 
-function chunkify(
-  ws: WebSocket,
-  type: string,
-  id: string,
-  buffer: Buffer,
-): void {
+function chunkify(ws: WebSocket, type: string, id: string, buffer: Buffer): void {
   for (let offset = 0; offset < buffer.length; offset += WS_FRAME_CHUNK_BYTES) {
     const part = buffer.subarray(offset, offset + WS_FRAME_CHUNK_BYTES);
     sendFrame(ws, { type, id, data: part.toString("base64") });
@@ -316,18 +293,10 @@ async function handlePublicHttp(
  * `/src/main.tsx`, `/favicon.ico`, runtime fetches) actually load through the
  * relay, since those paths never carry the `/t/<token>/` prefix.
  */
-function forwardToActiveTunnel(
-  pool: Pool,
-  req: IncomingMessage,
-  res: ServerResponse,
-): void {
+function forwardToActiveTunnel(pool: Pool, req: IncomingMessage, res: ServerResponse): void {
   const pathname = (req.url ?? "/").split("?")[0];
   // Never swallow control-plane routes.
-  if (
-    pathname === "/health" ||
-    pathname.startsWith("/v1/") ||
-    pathname.startsWith("/t/")
-  ) {
+  if (pathname === "/health" || pathname.startsWith("/v1/") || pathname.startsWith("/t/")) {
     res.writeHead(404, { "content-type": "text/plain" });
     res.end("Preview unavailable");
     return;
@@ -355,18 +324,11 @@ function forwardToActiveTunnel(
  * Register it AFTER the `/t` ingress and management API routes. Management
  * paths (`/health`, `/v1/*`) are passed to the next handler unchanged.
  */
-export function tunnelFallbackMiddleware(
-  pool: Pool,
-): express.RequestHandler {
+export function tunnelFallbackMiddleware(pool: Pool): express.RequestHandler {
   return (req, res, next) => handleTunnelFallback(pool, req, res, next);
 }
 
-function handleTunnelFallback(
-  pool: Pool,
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): void {
+function handleTunnelFallback(pool: Pool, req: Request, res: Response, next: NextFunction): void {
   const pathname = (req.url ?? "/").split("?")[0];
   if (pathname === "/health" || pathname.startsWith("/v1/")) {
     next();
@@ -521,10 +483,7 @@ export function installTunnelRelay(
 
         ws.on("message", (data) => {
           client.lastSeenAt = Date.now();
-          void pool.query(
-            `UPDATE preview_tunnels SET last_seen_at=now() WHERE id=$1`,
-            [tunnelId],
-          );
+          void pool.query(`UPDATE preview_tunnels SET last_seen_at=now() WHERE id=$1`, [tunnelId]);
           let message: Record<string, unknown>;
           try {
             message = JSON.parse(data.toString()) as Record<string, unknown>;
@@ -547,9 +506,7 @@ export function installTunnelRelay(
             case "response-body": {
               const pending = pendingHttp.get(String(message.id));
               if (!pending) break;
-              pending.res.write(
-                Buffer.from(String(message.data ?? ""), "base64"),
-              );
+              pending.res.write(Buffer.from(String(message.data ?? ""), "base64"));
               break;
             }
             case "response-end": {
@@ -723,10 +680,9 @@ async function handleControlUpgrade(
 ): Promise<void> {
   const url = new URL(req.url ?? "/", "http://localhost");
   const tunnelToken = url.searchParams.get("token") ?? "";
-  const result = await pool.query(
-    `SELECT id FROM preview_tunnels WHERE tunnel_token_hash=$1`,
-    [hash(tunnelToken)],
-  );
+  const result = await pool.query(`SELECT id FROM preview_tunnels WHERE tunnel_token_hash=$1`, [
+    hash(tunnelToken),
+  ]);
   if (!result.rows[0]) {
     socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
     socket.destroy();

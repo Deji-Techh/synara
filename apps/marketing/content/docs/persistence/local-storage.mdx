@@ -1,0 +1,40 @@
+---
+title: Local Storage & Data Privacy
+description: Learn how Caide stores workspace state in local SQLite databases with zero cloud tracking.
+---
+
+# Local Storage & Data Privacy
+
+Caide is fundamentally engineered as a **local-first** application. Unlike cloud-hosted AI coding assistants that upload your entire workspace to proprietary servers, Caide stores all state strictly on your local disk.
+
+---
+
+## What Lives on Your Machine
+
+All application state is stored locally inside your OS user data directory (`~/.config/caide` or `~/.caide`):
+
+| Data Type                  | Storage Engine            | Purpose                                                           |
+| -------------------------- | ------------------------- | ----------------------------------------------------------------- |
+| **Threads & Turns**        | SQLite via Drizzle ORM    | Conversation history, user prompts, assistant turns, token counts |
+| **Goal Trees**             | SQLite via Drizzle ORM    | High-level goal tracking, sub-tasks, and execution checklists     |
+| **Git Checkpoints**        | Embedded Git worktree     | Point-in-time snapshots for 1-click rollback after any turn       |
+| **API Keys & Secrets**     | OS safeStorage / Keychain | AES-256 encrypted provider keys and tokens                        |
+| **Project Configurations** | JSON in `.caide/`         | Project-level framework settings, dev-server ports, and rules     |
+
+---
+
+## Context Compaction & Memory
+
+As chat conversations grow, Caide employs an intelligent **context compaction** algorithm:
+
+- When a thread approaches the model's context window limit, Caide identifies completed turns and summarizes intermediate reasoning steps into dense, structured checkpoints.
+- Critical architectural decisions, file paths, and current goals are preserved.
+- Unnecessary verbose tool outputs (e.g. 500 lines of build logs) are compacted into a single status confirmation, saving tokens and maintaining model reasoning sharpness.
+
+---
+
+## Zero Telemetry Guarantee
+
+- Caide contains zero third-party analytics trackers (no PostHog, Mixpanel, or Google Analytics).
+- Your source code is never used to train models.
+- Network requests leave your machine only when explicitly making API calls to your configured model provider or when deploying to your chosen hosting service (Vercel / GitHub).

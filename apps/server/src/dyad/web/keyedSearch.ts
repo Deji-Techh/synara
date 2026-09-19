@@ -7,7 +7,11 @@ import type { SearchHit, WebSearchProvider } from "./webSearch.ts";
 
 const TIMEOUT_MS = 15_000;
 
-async function postJson(url: string, headers: Record<string, string>, body: unknown): Promise<unknown> {
+async function postJson(
+  url: string,
+  headers: Record<string, string>,
+  body: unknown,
+): Promise<unknown> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
@@ -59,7 +63,11 @@ export function braveProvider(apiKey: string): WebSearchProvider {
       return (data.web?.results ?? [])
         .filter((r) => r.url && r.title)
         .slice(0, 8)
-        .map((r) => ({ title: r.title!, url: r.url!, snippet: (r.description ?? "").slice(0, 300) }));
+        .map((r) => ({
+          title: r.title!,
+          url: r.url!,
+          snippet: (r.description ?? "").slice(0, 300),
+        }));
     } finally {
       clearTimeout(timer);
       signal?.removeEventListener("abort", onAbort);

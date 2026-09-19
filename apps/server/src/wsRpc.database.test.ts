@@ -16,13 +16,22 @@ function appDir(): string {
   return dir;
 }
 
-const handlers = makeWsDatabaseHandlers({}, {}) as Record<string, (input: unknown) => Effect.Effect<unknown, unknown, never>>;
+const handlers = makeWsDatabaseHandlers({}, {}) as Record<
+  string,
+  (input: unknown) => Effect.Effect<unknown, unknown, never>
+>;
 
 async function invoke(threadId: string, channel: string, payload: unknown = {}) {
-  return Effect.runPromise(handlers["database.invoke"]({ threadId, channel, payload }) as Effect.Effect<unknown>);
+  return Effect.runPromise(
+    handlers["database.invoke"]({ threadId, channel, payload }) as Effect.Effect<unknown>,
+  );
 }
 
-async function invokeError(threadId: string, channel: string, payload: unknown = {}): Promise<string> {
+async function invokeError(
+  threadId: string,
+  channel: string,
+  payload: unknown = {},
+): Promise<string> {
   const exit = await Effect.runPromiseExit(
     handlers["database.invoke"]({ threadId, channel, payload }) as Effect.Effect<unknown>,
   );
@@ -55,7 +64,11 @@ describe("database.invoke bridge (pane backend)", () => {
       JSON.stringify({ provider: "neon", projectId: "p1", branchId: "b1" }),
     );
     const out = (await invoke("s-1", "list-apps", { workspaceRoot: dir })) as {
-      apps: Array<{ name: string; neonProjectId: string | null; neonActiveBranchId: string | null }>;
+      apps: Array<{
+        name: string;
+        neonProjectId: string | null;
+        neonActiveBranchId: string | null;
+      }>;
     };
     expect(out.apps).toHaveLength(1);
     expect(out.apps[0].neonProjectId).toBe("p1");
@@ -94,7 +107,9 @@ describe("database.invoke bridge (pane backend)", () => {
 
   it("requires tokens with human errors, rejects unknown channels", async () => {
     expect(await invokeError("s-1", "neon:list-projects", {})).toMatch(/Settings → Database/);
-    expect(await invokeError("s-1", "supabase:list-organizations", {})).toMatch(/Settings → Database/);
+    expect(await invokeError("s-1", "supabase:list-organizations", {})).toMatch(
+      /Settings → Database/,
+    );
     expect(await invokeError("s-1", "nope:missing", {})).toMatch(/Unknown database channel/);
     expect(await invokeError("s-1", "neon:set-app-project", {})).toMatch(/workspace|projectId/);
   });
@@ -103,7 +118,8 @@ describe("database.invoke bridge (pane backend)", () => {
     const stub = vi.fn(async (url: unknown, init?: { method?: string }) => {
       const u = String(url);
       const method = init?.method ?? "GET";
-      const json = (body: unknown) => ({ ok: true, status: 200, json: async () => body }) as Response;
+      const json = (body: unknown) =>
+        ({ ok: true, status: 200, json: async () => body }) as Response;
       if (u.includes("console.neon.tech") && u.endsWith("/projects") && method === "GET") {
         return json({ projects: [{ id: "p1", name: "Shop" }] });
       }
@@ -128,7 +144,10 @@ describe("database.invoke bridge (pane backend)", () => {
       branches: Array<{ id: string }>;
     };
     expect(got.branches[0].id).toBe("b1");
-    const created = (await invoke("s-1", "neon:create-project", { workspaceRoot: dir, name: "New" })) as {
+    const created = (await invoke("s-1", "neon:create-project", {
+      workspaceRoot: dir,
+      name: "New",
+    })) as {
       project: { id: string };
     };
     expect(created.project.id).toBe("p9");

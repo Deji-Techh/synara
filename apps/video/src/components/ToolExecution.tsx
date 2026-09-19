@@ -8,10 +8,30 @@ export const ToolExecution: React.FC = () => {
   const { fps } = useVideoConfig();
 
   const toolItems = [
-    { title: "Scaffold React Native (Expo) Architecture", badge: "create_workspace", time: "0.4s", icon: "📁" },
-    { title: "Generate Neon PostgreSQL Database Tables & Branch", badge: "neon_migrate", time: "0.6s", icon: "⚡" },
-    { title: "Render Live Candlestick Graph & Touch Gesture Component", badge: "write_file", time: "0.9s", icon: "✨" },
-    { title: "Compile HMR Bundle to Preview Stage", badge: "preview_sync", time: "0.3s", icon: "🚀" },
+    {
+      title: "Scaffold React Native (Expo) Architecture",
+      badge: "create_workspace",
+      time: "0.4s",
+      icon: "📁",
+    },
+    {
+      title: "Generate Neon PostgreSQL Database Tables & Branch",
+      badge: "neon_migrate",
+      time: "0.6s",
+      icon: "⚡",
+    },
+    {
+      title: "Render Live Candlestick Graph & Touch Gesture Component",
+      badge: "write_file",
+      time: "0.9s",
+      icon: "✨",
+    },
+    {
+      title: "Compile HMR Bundle to Preview Stage",
+      badge: "preview_sync",
+      time: "0.3s",
+      icon: "🚀",
+    },
   ];
 
   return (
@@ -66,14 +86,27 @@ export const ToolExecution: React.FC = () => {
 
               <div>
                 <div style={{ fontSize: "14px", fontWeight: 600 }}>{item.title}</div>
-                <div style={{ fontSize: "11px", color: CAIDE_THEME.colors.subtleForeground, fontFamily: CAIDE_THEME.typography.fontMono, marginTop: "2px" }}>
+                <div
+                  style={{
+                    fontSize: "11px",
+                    color: CAIDE_THEME.colors.subtleForeground,
+                    fontFamily: CAIDE_THEME.typography.fontMono,
+                    marginTop: "2px",
+                  }}
+                >
                   {item.badge}
                 </div>
               </div>
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <span style={{ fontSize: "12px", color: CAIDE_THEME.colors.mutedForeground, fontFamily: CAIDE_THEME.typography.fontMono }}>
+              <span
+                style={{
+                  fontSize: "12px",
+                  color: CAIDE_THEME.colors.mutedForeground,
+                  fontFamily: CAIDE_THEME.typography.fontMono,
+                }}
+              >
                 {item.time}
               </span>
               <div
@@ -90,7 +123,13 @@ export const ToolExecution: React.FC = () => {
               >
                 {isDone ? (
                   <svg width="11" height="9" viewBox="0 0 11 9" fill="none">
-                    <path d="M1.5 4.5L4 7L9.5 1.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path
+                      d="M1.5 4.5L4 7L9.5 1.5"
+                      stroke="white"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
                   </svg>
                 ) : (
                   <div

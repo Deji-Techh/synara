@@ -51,7 +51,12 @@ interface ChatModeSelectorProps {
   iconOnly?: boolean;
 }
 
-export function ChatModeSelector({ mode, onChatModeChange, effort, iconOnly = false }: ChatModeSelectorProps) {
+export function ChatModeSelector({
+  mode,
+  onChatModeChange,
+  effort,
+  iconOnly = false,
+}: ChatModeSelectorProps) {
   const meta = CHAT_MODE_META[mode] || CHAT_MODE_META["local-agent"];
   const Icon = meta.Icon;
   const label = effort ? `${effort} · ${meta.name}` : meta.name;
@@ -78,14 +83,25 @@ export function ChatModeSelector({ mode, onChatModeChange, effort, iconOnly = fa
           >
             <SelectValue>
               <span className="flex items-center gap-1.5">
-                <Icon size={14} className={mode === "plan" ? "text-blue-400" : mode === "ask" ? "text-amber-400" : "opacity-80"} />
+                <Icon
+                  size={14}
+                  className={
+                    mode === "plan"
+                      ? "text-blue-400"
+                      : mode === "ask"
+                        ? "text-amber-400"
+                        : "opacity-80"
+                  }
+                />
                 {!iconOnly && <span>{label}</span>}
                 <ChevronDownIcon className="size-3 opacity-50 ml-0.5" />
               </span>
             </SelectValue>
           </TooltipTrigger>
           <TooltipPopup>
-            {iconOnly ? `Mode: ${label} (Ctrl + . to toggle)` : "Open mode menu (Ctrl + . to toggle)"}
+            {iconOnly
+              ? `Mode: ${label} (Ctrl + . to toggle)`
+              : "Open mode menu (Ctrl + . to toggle)"}
           </TooltipPopup>
         </Tooltip>
         <SelectPopup

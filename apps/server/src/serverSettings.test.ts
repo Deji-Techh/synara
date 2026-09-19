@@ -185,9 +185,7 @@ describe("resolveChatTitleModelSelection", () => {
         model: DEFAULT_MODEL_BY_PROVIDER.groq,
       },
     };
-    expect(resolveChatTitleModelSelection(settings)).toEqual(
-      settings.textGenerationModelSelection,
-    );
+    expect(resolveChatTitleModelSelection(settings)).toEqual(settings.textGenerationModelSelection);
   });
 
   it("prefers an explicit override on an enabled provider", () => {
@@ -221,9 +219,7 @@ describe("resolveChatTitleModelSelection", () => {
         opencodeZen: { ...DEFAULT_SERVER_SETTINGS.providers.opencodeZen, enabled: false },
       },
     };
-    expect(resolveChatTitleModelSelection(settings)).toEqual(
-      settings.textGenerationModelSelection,
-    );
+    expect(resolveChatTitleModelSelection(settings)).toEqual(settings.textGenerationModelSelection);
   });
 
   it("persists and clears the chat-title override through updateSettings", async () => {

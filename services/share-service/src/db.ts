@@ -19,9 +19,7 @@ export interface ShareRow {
   max_downloads: number | null;
   status: "pending" | "active" | "revoked" | "expired";
 }
-export async function findShareByPublicTokenHash(
-  hash: string,
-): Promise<ShareRow | null> {
+export async function findShareByPublicTokenHash(hash: string): Promise<ShareRow | null> {
   const result = await pool.query<ShareRow>(
     "SELECT * FROM project_shares WHERE public_token_hash = $1",
     [hash],

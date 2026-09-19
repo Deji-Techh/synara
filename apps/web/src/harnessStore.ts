@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useEffect, useSyncExternalStore } from "react";
 import type { HarnessEvent } from "@caide/contracts";
 

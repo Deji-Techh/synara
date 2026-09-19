@@ -193,19 +193,19 @@ export async function readProjectArchive(
   let fileCount = 0;
   let uncompressedBytes = 0;
   let jsonBytes = 0;
-    let current:
-      | {
-          archivePath: string;
-          destination?: string | undefined;
-          stream?: WriteStream | undefined;
-          expectedSize: number;
-          expectedHash: string;
-          expectedChunks: number;
-          receivedChunks: number;
-          receivedBytes: number;
-          hash: ReturnType<typeof createHash>;
-        }
-      | undefined;
+  let current:
+    | {
+        archivePath: string;
+        destination?: string | undefined;
+        stream?: WriteStream | undefined;
+        expectedSize: number;
+        expectedHash: string;
+        expectedChunks: number;
+        receivedChunks: number;
+        receivedBytes: number;
+        hash: ReturnType<typeof createHash>;
+      }
+    | undefined;
 
   const closeCurrent = async () => {
     if (!current) return;

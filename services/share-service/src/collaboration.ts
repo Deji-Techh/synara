@@ -21,14 +21,7 @@ const GENERIC_TYPES = new Set([
   "command_request",
   "command_result",
 ]);
-const COLORS = [
-  "#2563eb",
-  "#7c3aed",
-  "#db2777",
-  "#059669",
-  "#d97706",
-  "#0891b2",
-];
+const COLORS = ["#2563eb", "#7c3aed", "#db2777", "#059669", "#d97706", "#0891b2"];
 
 const SafePathSchema = z
   .string()
@@ -116,9 +109,7 @@ const FileOperationSchema = z.discriminatedUnion("type", [
 ]);
 
 const GenericEventSchema = z.object({
-  type: z
-    .string()
-    .refine((value) => GENERIC_TYPES.has(value) || PRESENCE_TYPES.has(value)),
+  type: z.string().refine((value) => GENERIC_TYPES.has(value) || PRESENCE_TYPES.has(value)),
   payload: z.record(z.string(), z.unknown()),
 });
 
@@ -162,10 +153,9 @@ async function authenticate(req: Request): Promise<Participant | null> {
   );
   const row = result.rows[0];
   if (!row) return null;
-  await pool.query(
-    `UPDATE collaboration_participants SET last_seen_at=now() WHERE id=$1`,
-    [row.id],
-  );
+  await pool.query(`UPDATE collaboration_participants SET last_seen_at=now() WHERE id=$1`, [
+    row.id,
+  ]);
   return {
     id: row.id,
     sessionId: row.session_id,
@@ -175,14 +165,9 @@ async function authenticate(req: Request): Promise<Participant | null> {
   };
 }
 
-function requireRole(
-  participant: Participant,
-  roles: Participant["role"][],
-): void {
+function requireRole(participant: Participant, roles: Participant["role"][]): void {
   if (!roles.includes(participant.role)) {
-    const error = new Error(
-      "You do not have permission for this collaboration action",
-    );
+    const error = new Error("You do not have permission for this collaboration action");
     (error as Error & { status?: number }).status = 403;
     throw error;
   }
@@ -199,10 +184,7 @@ async function assertSessionActive(sessionId: string): Promise<void> {
     (error as Error & { status?: number }).status = 404;
     throw error;
   }
-  if (
-    row.status !== "active" ||
-    new Date(row.expires_at).getTime() <= Date.now()
-  ) {
+  if (row.status !== "active" || new Date(row.expires_at).getTime() <= Date.now()) {
     const error = new Error("Collaboration session is no longer active");
     (error as Error & { status?: number }).status = 410;
     throw error;
@@ -245,11 +227,7 @@ function transformChange(
   const delta = prior.text.length - prior.rangeLength;
   if (priorEnd <= start) return { ...change, rangeOffset: start + delta };
   if (priorStart >= end) return change;
-  if (
-    change.rangeLength === 0 &&
-    prior.rangeLength === 0 &&
-    priorStart === start
-  ) {
+  if (change.rangeLength === 0 && prior.rangeLength === 0 && priorStart === start) {
     return { ...change, rangeOffset: start + prior.text.length };
   }
   return null;
@@ -291,9 +269,7 @@ async function handleTextEdit(
         [participant.sessionId, payload.path, payload.baseRevision],
       );
       for (const row of intervening.rows) {
-        const priorChanges = z
-          .array(TextChangeSchema)
-          .parse(row.payload.changes);
+        const priorChanges = z.array(TextChangeSchema).parse(row.payload.changes);
         const transformed: typeof changes = [];
         for (const change of changes) {
           let next: typeof change | null = change;
@@ -301,14 +277,11 @@ async function handleTextEdit(
             next = next ? transformChange(next, prior) : null;
           }
           if (!next) {
-            throw Object.assign(
-              new Error("Concurrent edits overlap; resync required"),
-              {
-                status: 409,
-                latestContent: file.content,
-                latestRevision: currentRevision,
-              },
-            );
+            throw Object.assign(new Error("Concurrent edits overlap; resync required"), {
+              status: 409,
+              latestContent: file.content,
+              latestRevision: currentRevision,
+            });
           }
           transformed.push(next);
         }
@@ -410,10 +383,10 @@ async function handleFileOperation(
         [participant.sessionId, event.payload.path, event.payload.content],
       );
     } else if (event.type === "file_delete") {
-      await client.query(
-        `DELETE FROM collaboration_files WHERE session_id=$1 AND path=$2`,
-        [participant.sessionId, event.payload.path],
-      );
+      await client.query(`DELETE FROM collaboration_files WHERE session_id=$1 AND path=$2`, [
+        participant.sessionId,
+        event.payload.path,
+      ]);
     } else {
       await client.query(
         `UPDATE collaboration_files SET path=$3, updated_at=now()
@@ -445,9 +418,7 @@ function sendApiError(error: unknown, res: Response, next: NextFunction): void {
     latestRevision?: number;
   };
   if (error instanceof z.ZodError) {
-    res
-      .status(400)
-      .json({ error: error.issues.map((issue) => issue.message).join("; ") });
+    res.status(400).json({ error: error.issues.map((issue) => issue.message).join("; ") });
     return;
   }
   if (typed.status) {
@@ -467,9 +438,7 @@ export function registerCollaborationRoutes(app: Express): void {
     try {
       const input = CreateSessionSchema.parse(req.body);
       if (totalFileBytes(input.files) > MAX_PROJECT_BYTES) {
-        res
-          .status(413)
-          .json({ error: "Initial collaboration snapshot is too large" });
+        res.status(413).json({ error: "Initial collaboration snapshot is too large" });
         return;
       }
       const sessionId = randomUUID();
@@ -477,9 +446,7 @@ export function registerCollaborationRoutes(app: Express): void {
       const accessToken = createToken();
       const expiresAt = new Date(Date.now() + input.expiresInDays * 86_400_000);
       await client.query("BEGIN");
-      await client.query(
-        "SET CONSTRAINTS collaboration_sessions_owner_fk DEFERRED",
-      );
+      await client.query("SET CONSTRAINTS collaboration_sessions_owner_fk DEFERRED");
       await client.query(
         `INSERT INTO collaboration_sessions(id,project_name,owner_participant_id,expires_at)
          VALUES ($1,$2,$3,$4)`,
@@ -489,13 +456,7 @@ export function registerCollaborationRoutes(app: Express): void {
         `INSERT INTO collaboration_participants
          (id,session_id,token_hash,display_name,role,color)
          VALUES ($1,$2,$3,$4,'owner',$5)`,
-        [
-          participantId,
-          sessionId,
-          hashToken(accessToken),
-          input.displayName,
-          COLORS[0],
-        ],
+        [participantId, sessionId, hashToken(accessToken), input.displayName, COLORS[0]],
       );
       for (const file of input.files) {
         await client.query(
@@ -591,8 +552,7 @@ export function registerCollaborationRoutes(app: Express): void {
         `SELECT count(*)::int AS count FROM collaboration_participants WHERE session_id=$1`,
         [invite.session_id],
       );
-      const color =
-        COLORS[Number(countResult.rows[0]?.count ?? 0) % COLORS.length];
+      const color = COLORS[Number(countResult.rows[0]?.count ?? 0) % COLORS.length];
       await client.query(
         `INSERT INTO collaboration_participants
          (id,session_id,token_hash,display_name,role,color)
@@ -606,22 +566,15 @@ export function registerCollaborationRoutes(app: Express): void {
           color,
         ],
       );
-      await client.query(
-        `UPDATE collaboration_invites SET use_count=use_count+1 WHERE id=$1`,
-        [invite.id],
-      );
-      await appendEvent(
-        client,
-        invite.session_id,
-        "participant_joined",
+      await client.query(`UPDATE collaboration_invites SET use_count=use_count+1 WHERE id=$1`, [
+        invite.id,
+      ]);
+      await appendEvent(client, invite.session_id, "participant_joined", participantId, {
         participantId,
-        {
-          participantId,
-          displayName: input.displayName,
-          role: invite.role,
-          color,
-        },
-      );
+        displayName: input.displayName,
+        role: invite.role,
+        color,
+      });
       await client.query("COMMIT");
       res.status(201).json({
         sessionId: invite.session_id,
@@ -645,33 +598,32 @@ export function registerCollaborationRoutes(app: Express): void {
         return;
       }
       await assertSessionActive(participant.sessionId);
-      const [session, participants, files, checkpoints, sequence] =
-        await Promise.all([
-          pool.query(
-            `SELECT id,project_name,status,created_at,expires_at FROM collaboration_sessions WHERE id=$1`,
-            [participant.sessionId],
-          ),
-          pool.query(
-            `SELECT id,display_name,role,color,last_seen_at
+      const [session, participants, files, checkpoints, sequence] = await Promise.all([
+        pool.query(
+          `SELECT id,project_name,status,created_at,expires_at FROM collaboration_sessions WHERE id=$1`,
+          [participant.sessionId],
+        ),
+        pool.query(
+          `SELECT id,display_name,role,color,last_seen_at
              FROM collaboration_participants
             WHERE session_id=$1 AND left_at IS NULL
               AND (id=$2 OR last_seen_at > now() - interval '45 seconds')
             ORDER BY created_at`,
-            [participant.sessionId, participant.id],
-          ),
-          pool.query(
-            `SELECT path,content,revision,updated_at FROM collaboration_files WHERE session_id=$1 ORDER BY path`,
-            [participant.sessionId],
-          ),
-          pool.query(
-            `SELECT id,name,created_by,created_at FROM collaboration_checkpoints WHERE session_id=$1 ORDER BY created_at DESC LIMIT 100`,
-            [participant.sessionId],
-          ),
-          pool.query(
-            `SELECT coalesce(max(sequence),0)::bigint AS sequence FROM collaboration_events WHERE session_id=$1`,
-            [participant.sessionId],
-          ),
-        ]);
+          [participant.sessionId, participant.id],
+        ),
+        pool.query(
+          `SELECT path,content,revision,updated_at FROM collaboration_files WHERE session_id=$1 ORDER BY path`,
+          [participant.sessionId],
+        ),
+        pool.query(
+          `SELECT id,name,created_by,created_at FROM collaboration_checkpoints WHERE session_id=$1 ORDER BY created_at DESC LIMIT 100`,
+          [participant.sessionId],
+        ),
+        pool.query(
+          `SELECT coalesce(max(sequence),0)::bigint AS sequence FROM collaboration_events WHERE session_id=$1`,
+          [participant.sessionId],
+        ),
+      ]);
       res.json({
         session: session.rows[0],
         self: participant,
@@ -718,9 +670,7 @@ export function registerCollaborationRoutes(app: Express): void {
           );
           for (const row of result.rows) {
             after = Number(row.sequence);
-            res.write(
-              `id: ${after}\nevent: collaboration\ndata: ${JSON.stringify(row)}\n\n`,
-            );
+            res.write(`id: ${after}\nevent: collaboration\ndata: ${JSON.stringify(row)}\n\n`);
           }
         } finally {
           busy = false;
@@ -786,52 +736,47 @@ export function registerCollaborationRoutes(app: Express): void {
     }
   });
 
-  app.post(
-    "/v1/collaboration/sessions/:id/checkpoints",
-    async (req, res, next) => {
-      try {
-        const participant = await authenticate(req);
-        if (!participant || participant.sessionId !== req.params.id) {
-          res
-            .status(401)
-            .json({ error: "Collaboration access token required" });
-          return;
-        }
-        requireRole(participant, ["owner", "editor"]);
-        const input = CheckpointSchema.parse(req.body);
-        const filesResult = await pool.query(
-          `SELECT path,content,revision FROM collaboration_files WHERE session_id=$1 ORDER BY path`,
-          [participant.sessionId],
-        );
-        assertPayloadSize(filesResult.rows, MAX_CHECKPOINT_BYTES);
-        const checkpointId = randomUUID();
-        await pool.query(
-          `INSERT INTO collaboration_checkpoints(id,session_id,created_by,name,files)
-         VALUES ($1,$2,$3,$4,$5)`,
-          [
-            checkpointId,
-            participant.sessionId,
-            participant.id,
-            input.name,
-            JSON.stringify(filesResult.rows),
-          ],
-        );
-        const sequence = await appendEvent(
-          pool,
-          participant.sessionId,
-          "checkpoint_created",
-          participant.id,
-          {
-            checkpointId,
-            name: input.name,
-          },
-        );
-        res.status(201).json({ checkpointId, sequence });
-      } catch (error) {
-        sendApiError(error, res, next);
+  app.post("/v1/collaboration/sessions/:id/checkpoints", async (req, res, next) => {
+    try {
+      const participant = await authenticate(req);
+      if (!participant || participant.sessionId !== req.params.id) {
+        res.status(401).json({ error: "Collaboration access token required" });
+        return;
       }
-    },
-  );
+      requireRole(participant, ["owner", "editor"]);
+      const input = CheckpointSchema.parse(req.body);
+      const filesResult = await pool.query(
+        `SELECT path,content,revision FROM collaboration_files WHERE session_id=$1 ORDER BY path`,
+        [participant.sessionId],
+      );
+      assertPayloadSize(filesResult.rows, MAX_CHECKPOINT_BYTES);
+      const checkpointId = randomUUID();
+      await pool.query(
+        `INSERT INTO collaboration_checkpoints(id,session_id,created_by,name,files)
+         VALUES ($1,$2,$3,$4,$5)`,
+        [
+          checkpointId,
+          participant.sessionId,
+          participant.id,
+          input.name,
+          JSON.stringify(filesResult.rows),
+        ],
+      );
+      const sequence = await appendEvent(
+        pool,
+        participant.sessionId,
+        "checkpoint_created",
+        participant.id,
+        {
+          checkpointId,
+          name: input.name,
+        },
+      );
+      res.status(201).json({ checkpointId, sequence });
+    } catch (error) {
+      sendApiError(error, res, next);
+    }
+  });
 
   app.post(
     "/v1/collaboration/sessions/:id/checkpoints/:checkpointId/restore",
@@ -840,9 +785,7 @@ export function registerCollaborationRoutes(app: Express): void {
       try {
         const participant = await authenticate(req);
         if (!participant || participant.sessionId !== req.params.id) {
-          res
-            .status(401)
-            .json({ error: "Collaboration access token required" });
+          res.status(401).json({ error: "Collaboration access token required" });
           return;
         }
         requireRole(participant, ["owner"]);
@@ -862,19 +805,13 @@ export function registerCollaborationRoutes(app: Express): void {
           )
           .parse(checkpoint.rows[0].files);
         await client.query("BEGIN");
-        await client.query(
-          `DELETE FROM collaboration_files WHERE session_id=$1`,
-          [participant.sessionId],
-        );
+        await client.query(`DELETE FROM collaboration_files WHERE session_id=$1`, [
+          participant.sessionId,
+        ]);
         for (const file of files) {
           await client.query(
             `INSERT INTO collaboration_files(session_id,path,content,revision) VALUES ($1,$2,$3,$4)`,
-            [
-              participant.sessionId,
-              file.path,
-              file.content,
-              (file.revision ?? 0) + 1,
-            ],
+            [participant.sessionId, file.path, file.content, (file.revision ?? 0) + 1],
           );
         }
         const sequence = await appendEvent(
@@ -899,52 +836,46 @@ export function registerCollaborationRoutes(app: Express): void {
     },
   );
 
-  app.delete(
-    "/v1/collaboration/sessions/:id/participants/me",
-    async (req, res, next) => {
-      const client = await pool.connect();
-      try {
-        const participant = await authenticate(req);
-        if (!participant || participant.sessionId !== req.params.id) {
-          res
-            .status(401)
-            .json({ error: "Collaboration access token required" });
-          return;
-        }
-        if (participant.role === "owner") {
-          res.status(409).json({
-            error:
-              "The owner must end the collaboration session instead of leaving it",
-          });
-          return;
-        }
-        await client.query("BEGIN");
-        const sequence = await appendEvent(
-          client,
-          participant.sessionId,
-          "participant_left",
-          participant.id,
-          {
-            participantId: participant.id,
-            displayName: participant.displayName,
-          },
-        );
-        await client.query(
-          `UPDATE collaboration_participants
+  app.delete("/v1/collaboration/sessions/:id/participants/me", async (req, res, next) => {
+    const client = await pool.connect();
+    try {
+      const participant = await authenticate(req);
+      if (!participant || participant.sessionId !== req.params.id) {
+        res.status(401).json({ error: "Collaboration access token required" });
+        return;
+      }
+      if (participant.role === "owner") {
+        res.status(409).json({
+          error: "The owner must end the collaboration session instead of leaving it",
+        });
+        return;
+      }
+      await client.query("BEGIN");
+      const sequence = await appendEvent(
+        client,
+        participant.sessionId,
+        "participant_left",
+        participant.id,
+        {
+          participantId: participant.id,
+          displayName: participant.displayName,
+        },
+      );
+      await client.query(
+        `UPDATE collaboration_participants
               SET left_at=now(), last_seen_at=now()
             WHERE id=$1 AND left_at IS NULL`,
-          [participant.id],
-        );
-        await client.query("COMMIT");
-        res.status(200).json({ sequence });
-      } catch (error) {
-        await client.query("ROLLBACK").catch(() => undefined);
-        sendApiError(error, res, next);
-      } finally {
-        client.release();
-      }
-    },
-  );
+        [participant.id],
+      );
+      await client.query("COMMIT");
+      res.status(200).json({ sequence });
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => undefined);
+      sendApiError(error, res, next);
+    } finally {
+      client.release();
+    }
+  });
 
   app.delete("/v1/collaboration/sessions/:id", async (req, res, next) => {
     try {
@@ -954,13 +885,7 @@ export function registerCollaborationRoutes(app: Express): void {
         return;
       }
       requireRole(participant, ["owner"]);
-      await appendEvent(
-        pool,
-        participant.sessionId,
-        "session_closed",
-        participant.id,
-        {},
-      );
+      await appendEvent(pool, participant.sessionId, "session_closed", participant.id, {});
       await pool.query(
         `UPDATE collaboration_sessions SET status='closed',closed_at=now() WHERE id=$1`,
         [participant.sessionId],

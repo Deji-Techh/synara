@@ -144,7 +144,8 @@ describe("provider connection probes", () => {
       if (url.pathname === "/api/tags") return json(200, { models: [] });
       // Minimal OpenAI-style SSE for inference probes (donor validation).
       if (url.pathname.endsWith("/chat/completions") && req.method === "POST") {
-        if (url.pathname.startsWith("/r429/")) return json(429, { error: { message: "slow down" } });
+        if (url.pathname.startsWith("/r429/"))
+          return json(429, { error: { message: "slow down" } });
         if (auth !== "Bearer good") return json(401, { error: { message: "invalid key" } });
         res.writeHead(200, { "content-type": "text/event-stream" });
         res.end('data: {"choices":[{"delta":{"content":"5"}}]}\n\ndata: [DONE]\n\n');
@@ -160,17 +161,27 @@ describe("provider connection probes", () => {
   });
 
   it("probes keyed and local providers", async () => {
-    await expect(testProviderConnection({ providerId: "openai", apiKey: "good", baseUrl: base })).resolves.toMatchObject({
+    await expect(
+      testProviderConnection({ providerId: "openai", apiKey: "good", baseUrl: base }),
+    ).resolves.toMatchObject({
       ok: true,
       message: "Connected — 1 model(s) listed.",
     });
-    await expect(testProviderConnection({ providerId: "openai", apiKey: "bad", baseUrl: base })).resolves.toMatchObject({
+    await expect(
+      testProviderConnection({ providerId: "openai", apiKey: "bad", baseUrl: base }),
+    ).resolves.toMatchObject({
       ok: false,
       message: "Key rejected (401/403). Check the key.",
     });
-    await expect(testProviderConnection({ providerId: "openai" })).resolves.toMatchObject({ ok: false });
-    await expect(testProviderConnection({ providerId: "ollama", baseUrl: base })).resolves.toMatchObject({ ok: true });
-    await expect(testProviderConnection({ providerId: "minimax", apiKey: "x" })).resolves.toMatchObject({
+    await expect(testProviderConnection({ providerId: "openai" })).resolves.toMatchObject({
+      ok: false,
+    });
+    await expect(
+      testProviderConnection({ providerId: "ollama", baseUrl: base }),
+    ).resolves.toMatchObject({ ok: true });
+    await expect(
+      testProviderConnection({ providerId: "minimax", apiKey: "x" }),
+    ).resolves.toMatchObject({
       ok: true,
       message: "Key saved — no live check for this provider yet.",
     });

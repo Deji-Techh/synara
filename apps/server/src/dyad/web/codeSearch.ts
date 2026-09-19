@@ -14,11 +14,41 @@ import { defineTool, type ToolDef } from "../../harness/tools/defineTool.ts";
 import { safeJoinAppPath } from "../editing/safePath.ts";
 
 const CODE_EXTENSIONS = new Set([
-  ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".json",
-  ".css", ".scss", ".html", ".vue", ".svelte", ".astro",
-  ".dart", ".py", ".go", ".rs", ".rb", ".php", ".java", ".kt", ".swift",
+  ".ts",
+  ".tsx",
+  ".js",
+  ".jsx",
+  ".mjs",
+  ".cjs",
+  ".json",
+  ".css",
+  ".scss",
+  ".html",
+  ".vue",
+  ".svelte",
+  ".astro",
+  ".dart",
+  ".py",
+  ".go",
+  ".rs",
+  ".rb",
+  ".php",
+  ".java",
+  ".kt",
+  ".swift",
 ]);
-const SKIP_DIRS = new Set(["node_modules", ".git", ".hg", "dist", "build", ".next", "out", ".dart_tool", "Pods", ".caide"]);
+const SKIP_DIRS = new Set([
+  "node_modules",
+  ".git",
+  ".hg",
+  "dist",
+  "build",
+  ".next",
+  "out",
+  ".dart_tool",
+  "Pods",
+  ".caide",
+]);
 
 function tokenizeQuery(query: string): string[] {
   return query
@@ -91,7 +121,10 @@ export async function searchWorkspace(
     const firstTerm = terms.find((t) => lower.includes(t)) ?? terms[0];
     const at = lower.indexOf(firstTerm);
     const start = Math.max(0, at - 120);
-    const snippet = text.slice(start, start + 320).replace(/\s+/g, " ").trim();
+    const snippet = text
+      .slice(start, start + 320)
+      .replace(/\s+/g, " ")
+      .trim();
     hits.push({ path: path.relative(root, file), score, snippet });
   }
   hits.sort((a, b) => b.score - a.score);
@@ -99,7 +132,9 @@ export async function searchWorkspace(
 }
 
 const codeSearchSchema = z.object({
-  query: z.string().describe("Keywords, symbol, or feature to find (e.g. 'auth context', 'submit handler')"),
+  query: z
+    .string()
+    .describe("Keywords, symbol, or feature to find (e.g. 'auth context', 'submit handler')"),
   limit: z.number().int().min(1).max(20).default(8).describe("Max files to return"),
 });
 
@@ -113,11 +148,14 @@ export const codeSearchTool = defineTool({
   execute: async (args, ctx) => {
     const parsed = codeSearchSchema.parse(args);
     const hits = await searchWorkspace(ctx.appPath, parsed.query, parsed.limit);
-    if (hits.length === 0) return `No files matched "${parsed.query}". Try different keywords or grep.`;
+    if (hits.length === 0)
+      return `No files matched "${parsed.query}". Try different keywords or grep.`;
     return [
       `Top ${hits.length} file(s) for "${parsed.query}":`,
       "",
-      ...hits.map((h, i) => `${i + 1}. ${h.path} (score ${h.score})\n   ${h.snippet.slice(0, 240)}`),
+      ...hits.map(
+        (h, i) => `${i + 1}. ${h.path} (score ${h.score})\n   ${h.snippet.slice(0, 240)}`,
+      ),
     ].join("\n");
   },
   presentCall: (args: any) => `Code search: ${args.query}`,
@@ -132,7 +170,11 @@ export interface SymbolHit {
   kind: string;
 }
 
-export async function lookupSymbol(appPath: string, symbol: string, limit = 10): Promise<SymbolHit[]> {
+export async function lookupSymbol(
+  appPath: string,
+  symbol: string,
+  limit = 10,
+): Promise<SymbolHit[]> {
   const root = safeJoinAppPath(appPath, ".");
   const files: string[] = [];
   await walkCodeFiles(root, files);
@@ -160,8 +202,13 @@ export const lspSymbolLookupTool = defineTool({
   execute: async (args, ctx) => {
     const parsed = lspSchema.parse(args);
     const hits = await lookupSymbol(ctx.appPath, parsed.symbol, parsed.limit);
-    if (hits.length === 0) return `Symbol "${parsed.symbol}" not found. Try code_search for related terms.`;
-    return [`Symbol "${parsed.symbol}":`, "", ...hits.map((h) => `- ${h.path}:${h.line} (${h.kind} ${h.name})`)].join("\n");
+    if (hits.length === 0)
+      return `Symbol "${parsed.symbol}" not found. Try code_search for related terms.`;
+    return [
+      `Symbol "${parsed.symbol}":`,
+      "",
+      ...hits.map((h) => `- ${h.path}:${h.line} (${h.kind} ${h.name})`),
+    ].join("\n");
   },
   presentCall: (args: any) => `Locate symbol: ${args.symbol}`,
 });
@@ -176,7 +223,9 @@ export function setExplorerRunner(fn: ExplorerRunner | null): void {
 }
 
 const exploreSchema = z.object({
-  intent: z.enum(["explain", "locate", "edit", "debug"]).describe("explain: how it works; locate: where it lives; edit/debug: exact ranges to change"),
+  intent: z
+    .enum(["explain", "locate", "edit", "debug"])
+    .describe("explain: how it works; locate: where it lives; edit/debug: exact ranges to change"),
   target: z.string().describe("Feature, flow, or symbol to explore (e.g. 'how login works')"),
 });
 
@@ -209,7 +258,8 @@ export async function executeExploreCode(
     return `${digest}\n\n(Explorer synthesis not wired yet (M3) — digest above is the map; read the listed files for exact ranges.)`;
   }
   const text = await explorerRunner({
-    system: "You are a code reconnaissance assistant. Turn the file digest into a precise codebase map with roles and exact ranges.",
+    system:
+      "You are a code reconnaissance assistant. Turn the file digest into a precise codebase map with roles and exact ranges.",
     prompt: `${digest}\n\nIntent: ${parsed.intent}. Target: ${parsed.target}`,
   });
   return text;

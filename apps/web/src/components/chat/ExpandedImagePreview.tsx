@@ -11,9 +11,8 @@ export interface ExpandedImagePreview {
 export function buildExpandedImagePreview(
   images: ReadonlyArray<{ id: string; name: string; previewUrl?: string | null }>,
   selectedImageId: string,
-  resolveSrc: (image: { id: string; previewUrl?: string | null }) => string | undefined = (
-    image,
-  ) => image.previewUrl ?? undefined,
+  resolveSrc: (image: { id: string; previewUrl?: string | null }) => string | undefined = (image) =>
+    image.previewUrl ?? undefined,
 ): ExpandedImagePreview | null {
   const previewableImages = images.flatMap((image) => {
     const src = resolveSrc(image);

@@ -72,73 +72,59 @@ exampleRoutes.get("/items", requireAuth(), async (c) => {
  * GET /api/items/:id
  * Returns a single item by UUID.
  */
-exampleRoutes.get(
-  "/items/:id",
-  requireAuth(),
-  zValidator("param", ItemIdSchema),
-  async (c) => {
-    const requestId = c.get("requestId") ?? "unknown";
-    const { id } = c.req.valid("param");
+exampleRoutes.get("/items/:id", requireAuth(), zValidator("param", ItemIdSchema), async (c) => {
+  const requestId = c.get("requestId") ?? "unknown";
+  const { id } = c.req.valid("param");
 
-    // TODO: Replace with your actual DB query
-    // const item = await db.query.items.findFirst({ where: eq(items.id, id) });
-    // if (!item) return c.json(error("NOT_FOUND", "Item not found", requestId), 404);
-    // return c.json(success(item, requestId));
+  // TODO: Replace with your actual DB query
+  // const item = await db.query.items.findFirst({ where: eq(items.id, id) });
+  // if (!item) return c.json(error("NOT_FOUND", "Item not found", requestId), 404);
+  // return c.json(success(item, requestId));
 
-    return c.json(
-      error("NOT_FOUND", `Item ${id} not found`, requestId),
-      404,
-    );
-  },
-);
+  return c.json(error("NOT_FOUND", `Item ${id} not found`, requestId), 404);
+});
 
 /**
  * POST /api/items
  * Create a new item.
  */
-exampleRoutes.post(
-  "/items",
-  requireAuth(),
-  zValidator("json", CreateItemSchema),
-  async (c) => {
-    const requestId = c.get("requestId") ?? "unknown";
-    const body = c.req.valid("json");
+exampleRoutes.post("/items", requireAuth(), zValidator("json", CreateItemSchema), async (c) => {
+  const requestId = c.get("requestId") ?? "unknown";
+  const body = c.req.valid("json");
 
-    // TODO: Replace with your actual DB insert, e.g.:
-    // const user = c.get("user");
-    // const [item] = await db
-    //   .insert(items)
-    //   .values({ ...body, userId: user.id })
-    //   .returning();
-    // return c.json(success(item, requestId), 201);
+  // TODO: Replace with your actual DB insert, e.g.:
+  // const user = c.get("user");
+  // const [item] = await db
+  //   .insert(items)
+  //   .values({ ...body, userId: user.id })
+  //   .returning();
+  // return c.json(success(item, requestId), 201);
 
-    return c.json(
-      success({ title: body.title, description: body.description ?? null, id: "placeholder-replace-with-db-insert" }, requestId),
-      201,
-    );
-  },
-);
+  return c.json(
+    success(
+      {
+        title: body.title,
+        description: body.description ?? null,
+        id: "placeholder-replace-with-db-insert",
+      },
+      requestId,
+    ),
+    201,
+  );
+});
 
 /**
  * DELETE /api/items/:id
  * Delete an item.
  */
-exampleRoutes.delete(
-  "/items/:id",
-  requireAuth(),
-  zValidator("param", ItemIdSchema),
-  async (c) => {
-    const requestId = c.get("requestId") ?? "unknown";
-    const { id } = c.req.valid("param");
+exampleRoutes.delete("/items/:id", requireAuth(), zValidator("param", ItemIdSchema), async (c) => {
+  const requestId = c.get("requestId") ?? "unknown";
+  const { id } = c.req.valid("param");
 
-    // TODO: Replace with your actual DB delete
-    // const [deleted] = await db.delete(items).where(eq(items.id, id)).returning();
-    // if (!deleted) return c.json(error("NOT_FOUND", "Item not found", requestId), 404);
-    // return c.json(success({ deleted: true }, requestId));
+  // TODO: Replace with your actual DB delete
+  // const [deleted] = await db.delete(items).where(eq(items.id, id)).returning();
+  // if (!deleted) return c.json(error("NOT_FOUND", "Item not found", requestId), 404);
+  // return c.json(success({ deleted: true }, requestId));
 
-    return c.json(
-      error("NOT_FOUND", `Item ${id} not found`, requestId),
-      404,
-    );
-  },
-);
+  return c.json(error("NOT_FOUND", `Item ${id} not found`, requestId), 404);
+});

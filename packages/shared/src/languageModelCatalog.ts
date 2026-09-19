@@ -1328,7 +1328,9 @@ export function parseRemoteCatalogResponse(raw: unknown): {
         id: p.id,
         name: asOptionalString(p.displayName) ?? p.id,
         ...(typeof p.hasFreeTier === "boolean" ? { hasFreeTier: p.hasFreeTier } : {}),
-        ...(asOptionalString(p.websiteUrl) ? { websiteUrl: asOptionalString(p.websiteUrl) as string } : {}),
+        ...(asOptionalString(p.websiteUrl)
+          ? { websiteUrl: asOptionalString(p.websiteUrl) as string }
+          : {}),
       };
     });
     const modelsByProvider: Record<string, ModelOption[]> = {};

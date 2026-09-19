@@ -27,7 +27,11 @@ export function GameSettings({ game }: { game: GameId }) {
         <h4 className="mb-1.5 text-xs font-semibold text-foreground">
           Difficulty — {GAME_META[game].title}
         </h4>
-        <div className="flex gap-1" role="radiogroup" aria-label={`${GAME_META[game].title} difficulty`}>
+        <div
+          className="flex gap-1"
+          role="radiogroup"
+          aria-label={`${GAME_META[game].title} difficulty`}
+        >
           {DIFFICULTIES.map((d) => (
             <button
               key={d}

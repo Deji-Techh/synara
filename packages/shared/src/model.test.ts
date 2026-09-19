@@ -68,9 +68,9 @@ const SYNTHETIC_CAPS: ModelCapabilities = {
 
 describe("resolveHarnessModelRouting", () => {
   it("passes concrete selections through untouched", () => {
-    expect(
-      resolveHarnessModelRouting({ provider: "openrouter", model: "openai/gpt-5.5" }),
-    ).toEqual({ providerId: "openrouter", modelId: "openai/gpt-5.5" });
+    expect(resolveHarnessModelRouting({ provider: "openrouter", model: "openai/gpt-5.5" })).toEqual(
+      { providerId: "openrouter", modelId: "openai/gpt-5.5" },
+    );
   });
 
   it("resolves placeholder slugs to the provider default", () => {
@@ -90,9 +90,10 @@ describe("resolveHarnessModelRouting", () => {
     expect(resolveHarnessModelRouting({ provider: "opencode-zen", model: "x" }).providerId).toBe(
       "opencodeZen",
     );
-    expect(
-      resolveHarnessModelRouting({ provider: "gemini", model: "gemini-2.5-flash" }),
-    ).toEqual({ providerId: "google", modelId: "gemini-2.5-flash" });
+    expect(resolveHarnessModelRouting({ provider: "gemini", model: "gemini-2.5-flash" })).toEqual({
+      providerId: "google",
+      modelId: "gemini-2.5-flash",
+    });
   });
 
   it("omits providerId for auto so the server resolves by key", () => {
@@ -103,7 +104,8 @@ describe("resolveHarnessModelRouting", () => {
   });
 });
 
-describe("getDefaultModel", () => {  it("returns the per-provider default model", () => {
+describe("getDefaultModel", () => {
+  it("returns the per-provider default model", () => {
     expect(getDefaultModel("groq")).toBe("llama-3.3-70b-versatile");
     expect(getDefaultModel("opencodeZen")).toBe("deepseek-v4-flash-free");
     expect(getDefaultModel()).toBe(DEFAULT_MODEL);

@@ -13,10 +13,7 @@ import { buildPlatformPrompt } from "./platformContracts.ts";
 import { buildProviderInvariants } from "./providerInvariants.ts";
 import { BUILD_GIT_CONTEXT_BLOCK, GIT_CONTEXT_BLOCK } from "./gitContextPrompt.ts";
 import { TURBO_EDITS_V2_SYSTEM_PROMPT } from "./turboEditsPrompt.ts";
-import {
-  buildUiSkillPack,
-  COMPANION_SKILL_FRONTMATTERS,
-} from "./skillPacks.ts";
+import { buildUiSkillPack, COMPANION_SKILL_FRONTMATTERS } from "./skillPacks.ts";
 import { WEB3_SKILL_FRONTMATTERS, WEB3_SKILL_PACK } from "./skillPacks.ts";
 import { DEFAULT_AI_RULES } from "./aiRules.ts";
 import {
@@ -535,10 +532,7 @@ export function constructLocalAgentPrompt(
   if (options?.readOnly) {
     basePrompt = LOCAL_AGENT_ASK_SYSTEM_PROMPT;
   } else if (options?.basicAgentMode || options?.freeModelMode) {
-    basePrompt = buildLocalAgentBasicSystemPrompt(
-      enableAppBlueprint,
-      testingEnabled,
-    );
+    basePrompt = buildLocalAgentBasicSystemPrompt(enableAppBlueprint, testingEnabled);
   } else {
     basePrompt = buildLocalAgentSystemPrompt({
       enableAppBlueprint,
@@ -575,9 +569,8 @@ export function constructLocalAgentPrompt(
     .replace("[[PLATFORM_CONTRACT]]", () => buildPlatformPrompt(target, options?.caideFramework))
     .replace("[[SERVER_LAYER]]", () => serverLayer)
     .replace("[[AI_RULES]]", () => resolvedRules)
-    .replace(
-      "[[DESIGN_QUALITY_CONTRACT]]",
-      () => buildDesignQualityContract(options?.caideFramework),
+    .replace("[[DESIGN_QUALITY_CONTRACT]]", () =>
+      buildDesignQualityContract(options?.caideFramework),
     );
 
   // Database provider invariants (Supabase / Neon): appended only when the

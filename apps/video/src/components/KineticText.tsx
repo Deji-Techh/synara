@@ -38,7 +38,8 @@ export const KineticText: React.FC<KineticTextProps> = ({
       style={{
         display: "flex",
         flexWrap: "wrap",
-        justifyContent: align === "center" ? "center" : align === "right" ? "flex-end" : "flex-start",
+        justifyContent:
+          align === "center" ? "center" : align === "right" ? "flex-end" : "flex-start",
         gap: "0.28em",
         fontFamily: CAIDE_THEME.typography.fontFamily,
         fontSize: `${fontSize}px`,

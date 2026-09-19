@@ -55,7 +55,10 @@ export function knownDyadProviders(): readonly string[] {
 }
 
 export function useDyadProviderSettings(): DyadProvidersState & {
-  save: (providerId: string, entry: { apiKey?: string; apiBaseUrl?: string; resourceName?: string }) => void;
+  save: (
+    providerId: string,
+    entry: { apiKey?: string; apiBaseUrl?: string; resourceName?: string },
+  ) => void;
   /** Merge-patch server defaults. `undefined` keeps the current value;
    * `""` clears back to Auto. Never wipes untouched defaults (P8). */
   saveDefaults: (patch: {
@@ -83,7 +86,12 @@ export function useDyadProviderSettings(): DyadProvidersState & {
   const handleRef = useRef<HarnessWsHandle | null>(null);
   const pendingRef = useRef(new Map<string, (event: HarnessEvent) => void>());
   // Live mirror of server defaults for merge-patch saves (P8).
-  const stateRef = useRef({ defaultProviderId: "", defaultModelId: "", defaultImageProviderId: "", defaultImageModelId: "" });
+  const stateRef = useRef({
+    defaultProviderId: "",
+    defaultModelId: "",
+    defaultImageProviderId: "",
+    defaultImageModelId: "",
+  });
   // Last applied provider_settings_state / last state request, for staleness
   // detection. A socket can end up half-working (sends arrive, broadcasts
   // never do — e.g. a subscription lost across a server restart): without
@@ -215,22 +223,23 @@ export function useDyadProviderSettings(): DyadProvidersState & {
     // Seed from local presence (desktop only): instant, socket-independent.
     // Server state replaces it whenever it arrives (see the merged return).
     try {
-      const bridge = (
+      const bridge =
         typeof window !== "undefined"
-          ? (window as unknown as {
-              desktopBridge?: {
-                getProviderKeyPresence?: () => Promise<
-                  ReadonlyArray<{
-                    id: string;
-                    configured: boolean;
-                    hasBaseUrl: boolean;
-                    keyless: boolean;
-                  }>
-                >;
-              };
-            }).desktopBridge
-          : undefined
-      );
+          ? (
+              window as unknown as {
+                desktopBridge?: {
+                  getProviderKeyPresence?: () => Promise<
+                    ReadonlyArray<{
+                      id: string;
+                      configured: boolean;
+                      hasBaseUrl: boolean;
+                      keyless: boolean;
+                    }>
+                  >;
+                };
+              }
+            ).desktopBridge
+          : undefined;
       void bridge
         ?.getProviderKeyPresence?.()
         .then((entries) => {
@@ -238,7 +247,14 @@ export function useDyadProviderSettings(): DyadProvidersState & {
           setLocalProviders(
             entries
               .filter(
-                (e): e is { id: string; configured: boolean; hasBaseUrl: boolean; keyless: boolean } =>
+                (
+                  e,
+                ): e is {
+                  id: string;
+                  configured: boolean;
+                  hasBaseUrl: boolean;
+                  keyless: boolean;
+                } =>
                   e !== null &&
                   typeof e === "object" &&
                   typeof (e as { id?: unknown }).id === "string",
@@ -283,7 +299,11 @@ export function useDyadProviderSettings(): DyadProvidersState & {
     // subscription can be lost while sends keep working (e.g. across a
     // server restart), leaving the panel permanently empty.
     send({ type: "subscribe", sessionId: "settings" });
-    send({ type: "provider_settings_get", sessionId: "settings", requestId: `get-${++requestCounter}` });
+    send({
+      type: "provider_settings_get",
+      sessionId: "settings",
+      requestId: `get-${++requestCounter}`,
+    });
     lastGetAtRef.current = Date.now();
     // Arm the stale watchdog so a half-working socket heals itself instead
     // of leaving badges stuck on "Needs key".
@@ -291,7 +311,10 @@ export function useDyadProviderSettings(): DyadProvidersState & {
   }, [send]);
 
   const save = useCallback(
-    (providerId: string, entry: { apiKey?: string; apiBaseUrl?: string; resourceName?: string }) => {
+    (
+      providerId: string,
+      entry: { apiKey?: string; apiBaseUrl?: string; resourceName?: string },
+    ) => {
       send({ type: "subscribe", sessionId: "settings" });
       send({
         type: "provider_settings_set",

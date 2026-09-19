@@ -12,7 +12,13 @@ export {
   MCP_CONSENT_POLICY,
   buildMcpConsentSystemPrompt,
 } from "./mcpConsentPolicy.ts";
-export { tokenize, buildToolDocument, bm25Ranker, type ToolRanker, type RankedTool } from "./bm25.ts";
+export {
+  tokenize,
+  buildToolDocument,
+  bm25Ranker,
+  type ToolRanker,
+  type RankedTool,
+} from "./bm25.ts";
 export {
   MemoryMcpConsentStore,
   waitForMcpConsent,

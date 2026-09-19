@@ -361,9 +361,7 @@ export async function importProjectPackage(
     });
     if (!seen["manifest"]) throw new ProjectPackageError("Package has no manifest");
     const manifest = ProjectPackageManifestSchema.parse(seen["manifest"]);
-    const projectName = sanitizeProjectName(
-      params.projectName ?? manifest.projectName,
-    );
+    const projectName = sanitizeProjectName(params.projectName ?? manifest.projectName);
     const destination = path.join(params.workspaceRoot, projectName);
     if (fs.existsSync(destination)) {
       throw new ProjectPackageError(`Import destination already exists: ${destination}`);

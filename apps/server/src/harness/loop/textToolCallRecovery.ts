@@ -8,10 +8,7 @@
 // Only names present in the turn's tool map are recovered — unknown names
 // stay visible as text so the failure is debuggable, never silently dropped.
 
-import {
-  getCaideWriteTags,
-  parseFunctionTagCalls,
-} from "../utils/caideTagParser.ts";
+import { getCaideWriteTags, parseFunctionTagCalls } from "../utils/caideTagParser.ts";
 
 export interface RecoveredToolCall {
   id: string;

@@ -17,8 +17,7 @@ export interface PreviewIdentity {
 
 function controlPlaneUrl(): string {
   return (
-    process.env.CAIDE_PREVIEW_CONTROL_PLANE_URL?.trim() ||
-    "https://caide-preview-api.onrender.com"
+    process.env.CAIDE_PREVIEW_CONTROL_PLANE_URL?.trim() || "https://caide-preview-api.onrender.com"
   ).replace(/\/$/, "");
 }
 
@@ -41,10 +40,7 @@ async function request<T>(
       ...init.headers,
     },
   });
-  const body = (await response.json().catch(() => null)) as
-    | T
-    | { error?: string }
-    | null;
+  const body = (await response.json().catch(() => null)) as T | { error?: string } | null;
   if (!response.ok) {
     throw new Error(
       (body && typeof body === "object" && "error" in body && body.error) ||

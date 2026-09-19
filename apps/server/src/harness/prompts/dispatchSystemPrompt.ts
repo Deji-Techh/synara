@@ -17,9 +17,7 @@ export const DISPATCH_SYSTEM_PROMPT_ALIAS_ENV = "DYAD_DEFAULT_SYSTEM_PROMPT";
 
 type EnvLike = Record<string, string | undefined>;
 
-export function resolveDispatchSystemPromptOverride(
-  env: EnvLike = process.env,
-): string | null {
+export function resolveDispatchSystemPromptOverride(env: EnvLike = process.env): string | null {
   const primary = (env[DISPATCH_SYSTEM_PROMPT_ENV] ?? "").trim();
   if (primary.length > 0) return primary;
   const alias = (env[DISPATCH_SYSTEM_PROMPT_ALIAS_ENV] ?? "").trim();

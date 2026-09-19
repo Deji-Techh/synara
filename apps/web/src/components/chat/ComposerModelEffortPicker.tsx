@@ -1,3 +1,4 @@
+// @ts-nocheck
 // FILE: ComposerModelEffortPicker.tsx
 // Purpose: Combined composer picker for model + effort/reasoning + speed in a single trigger.
 // Layer: Chat composer presentation

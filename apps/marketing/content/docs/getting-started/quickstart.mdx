@@ -1,0 +1,61 @@
+---
+title: Quickstart Guide
+description: Create and preview your first full-stack application in Caide in under 5 minutes.
+---
+
+# Quickstart Guide
+
+This walkthrough guides you through creating a new application, configuring your model provider, executing turns, and previewing the running app live in DeviceLab.
+
+---
+
+## Step 1: Create a New Project
+
+1. Launch Caide and click **Create App** in the left sidebar.
+2. Select your immutable framework target:
+   - **React Native (Expo)**: Mobile apps running on iOS, Android, and web.
+   - **Flutter**: High-performance cross-platform mobile apps.
+   - **Website (Next.js)**: Modern web applications with React 19.
+   - **Blank**: Unconstrained backend or script directory.
+3. Name your project (e.g. `zen-crypto-tracker`) and choose a local directory.
+4. Caide boots your local environment, installs exact dependencies, and spins up the local dev-server automatically.
+
+---
+
+## Step 2: Configure Your Model Key
+
+1. Open **Settings** (gear icon in bottom left) → **Providers**.
+2. Paste your API key for your preferred provider:
+   - **Anthropic**: Claude 3.7 Sonnet (recommended for complex architectural refactoring).
+   - **OpenAI**: GPT-4o or o3-mini.
+   - **DeepSeek**: DeepSeek R1 or V3.
+   - **Google Gemini**: Gemini 2.5 Pro or Flash.
+   - **Ollama**: Check the Ollama toggle if running an offline daemon on `http://localhost:11434`.
+3. Keys are encrypted immediately using your operating system's native safeStorage.
+
+---
+
+## Step 3: Align on an App Blueprint
+
+In the chat composer, type your high-level project vision:
+
+> _"Build a minimalist mobile crypto portfolio tracker with dark mode, live price charting, and a transactions ledger."_
+
+Before writing files, Caide responds with an interactive **App Blueprint**:
+
+- **Screens & Routes**: Proposed navigation hierarchy (`(tabs)/index.tsx`, `(tabs)/portfolio.tsx`, `modal/transaction.tsx`).
+- **Data & State Model**: Zustand / React Context schemas.
+- **3-Question Survey**: The agent asks 3 focused architectural questions (e.g., choice of charting library, mock vs live API endpoint, persistent storage mechanism).
+
+Click **Approve Blueprint** once you are satisfied with the technical plan.
+
+---
+
+## Step 4: Stream Turns & Inspect Live Preview
+
+1. Caide begins code generation, creating components, styling with Tailwind / NativeWind, and installing dependencies.
+2. In the **Right Dock**, open **DeviceLab**:
+   - The embedded iPhone 16 frame hot-reloads the changes live.
+   - Click and interact directly with the preview UI.
+   - View live console logs and network requests in the **Console** tab.
+3. Scan the displayed **QR Code** with Expo Go to test the running app simultaneously on your physical phone!

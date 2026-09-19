@@ -4,11 +4,23 @@
 // Exports: section ids, nav items, and search normalization helper
 
 export const SETTINGS_SECTION_IDS = [
+  "database",
+  "general",
   "profile",
+  "appearance",
+  "notifications",
+  "behavior",
+  "shortcuts",
+  "worktrees",
+  "archived",
+  "providers",
+  "skills",
+  "integrations",
+  "advanced",
 ] as const;
 
 export type SettingsSectionId = (typeof SETTINGS_SECTION_IDS)[number];
-export type SettingsNavGroupId = "personal";
+export type SettingsNavGroupId = "personal" | "integrations" | "coding" | "system" | "archived";
 
 /**
  * Deep-link scroll targets inside settings panels. Each id is shared by its DOM owner and callers
@@ -33,9 +45,7 @@ export type SettingsNavItem = {
 export const SETTINGS_NAV_GROUPS: ReadonlyArray<{
   id: SettingsNavGroupId;
   label: string;
-}> = [
-  { id: "personal", label: "Personal" },
-] as const;
+}> = [{ id: "personal", label: "Personal" }] as const;
 
 export const SETTINGS_NAV_ITEMS: readonly SettingsNavItem[] = [
   {

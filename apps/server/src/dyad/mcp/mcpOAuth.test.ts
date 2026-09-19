@@ -99,7 +99,13 @@ describe("mcp oauth flow (phase 5)", () => {
     expect(tokens.expires_at).toBeGreaterThan(Date.now());
 
     await expect(
-      exchangeOAuthCode({ metadata, client, code: "wrong", redirectUri: "http://127.0.0.1:9/callback", codeVerifier: verifier }),
+      exchangeOAuthCode({
+        metadata,
+        client,
+        code: "wrong",
+        redirectUri: "http://127.0.0.1:9/callback",
+        codeVerifier: verifier,
+      }),
     ).rejects.toThrow(/400/);
 
     const refreshed = await refreshOAuthTokens({ metadata, client, refreshToken: "rt-1" });
@@ -120,7 +126,11 @@ describe("mcp oauth flow (phase 5)", () => {
   it("rejects servers without registration endpoints", async () => {
     await expect(
       registerOAuthClient(
-        { issuer: base, authorization_endpoint: `${base}/authorize`, token_endpoint: `${base}/token` },
+        {
+          issuer: base,
+          authorization_endpoint: `${base}/authorize`,
+          token_endpoint: `${base}/token`,
+        },
         ["http://127.0.0.1:9/callback"],
       ),
     ).rejects.toThrow(/dynamic client registration/);

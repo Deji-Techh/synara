@@ -4,11 +4,7 @@
 // silently when not, placeholder preference skips generation.
 
 import { describe, expect, it, vi, afterEach, beforeEach } from "vitest";
-import {
-  cascadeImageProvider,
-  normalizeImagePreference,
-  resolveImageLegs,
-} from "./keyedImages.ts";
+import { cascadeImageProvider, normalizeImagePreference, resolveImageLegs } from "./keyedImages.ts";
 
 vi.mock("../../voice/transcriptionService.ts", () => ({
   getVoiceApiKey: vi.fn((_provider: string) => null),
@@ -65,7 +61,10 @@ describe("image cascade (p8)", () => {
   it("capable turn model leads when its provider key exists", () => {
     mockKey.mockImplementation((p: string) => (p === "google" ? "test-key" : null));
     expect(
-      legsOf({ turnProviderId: "google", turnModelId: "gemini-2.0-flash-preview-image-generation" }),
+      legsOf({
+        turnProviderId: "google",
+        turnModelId: "gemini-2.0-flash-preview-image-generation",
+      }),
     ).toEqual(["turn-model", "gemini", "pollinations"]);
   });
 

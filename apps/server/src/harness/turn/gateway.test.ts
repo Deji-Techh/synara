@@ -646,7 +646,8 @@ describe("turn gateway (m3h)", () => {
       list("s-lm", undefined, "r-lm");
       await new Promise((r) => setTimeout(r, 200));
       const state = sent.find(
-        (e) => e.type === "local_models_state" && (e as { requestId?: string }).requestId === "r-lm",
+        (e) =>
+          e.type === "local_models_state" && (e as { requestId?: string }).requestId === "r-lm",
       );
       // Dead runtimes contribute nothing, but the state still broadcasts.
       expect(state).toMatchObject({ sessionId: "s-lm", models: [] });

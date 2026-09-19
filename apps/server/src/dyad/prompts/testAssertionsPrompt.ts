@@ -40,9 +40,7 @@ Return ONLY JSON. No prose, no markdown fences:
 {"assertions":[{"id":"...","code":"await expect(...).toBeVisible();"}]}`;
 
 function formatStatements(bodyStatements: string[]): string {
-  return bodyStatements
-    .map((statement, index) => `${index}: ${statement}`)
-    .join("\n");
+  return bodyStatements.map((statement, index) => `${index}: ${statement}`).join("\n");
 }
 
 export function buildAssertionCodePayload({

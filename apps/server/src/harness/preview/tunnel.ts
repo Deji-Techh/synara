@@ -85,7 +85,7 @@ export function relayAppIdForThread(threadId: string): number {
     hash ^= threadId.charCodeAt(i);
     hash = Math.imul(hash, 0x01000193);
   }
-  return (hash >>> 0) % 2_147_483_647 + 1;
+  return ((hash >>> 0) % 2_147_483_647) + 1;
 }
 
 function localPortForPreview(threadId: string): number {

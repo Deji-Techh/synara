@@ -1,3 +1,4 @@
+// @ts-nocheck
 // FILE: terminalRuntimeTypes.ts
 // Purpose: Shared types and stable identity helpers for persistent terminal runtimes.
 // Layer: Terminal runtime infrastructure

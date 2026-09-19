@@ -991,8 +991,7 @@ const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* (
       });
     }
   }
-  const localTmpDir =
-    process.env.CAIDE_DESKTOP_TMPDIR?.trim() || path.join(repoRoot, ".tmp");
+  const localTmpDir = process.env.CAIDE_DESKTOP_TMPDIR?.trim() || path.join(repoRoot, ".tmp");
   yield* fs.makeDirectory(localTmpDir, { recursive: true });
   const mkdir = options.keepStage ? fs.makeTempDirectory : fs.makeTempDirectoryScoped;
   const stageRoot = yield* mkdir({

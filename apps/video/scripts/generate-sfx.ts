@@ -3,7 +3,12 @@ import path from "path";
 
 const SAMPLE_RATE = 44100;
 
-function createWavHeader(dataLength: number, sampleRate = SAMPLE_RATE, channels = 1, bitsPerSample = 16) {
+function createWavHeader(
+  dataLength: number,
+  sampleRate = SAMPLE_RATE,
+  channels = 1,
+  bitsPerSample = 16,
+) {
   const buffer = Buffer.alloc(44);
   const byteRate = (sampleRate * channels * bitsPerSample) / 8;
   const blockAlign = (channels * bitsPerSample) / 8;
@@ -127,12 +132,12 @@ function generateAmbientSoundtrack() {
     { tStart: 0, tEnd: 7.5, root: 65.41 },
     { tStart: 7.5, tEnd: 15, root: 49.0 },
     { tStart: 15, tEnd: 22.5, root: 55.0 },
-    { tStart: 22.5, tEnd: 30, root: 43.65 }
+    { tStart: 22.5, tEnd: 30, root: 43.65 },
   ];
 
   for (let i = 0; i < length; i++) {
     const t = i / SAMPLE_RATE;
-    const currentChord = chordRoots.find(c => t >= c.tStart && t < c.tEnd) || chordRoots[3]!;
+    const currentChord = chordRoots.find((c) => t >= c.tStart && t < c.tEnd) || chordRoots[3]!;
     const chordTime = t - currentChord.tStart;
     const chordEnvelope = Math.sin(Math.PI * (chordTime / 7.5));
 

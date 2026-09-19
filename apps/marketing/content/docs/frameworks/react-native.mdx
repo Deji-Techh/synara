@@ -1,15 +1,39 @@
 ---
 title: React Native (Expo)
-description: Building cross-platform mobile apps with Caide and Expo.
+description: Building cross-platform mobile apps with Caide, Expo, Metro bundler, and DeviceLab.
 ---
 
 # React Native (Expo)
 
-Caide treats React Native as a first-class citizen with deep Expo integration.
+Caide treats React Native as a first-class mobile development environment. When you select React Native during project creation, Caide scaffolds an Expo project configured with TypeScript, modern file-based routing (`expo-router`), and NativeWind / Tailwind CSS.
 
-## Features
+---
 
-- Automatic Metro bundler supervision on port 8081.
-- Responsive DeviceLab preview with iPhone and Android device framing.
-- Physical device testing via integrated mobile QR codes.
-- Native build pipelines with EAS or local Xcode / Android Studio.
+## Toolchain & Dev Server Management
+
+When a React Native project boots:
+
+1. **Metro Bundler Supervision**: Caide starts the Metro bundler on port `8081` (or next free port) in an isolated background process.
+2. **DeviceLab Integration**: The Right Dock loads the web bundle inside an interactive iPhone 16 Pro simulator frame.
+3. **Hot Module Replacement (HMR)**: As the agent modifies screens and components, Metro immediately pushes updates to the preview stage with zero full-page reloads.
+4. **Console Log Interception**: Metro’s standard error and log stream are piped directly into Caide's bottom console, allowing the agent to diagnose rendering exceptions in real time.
+
+---
+
+## Testing on Physical Devices with QR Codes
+
+Testing touch gestures and native camera/sensor APIs requires physical hardware:
+
+- Click the **Mobile QR** badge in the Right Dock.
+- Scan the displayed QR code with the **Expo Go** app (iOS Camera or Android Expo Go).
+- Your physical device connects to the running Metro dev server over your local WiFi network, mirroring changes instantly.
+
+---
+
+## Native Build & Export Pipelines
+
+Caide supports multiple deployment paths:
+
+- **EAS Build**: Run cloud builds with Expo Application Services (`eas build -p ios` / `eas build -p android`).
+- **Prebuild & Native Projects**: Run `npx expo prebuild` to eject native `ios/` and `android/` folders for direct Xcode and Android Studio compilation.
+- **Export CAIDEPKG**: Export a self-contained portable package with dependencies locked.

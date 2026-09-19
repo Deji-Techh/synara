@@ -56,9 +56,7 @@ describe("resolveChatNumberForThread", () => {
 
   it("sorts unknown threads last so retries never reuse a number", () => {
     const threads = [identity("t1", "2026-01-01T00:00:00.000Z")];
-    expect(
-      resolveChatNumberForThread(threads, PROJECT_ID, ThreadId.makeUnsafe("missing")),
-    ).toBe(2);
+    expect(resolveChatNumberForThread(threads, PROJECT_ID, ThreadId.makeUnsafe("missing"))).toBe(2);
   });
 });
 

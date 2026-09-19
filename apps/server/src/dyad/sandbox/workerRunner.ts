@@ -29,12 +29,15 @@ export async function runWorkerSandbox(
         void worker.terminate();
         reject(new Error(`Sandbox worker timed out after ${WORKER_WALL_TIMEOUT_MS}ms`));
       }, WORKER_WALL_TIMEOUT_MS);
-      worker.once("message", (msg: { ok: boolean; result?: unknown; logs?: string[]; error?: string }) => {
-        clearTimeout(timer);
-        void worker.terminate();
-        if (msg.ok) resolve({ result: msg.result, logs: msg.logs ?? [] });
-        else reject(new Error(msg.error ?? "Sandbox worker failed"));
-      });
+      worker.once(
+        "message",
+        (msg: { ok: boolean; result?: unknown; logs?: string[]; error?: string }) => {
+          clearTimeout(timer);
+          void worker.terminate();
+          if (msg.ok) resolve({ result: msg.result, logs: msg.logs ?? [] });
+          else reject(new Error(msg.error ?? "Sandbox worker failed"));
+        },
+      );
       worker.once("error", (err) => {
         clearTimeout(timer);
         void worker.terminate();

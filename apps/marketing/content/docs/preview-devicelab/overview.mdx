@@ -1,12 +1,47 @@
 ---
 title: LiveLab & DeviceLab
-description: Multi-device live preview, console logs, and visual inspection.
+description: Multi-device live preview, mobile simulators, console logs, and problem diagnostics.
 ---
 
 # LiveLab & DeviceLab
 
-Caide features a built-in preview stage in the Right Dock:
+Building applications requires continuous visual and runtime feedback. Caide’s **Right Dock** houses a suite of inspection tools designed to eliminate the friction of switching between editor, terminal, and browser.
 
-- **DeviceLab Frames**: Test your app inside realistic iPhone 16, Google Pixel, iPad, or Desktop viewports.
-- **Console Log Stream**: Live stderr and stdout logs from your running Metro or Vite server.
-- **Problems Tab**: Diagnostics and lint errors captured before commits.
+---
+
+## DeviceLab Simulator Frames
+
+DeviceLab embeds an interactive iframe wrapped in pixel-accurate hardware frames:
+
+- **iPhone 16 Pro**: 393 × 852 viewport with Dynamic Island silhouette.
+- **Google Pixel 9**: 412 × 924 Android viewport.
+- **iPad Air / Tablet**: 820 × 1180 viewport for testing responsive split-views.
+- **Desktop / Responsive**: Unconstrained viewport with drag-to-resize handles.
+
+### Controls & Actions
+
+- **Rotate Orientation**: Toggle between portrait and landscape modes.
+- **Zoom / Scaling**: Fit to window, 50%, 75%, 100%, or 125% zoom factors.
+- **Hard Refresh**: Clear cache and reload the current preview state.
+- **Inspect Mode**: Click any element in the preview to jump directly to its JSX/Dart component declaration in the code editor.
+
+---
+
+## Live Console Log Stream
+
+The bottom dock features an integrated console that captures:
+
+- `stdout` and `stderr` streams from your active Vite, Next.js, or Metro dev servers.
+- Client-side browser logs (`console.log`, `console.warn`, `console.error`) bridged through the preview proxy.
+- Unhandled Promise rejections and network fetch failures.
+
+---
+
+## Problems & Diagnostics Tab
+
+Before you commit or deploy, Caide’s diagnostics engine monitors:
+
+- TypeScript compilation errors (`tsc --noEmit`).
+- ESLint and Biome warnings.
+- Missing dependencies or uninstalled package imports.
+- Unclosed JSX tags or broken React hook dependencies.

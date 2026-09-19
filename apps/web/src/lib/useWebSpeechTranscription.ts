@@ -199,7 +199,8 @@ export function useWebSpeechTranscription(
     const recognition = new Recognition();
     recognition.continuous = true;
     recognition.interimResults = true;
-    recognition.lang = typeof navigator !== "undefined" && navigator.language ? navigator.language : "en-US";
+    recognition.lang =
+      typeof navigator !== "undefined" && navigator.language ? navigator.language : "en-US";
     // Use a short maxAlternatives for speed — we only need the top result.
     recognition.maxAlternatives = 1;
 

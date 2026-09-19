@@ -88,24 +88,16 @@ describe("dyad providers transplant (m1, free-entirely)", () => {
     const ollama = resolveConnection("ollama", "qwen3:8b", {});
     expect(ollama.apiKey).toBeUndefined();
 
-    expect(() =>
-      resolveConnection("openai", "gpt-5", { providerSettings: {} }),
-    ).toThrow(/API key is required/);
+    expect(() => resolveConnection("openai", "gpt-5", { providerSettings: {} })).toThrow(
+      /API key is required/,
+    );
   });
 
   it("rejects pasted non-key text and missing azure/custom config", () => {
-    expect(() =>
-      resolveApiKeyOrThrow("sk-abc def", "OpenAI"),
-    ).toThrow(/invalid character/);
-    expect(() => resolveConnection("azure", "gpt-5", {})).toThrow(
-      /resource name is required/,
-    );
-    expect(() => resolveConnection("custom", "x", {})).toThrow(
-      /API Base URL/,
-    );
-    expect(() => resolveConnection("bedrock", "x", {})).toThrow(
-      /not on fetch streaming yet/,
-    );
+    expect(() => resolveApiKeyOrThrow("sk-abc def", "OpenAI")).toThrow(/invalid character/);
+    expect(() => resolveConnection("azure", "gpt-5", {})).toThrow(/resource name is required/);
+    expect(() => resolveConnection("custom", "x", {})).toThrow(/API Base URL/);
+    expect(() => resolveConnection("bedrock", "x", {})).toThrow(/not on fetch streaming yet/);
     expect(() => resolveConnection("nope", "x", {})).toThrow(/Unsupported/);
   });
 
@@ -120,18 +112,13 @@ describe("dyad providers transplant (m1, free-entirely)", () => {
     ).toBe("openai");
     expect(hasProviderKey("ollama", {})).toBe(true);
     expect(resolveAutoProvider({})).toBe("ollama");
-    expect(resolveAutoProvider({ providerSettings: { vertex: {} } })).toBe(
-      "ollama",
-    );
+    expect(resolveAutoProvider({ providerSettings: { vertex: {} } })).toBe("ollama");
   });
 
   it("resolveProviderDefaultModel never yields placeholder slugs", () => {
     expect(resolveProviderDefaultModel("openai", "gpt-5")).toBe("gpt-5");
     for (const placeholder of ["", "auto", "default", undefined, null]) {
-      const resolved = resolveProviderDefaultModel(
-        "openai",
-        placeholder as string | undefined,
-      );
+      const resolved = resolveProviderDefaultModel("openai", placeholder as string | undefined);
       expect(resolved).toBeTruthy();
       expect(["auto", "default"]).not.toContain(resolved);
     }

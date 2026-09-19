@@ -83,7 +83,9 @@ export function buildMcpTypeDefsBlock(defs: McpToolDef[]): string {
       const props = d.inputSchema?.properties ?? {};
       const required = new Set(d.inputSchema?.required ?? []);
       const params = Object.entries(props)
-        .map(([name, s]) => `${toJsIdentifier(name)}${required.has(name) ? "" : "?"}: ${tsTypeOf(s)}`)
+        .map(
+          ([name, s]) => `${toJsIdentifier(name)}${required.has(name) ? "" : "?"}: ${tsTypeOf(s)}`,
+        )
         .join("; ");
       const desc = d.description ? `\n// ${d.description}` : "";
       return `${desc}\ndeclare function ${d.jsName}(args: { ${params} }): Promise<McpResult>;`;
@@ -103,8 +105,17 @@ function uniqueServerNames(defs: McpToolDef[]): string[] {
 // --- search_mcp_tools (donor description verbatim) ---
 
 const searchMcpToolsSchema = z.object({
-  query: z.string().describe("Keywords describing the MCP tool you need (e.g. 'create github issue', 'send slack message')."),
-  server: z.string().optional().describe("Optional. Restrict the search to a single MCP server by name. Omit to search across all enabled servers."),
+  query: z
+    .string()
+    .describe(
+      "Keywords describing the MCP tool you need (e.g. 'create github issue', 'send slack message').",
+    ),
+  server: z
+    .string()
+    .optional()
+    .describe(
+      "Optional. Restrict the search to a single MCP server by name. Omit to search across all enabled servers.",
+    ),
 });
 
 export const searchMcpToolsTool = defineTool({
@@ -164,7 +175,9 @@ const getMcpToolSchemaSchema = z.object({
   tools: z
     .array(z.string())
     .min(1)
-    .describe("Names of the MCP tools to fetch full TypeScript signatures for (e.g. ['github__issue_write'])."),
+    .describe(
+      "Names of the MCP tools to fetch full TypeScript signatures for (e.g. ['github__issue_write']).",
+    ),
 });
 
 export const getMcpToolSchemaTool = defineTool({

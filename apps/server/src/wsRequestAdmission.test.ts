@@ -2,7 +2,11 @@ import { ORCHESTRATION_WS_METHODS, WS_METHODS } from "@caide/contracts";
 import { Deferred, Effect, Fiber } from "effect";
 import { describe, expect, it } from "vitest";
 
-import { classifyWsRequest, makeWsRequestAdmission, WS_REQUEST_CLASS_LIMITS } from "./wsRequestAdmission";
+import {
+  classifyWsRequest,
+  makeWsRequestAdmission,
+  WS_REQUEST_CLASS_LIMITS,
+} from "./wsRequestAdmission";
 
 describe("WsRequestAdmission", () => {
   it("keeps lightweight shell reads out of the expensive lane", () => {

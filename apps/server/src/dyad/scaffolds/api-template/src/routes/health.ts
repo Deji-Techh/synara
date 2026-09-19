@@ -11,17 +11,9 @@ healthRoutes.get("/health", async (c) => {
   try {
     const sql = neon(env.DATABASE_URL);
     await sql`SELECT 1`;
-    return c.json(
-      success(
-        { status: "healthy", timestamp: new Date().toISOString() },
-        requestId,
-      ),
-    );
+    return c.json(success({ status: "healthy", timestamp: new Date().toISOString() }, requestId));
   } catch (err) {
     console.error(`[${requestId}] Health check failed:`, err);
-    return c.json(
-      error("SERVICE_UNAVAILABLE", "Database connection failed", requestId),
-      503,
-    );
+    return c.json(error("SERVICE_UNAVAILABLE", "Database connection failed", requestId), 503);
   }
 });

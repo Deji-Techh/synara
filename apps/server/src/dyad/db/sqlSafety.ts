@@ -36,7 +36,8 @@ const SQL_DANGER_PATTERNS: SqlDangerPattern[] = [
   {
     pattern: /\bTRUNCATE\b/i,
     severity: "critical",
-    explanation: "TRUNCATE removes all rows from a table without a WHERE clause — this cannot be rolled back.",
+    explanation:
+      "TRUNCATE removes all rows from a table without a WHERE clause — this cannot be rolled back.",
   },
   {
     pattern: /\bALTER\s+TABLE\b[\s\S]*?\bDROP\s+COLUMN\b/i,

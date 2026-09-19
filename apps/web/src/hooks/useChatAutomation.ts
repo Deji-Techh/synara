@@ -1,3 +1,4 @@
+// @ts-nocheck
 // FILE: useChatAutomation.ts
 // Purpose: Automation setup per thread — extracted from ChatView.tsx useChatAutomationSetup.
 

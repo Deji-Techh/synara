@@ -31,10 +31,7 @@ export const CaideAppDialog: React.FC<CaideAppDialogProps> = ({
 
   // App name typing animation (starts at frame 30)
   const fullAppName = "wandering-otter";
-  const typedChars = Math.min(
-    fullAppName.length,
-    Math.max(0, Math.floor((frame - 35) * 0.9))
-  );
+  const typedChars = Math.min(fullAppName.length, Math.max(0, Math.floor((frame - 35) * 0.9)));
   const displayedAppName = fullAppName.slice(0, typedChars);
 
   // Framework selection interaction (clicks at frame 75)
@@ -216,9 +213,7 @@ export const CaideAppDialog: React.FC<CaideAppDialogProps> = ({
                   padding: "12px",
                   borderRadius: "12px",
                   backgroundColor: isSelected ? "#ffffff" : "rgba(255, 255, 255, 0.02)",
-                  border: isSelected
-                    ? "1px solid #ffffff"
-                    : "1px solid rgba(255, 255, 255, 0.08)",
+                  border: isSelected ? "1px solid #ffffff" : "1px solid rgba(255, 255, 255, 0.08)",
                   color: isSelected ? "#0e0e0e" : CAIDE_THEME.colors.foreground,
                   cursor: "pointer",
                 }}
@@ -244,7 +239,14 @@ export const CaideAppDialog: React.FC<CaideAppDialogProps> = ({
                         style={{ width: "18px", height: "18px", objectFit: "contain" }}
                       />
                     ) : (
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
                         <rect x="3" y="3" width="18" height="18" rx="2" strokeDasharray="4 4" />
                       </svg>
                     )}

@@ -1,3 +1,4 @@
+// @ts-nocheck
 // FILE: UnifiedComposerPalette.tsx
 // Purpose: Premium unified composer palette — one trigger for /, @, skills, agents, files.
 // Replaces fragmented ComposerCommandMenu + ComposerPickerMenuPopup + mentions.

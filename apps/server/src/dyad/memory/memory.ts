@@ -62,7 +62,8 @@ function readDecisions(appPath: string, limit = MAX_DECISIONS): MemoryNote[] {
       try {
         const parsed = JSON.parse(line) as { decision?: unknown; reason?: unknown; time?: unknown };
         if (typeof parsed.decision !== "string" || !parsed.decision) return [];
-        const reason = typeof parsed.reason === "string" && parsed.reason ? ` (${parsed.reason})` : "";
+        const reason =
+          typeof parsed.reason === "string" && parsed.reason ? ` (${parsed.reason})` : "";
         return [
           {
             kind: "decision" as const,

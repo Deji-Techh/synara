@@ -87,8 +87,17 @@ describe("supabase auth management", () => {
 
   it("builds enable/disable patches", () => {
     expect(
-      buildSocialAuthProviderPatch({ provider: "google", enabled: true, clientId: "c", clientSecret: "s" }),
-    ).toEqual({ external_google_enabled: true, external_google_client_id: "c", external_google_secret: "s" });
+      buildSocialAuthProviderPatch({
+        provider: "google",
+        enabled: true,
+        clientId: "c",
+        clientSecret: "s",
+      }),
+    ).toEqual({
+      external_google_enabled: true,
+      external_google_client_id: "c",
+      external_google_secret: "s",
+    });
     expect(buildSocialAuthProviderPatch({ provider: "google", enabled: false })).toEqual({
       external_google_enabled: false,
     });
@@ -120,14 +129,28 @@ describe("supabase auth management", () => {
   });
 
   it("reads function logs and org data", async () => {
-    const logs = await getSupabaseFunctionLogs({ token: "good", projectRef: "ref-1", baseUrl: base });
+    const logs = await getSupabaseFunctionLogs({
+      token: "good",
+      projectRef: "ref-1",
+      baseUrl: base,
+    });
     expect(logs).toHaveLength(1);
     expect(logs[0]?.eventMessage).toBe("[fn] ok");
-    expect(await getSupabaseOrganizationDetails({ token: "good", organizationSlug: "org-1", baseUrl: base })).toMatchObject({
+    expect(
+      await getSupabaseOrganizationDetails({
+        token: "good",
+        organizationSlug: "org-1",
+        baseUrl: base,
+      }),
+    ).toMatchObject({
       name: "Org",
     });
     expect(
-      await getSupabaseOrganizationMembers({ token: "good", organizationSlug: "org-1", baseUrl: base }),
+      await getSupabaseOrganizationMembers({
+        token: "good",
+        organizationSlug: "org-1",
+        baseUrl: base,
+      }),
     ).toEqual([{ userId: "u1", email: "a@b.c", role: "Owner", username: undefined }]);
   });
 });

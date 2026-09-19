@@ -4,10 +4,7 @@
 // keep rendering identically.
 
 import React from "react";
-import {
-  CaideClaudeToolCard,
-  type ToolCardStatus,
-} from "./CaideClaudeToolCard";
+import { CaideClaudeToolCard, type ToolCardStatus } from "./CaideClaudeToolCard";
 
 interface CaideGenericToolCardProps {
   toolName: string;

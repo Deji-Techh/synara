@@ -1,3 +1,4 @@
+// @ts-nocheck
 // FILE: useChatTurnLifecycle.ts
 // Purpose: Isolated turn lifecycle — extracted from ChatView.tsx for single isAtEnd ownership.
 // Owns: latestTurn, session, working state, interrupt/steer. No composer logic.

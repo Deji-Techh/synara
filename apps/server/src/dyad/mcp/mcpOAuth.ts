@@ -52,7 +52,9 @@ async function fetchJson(url: string, init?: RequestInit, timeoutMs = 15_000): P
     return (await res.json()) as unknown;
   } catch (err) {
     if (err instanceof McpOAuthError) throw err;
-    throw new McpOAuthError(`OAuth request failed: ${err instanceof Error ? err.message : String(err)}`);
+    throw new McpOAuthError(
+      `OAuth request failed: ${err instanceof Error ? err.message : String(err)}`,
+    );
   } finally {
     clearTimeout(timer);
   }
@@ -69,13 +71,19 @@ export async function discoverOAuthMetadata(serverUrl: string): Promise<OAuthSer
   ]) {
     try {
       const data = (await fetchJson(candidate)) as Record<string, unknown>;
-      if (typeof data.authorization_endpoint === "string" && typeof data.token_endpoint === "string") {
+      if (
+        typeof data.authorization_endpoint === "string" &&
+        typeof data.token_endpoint === "string"
+      ) {
         return {
           issuer: typeof data.issuer === "string" ? data.issuer : url.origin,
           authorization_endpoint: data.authorization_endpoint,
           token_endpoint: data.token_endpoint,
-          registration_endpoint: typeof data.registration_endpoint === "string" ? data.registration_endpoint : undefined,
-          scopes_supported: Array.isArray(data.scopes_supported) ? (data.scopes_supported as string[]) : undefined,
+          registration_endpoint:
+            typeof data.registration_endpoint === "string" ? data.registration_endpoint : undefined,
+          scopes_supported: Array.isArray(data.scopes_supported)
+            ? (data.scopes_supported as string[])
+            : undefined,
         };
       }
       errors.push(`${candidate}: missing endpoints`);
@@ -92,23 +100,25 @@ export async function registerOAuthClient(
   redirectUris: string[],
 ): Promise<OAuthClientInfo> {
   if (!metadata.registration_endpoint) {
-    throw new McpOAuthError("Server does not support dynamic client registration — configure a client id manually.");
+    throw new McpOAuthError(
+      "Server does not support dynamic client registration — configure a client id manually.",
+    );
   }
-  const data = (await fetchJson(
-    metadata.registration_endpoint,
-    {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        redirect_uris: redirectUris,
-        grant_types: ["authorization_code", "refresh_token"],
-        token_endpoint_auth_method: "none",
-        client_name: "Caide",
-      }),
-    },
-  )) as { client_id?: string; client_secret?: string };
+  const data = (await fetchJson(metadata.registration_endpoint, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      redirect_uris: redirectUris,
+      grant_types: ["authorization_code", "refresh_token"],
+      token_endpoint_auth_method: "none",
+      client_name: "Caide",
+    }),
+  })) as { client_id?: string; client_secret?: string };
   if (!data.client_id) throw new McpOAuthError("Registration returned no client_id.");
-  return { client_id: data.client_id, ...(data.client_secret ? { client_secret: data.client_secret } : {}) };
+  return {
+    client_id: data.client_id,
+    ...(data.client_secret ? { client_secret: data.client_secret } : {}),
+  };
 }
 
 export function newCodeVerifier(): string {
@@ -162,7 +172,9 @@ export async function listenOAuthCallback(
     } catch {
       // already closed
     }
-    rejectWait(new McpOAuthError("OAuth callback timed out — complete the browser step within 2 minutes."));
+    rejectWait(
+      new McpOAuthError("OAuth callback timed out — complete the browser step within 2 minutes."),
+    );
   }, timeoutMs);
   server = http.createServer((req, res) => {
     try {
@@ -222,7 +234,11 @@ export async function exchangeOAuthCode(input: {
   if (input.client.client_secret) {
     headers.authorization = `Basic ${Buffer.from(`${input.client.client_id}:${input.client.client_secret}`).toString("base64")}`;
   }
-  const data = (await fetchJson(input.metadata.token_endpoint, { method: "POST", headers, body: body.toString() })) as {
+  const data = (await fetchJson(input.metadata.token_endpoint, {
+    method: "POST",
+    headers,
+    body: body.toString(),
+  })) as {
     access_token?: string;
     refresh_token?: string;
     expires_in?: number;
@@ -232,7 +248,9 @@ export async function exchangeOAuthCode(input: {
   return {
     access_token: data.access_token,
     ...(data.refresh_token ? { refresh_token: data.refresh_token } : {}),
-    ...(typeof data.expires_in === "number" ? { expires_at: Date.now() + data.expires_in * 1000 } : {}),
+    ...(typeof data.expires_in === "number"
+      ? { expires_at: Date.now() + data.expires_in * 1000 }
+      : {}),
     ...(data.scope ? { scope: data.scope } : {}),
   };
 }
@@ -251,7 +269,11 @@ export async function refreshOAuthTokens(input: {
   if (input.client.client_secret) {
     headers.authorization = `Basic ${Buffer.from(`${input.client.client_id}:${input.client.client_secret}`).toString("base64")}`;
   }
-  const data = (await fetchJson(input.metadata.token_endpoint, { method: "POST", headers, body: body.toString() })) as {
+  const data = (await fetchJson(input.metadata.token_endpoint, {
+    method: "POST",
+    headers,
+    body: body.toString(),
+  })) as {
     access_token?: string;
     refresh_token?: string;
     expires_in?: number;
@@ -261,7 +283,9 @@ export async function refreshOAuthTokens(input: {
   return {
     access_token: data.access_token,
     refresh_token: data.refresh_token ?? input.refreshToken,
-    ...(typeof data.expires_in === "number" ? { expires_at: Date.now() + data.expires_in * 1000 } : {}),
+    ...(typeof data.expires_in === "number"
+      ? { expires_at: Date.now() + data.expires_in * 1000 }
+      : {}),
     ...(data.scope ? { scope: data.scope } : {}),
   };
 }
@@ -296,7 +320,10 @@ export function loadMcpOAuthState(serverId: string): StoredOAuthState | null {
 export function saveMcpOAuthState(serverId: string, state: StoredOAuthState): void {
   const db = openDyadDb();
   try {
-    db.prepare("UPDATE mcp_servers SET oauth_state = ? WHERE id = ?").run(JSON.stringify(state), serverId);
+    db.prepare("UPDATE mcp_servers SET oauth_state = ? WHERE id = ?").run(
+      JSON.stringify(state),
+      serverId,
+    );
   } finally {
     db.close();
   }

@@ -13,9 +13,9 @@ import {
 
 describe("resolveTimelineImageSrc", () => {
   it("prefers the local preview url when present", () => {
-    expect(
-      resolveTimelineImageSrc({ id: "thread-1-abc", previewUrl: "blob:local-preview" }),
-    ).toBe("blob:local-preview");
+    expect(resolveTimelineImageSrc({ id: "thread-1-abc", previewUrl: "blob:local-preview" })).toBe(
+      "blob:local-preview",
+    );
   });
 
   it("falls back to the download route for persisted attachments", () => {

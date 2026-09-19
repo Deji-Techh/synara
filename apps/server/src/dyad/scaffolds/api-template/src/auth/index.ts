@@ -19,17 +19,14 @@ interface CachedSession {
 const sessionCache = new Map<string, CachedSession>();
 
 // Periodically evict stale entries so memory doesn't grow unbounded.
-setInterval(
-  () => {
-    const now = Date.now();
-    for (const [key, entry] of sessionCache) {
-      if (entry.expiresAt <= now) {
-        sessionCache.delete(key);
-      }
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of sessionCache) {
+    if (entry.expiresAt <= now) {
+      sessionCache.delete(key);
     }
-  },
-  60_000,
-).unref();
+  }
+}, 60_000).unref();
 
 interface Session {
   user: {
@@ -54,9 +51,7 @@ const SessionRowSchema = z.object({
   expires_at: z.string(),
 });
 
-export async function getSession(
-  token: string | undefined,
-): Promise<Session | null> {
+export async function getSession(token: string | undefined): Promise<Session | null> {
   if (!token) return null;
 
   // Check cache first (key is the token; in production consider hashing it).

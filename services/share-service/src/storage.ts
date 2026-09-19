@@ -73,15 +73,11 @@ export function signedPreviewDownloadUrl(key: string) {
 }
 
 export async function headObject(key: string) {
-  return storage.send(
-    new HeadObjectCommand({ Bucket: config.S3_BUCKET, Key: key }),
-  );
+  return storage.send(new HeadObjectCommand({ Bucket: config.S3_BUCKET, Key: key }));
 }
 
 export async function sha256Object(key: string): Promise<string> {
-  const response = await storage.send(
-    new GetObjectCommand({ Bucket: config.S3_BUCKET, Key: key }),
-  );
+  const response = await storage.send(new GetObjectCommand({ Bucket: config.S3_BUCKET, Key: key }));
   if (!response.Body) {
     throw new Error("Uploaded object body is unavailable");
   }
@@ -94,7 +90,5 @@ export async function sha256Object(key: string): Promise<string> {
 }
 
 export async function deleteObject(key: string) {
-  await storage.send(
-    new DeleteObjectCommand({ Bucket: config.S3_BUCKET, Key: key }),
-  );
+  await storage.send(new DeleteObjectCommand({ Bucket: config.S3_BUCKET, Key: key }));
 }

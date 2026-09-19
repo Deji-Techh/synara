@@ -76,10 +76,7 @@ export function rateLimit({
     if (state.count > max) {
       c.header("Retry-After", String(retryAfter));
       const requestId = c.get("requestId") ?? "unknown";
-      return c.json(
-        { data: null, error: { code: "RATE_LIMITED", message }, requestId },
-        429,
-      );
+      return c.json({ data: null, error: { code: "RATE_LIMITED", message }, requestId }, 429);
     }
 
     await next();

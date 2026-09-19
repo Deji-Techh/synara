@@ -7,13 +7,15 @@ import { getLatestSecurityReview, parseSecurityFindings } from "./securityFindin
 
 describe("security findings", () => {
   it("parses finding tags with levels", () => {
-    const findings = parseSecurityFindings([
-      "text",
-      '<dyad-security-finding title="SQLi in lookup" level="critical">',
-      "Unsanitized id flows into query.",
-      "</dyad-security-finding>",
-      '<dyad-security-finding title="Weak hash" level="low">md5</dyad-security-finding>',
-    ].join("\n"));
+    const findings = parseSecurityFindings(
+      [
+        "text",
+        '<dyad-security-finding title="SQLi in lookup" level="critical">',
+        "Unsanitized id flows into query.",
+        "</dyad-security-finding>",
+        '<dyad-security-finding title="Weak hash" level="low">md5</dyad-security-finding>',
+      ].join("\n"),
+    );
     expect(findings).toEqual([
       {
         title: "SQLi in lookup",
@@ -25,9 +27,11 @@ describe("security findings", () => {
   });
 
   it("ignores malformed tags", () => {
-    expect(parseSecurityFindings('<dyad-security-finding title="x" level="bogus">y</dyad-security-finding>')).toEqual(
-      [],
-    );
+    expect(
+      parseSecurityFindings(
+        '<dyad-security-finding title="x" level="bogus">y</dyad-security-finding>',
+      ),
+    ).toEqual([]);
     expect(parseSecurityFindings("no tags here")).toEqual([]);
   });
 

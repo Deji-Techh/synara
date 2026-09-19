@@ -47,7 +47,9 @@ export function DraftHeroHeadline({
               </MenuTrigger>
             }
           />
-          <TooltipPopup side="top">{hasProject ? "Change project" : "Choose a project"}</TooltipPopup>
+          <TooltipPopup side="top">
+            {hasProject ? "Change project" : "Choose a project"}
+          </TooltipPopup>
         </Tooltip>
         <ComposerPickerMenuPopup
           align="center"

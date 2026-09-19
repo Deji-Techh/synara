@@ -115,7 +115,11 @@ describe("Milestone M26 — Self-Improving Loop & Cross-Project Learning", () =>
     const usage = analyzeSkillUsage(logs);
     expect(usage[0]).toMatchObject({ skill: "appllama-design", turns: 2 });
     expect(usage[0].averageTasteScore).toBe(85);
-    const text = formatTelemetryProposals(ProjectLogStore.analyzePatterns(logs), usage, logs.length);
+    const text = formatTelemetryProposals(
+      ProjectLogStore.analyzePatterns(logs),
+      usage,
+      logs.length,
+    );
     expect(text).toContain("appllama-design");
     expect(text).toContain("3 logged turns");
     expect(

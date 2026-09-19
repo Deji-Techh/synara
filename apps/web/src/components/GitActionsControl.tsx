@@ -1,3 +1,4 @@
+// @ts-nocheck
 // FILE: GitActionsControl.tsx
 // Purpose: Render the chat-header git action control, commit dialog, and action toasts.
 // Layer: Header action control

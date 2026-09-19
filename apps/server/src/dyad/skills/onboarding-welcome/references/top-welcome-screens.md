@@ -16,18 +16,18 @@ audited generated-asset inventory.
 
 ## The ten studies at a glance
 
-| Study | Entrance | Signature motion worth borrowing |
-| --- | --- | --- |
-| Duolingo-inspired | 2.667 s | staged owl blinks (0.400–0.567, 2.467–2.600), splash mark scales down, circular-mask page expansion, strong ease-out |
-| Strava-inspired | 6.600 s | static brand splash then a spinner rotating below the logo (0.867–5.133), hard cut to final screen |
-| MyFitnessPal-inspired | 8.867 s | blue loader copy swaps Updating… → Loading… with no dissolve (2.900), hard cut to a hero carousel |
-| Perplexity-inspired | Final state | No entrance: deterministic final login screen (Apple/Google/email rows, SSO, small legal links) |
-| Yazio-inspired | 1.733 s | Staggered damped-spring entrance of icon tiles (carrot, apples, clock, calendar, chef hat) into the shell |
-| onX Hunt-inspired | 1.467 s | Static orange-red brand splash, hard cut to the sign-in page |
-| Speak & Learn-inspired | 4.940 s | Layered vertical logo mark rotates and grows in, speech-bubble objects grow/slide in and fade, welcome page slides in with strong ease-out |
-| Hallow-inspired | 4.500 s | Splash color interpolation (e.g. #9F3BE9 → #9240E0), loader-dot scale pulse, whole loader dissolves into final page |
-| SCRL-inspired | 1.999 s | Static black splash, hard cut to skeleton/home; background, awards, copy, CTA reveal with separate ease-out opacity curves (1.300–1.800) |
-| Speak: Language Learning-inspired | 5.070 s | Launch page dissolves to loading field, page-to-page horizontal slide (3.267–3.533), final CTA fades in last (3.800–4.400) |
+| Study                             | Entrance    | Signature motion worth borrowing                                                                                                           |
+| --------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Duolingo-inspired                 | 2.667 s     | staged owl blinks (0.400–0.567, 2.467–2.600), splash mark scales down, circular-mask page expansion, strong ease-out                       |
+| Strava-inspired                   | 6.600 s     | static brand splash then a spinner rotating below the logo (0.867–5.133), hard cut to final screen                                         |
+| MyFitnessPal-inspired             | 8.867 s     | blue loader copy swaps Updating… → Loading… with no dissolve (2.900), hard cut to a hero carousel                                          |
+| Perplexity-inspired               | Final state | No entrance: deterministic final login screen (Apple/Google/email rows, SSO, small legal links)                                            |
+| Yazio-inspired                    | 1.733 s     | Staggered damped-spring entrance of icon tiles (carrot, apples, clock, calendar, chef hat) into the shell                                  |
+| onX Hunt-inspired                 | 1.467 s     | Static orange-red brand splash, hard cut to the sign-in page                                                                               |
+| Speak & Learn-inspired            | 4.940 s     | Layered vertical logo mark rotates and grows in, speech-bubble objects grow/slide in and fade, welcome page slides in with strong ease-out |
+| Hallow-inspired                   | 4.500 s     | Splash color interpolation (e.g. #9F3BE9 → #9240E0), loader-dot scale pulse, whole loader dissolves into final page                        |
+| SCRL-inspired                     | 1.999 s     | Static black splash, hard cut to skeleton/home; background, awards, copy, CTA reveal with separate ease-out opacity curves (1.300–1.800)   |
+| Speak: Language Learning-inspired | 5.070 s     | Launch page dissolves to loading field, page-to-page horizontal slide (3.267–3.533), final CTA fades in last (3.800–4.400)                 |
 
 ## Craft contracts (apply to every welcome screen)
 

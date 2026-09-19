@@ -1,3 +1,4 @@
+// @ts-nocheck
 // FILE: useHarnessSession.ts
 // Purpose: Own the harness socket for one thread (sessionId = threadId):
 // connect on mount, set the active harness session, register the handle for

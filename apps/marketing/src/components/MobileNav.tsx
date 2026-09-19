@@ -4,17 +4,24 @@ import Link from "next/link";
 import { useEffect, useId, useState } from "react";
 import { FiX } from "react-icons/fi";
 import { SiX } from "react-icons/si";
+import { scrollToAnchor } from "@/lib/scrollToAnchor";
 
 const links = [
-  { href: "/#frameworks", label: "Frameworks" },
-  { href: "/#providers", label: "Models" },
-  { href: "/#workflow", label: "Workflow" },
+  { href: "/#frameworks", anchor: "frameworks", label: "Frameworks" },
+  { href: "/#providers", anchor: "providers", label: "Models" },
+  { href: "/#workflow", anchor: "workflow", label: "Workflow" },
   { href: "/docs", label: "Docs" },
   { href: "/changelog", label: "Changelog" },
   { href: "/privacy", label: "Privacy" },
 ] as const;
 
-export default function MobileNav({ isHome = false }: { isHome?: boolean }) {
+export default function MobileNav({
+  isHome = false,
+  onOpenWhitelist,
+}: {
+  isHome?: boolean;
+  onOpenWhitelist?: () => void;
+}) {
   const [open, setOpen] = useState(false);
   const menuId = useId();
 
@@ -26,6 +33,13 @@ export default function MobileNav({ isHome = false }: { isHome?: boolean }) {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [open]);
+
+  const handleLinkClick = (anchor?: string) => (e: React.MouseEvent) => {
+    setOpen(false);
+    if (isHome && anchor) {
+      scrollToAnchor(anchor, e);
+    }
+  };
 
   return (
     <div className="relative flex items-center gap-1.5 sm:hidden">
@@ -42,16 +56,20 @@ export default function MobileNav({ isHome = false }: { isHome?: boolean }) {
       >
         <SiX className="size-3" />
       </a>
-      <Link
-        href="/install"
-        className={`rounded-full border px-3 py-1.5 text-[12px] font-medium backdrop-blur-md transition-colors ${
+      <button
+        type="button"
+        onClick={() => {
+          setOpen(false);
+          onOpenWhitelist?.();
+        }}
+        className={`inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-[12px] font-medium backdrop-blur-md transition-colors ${
           isHome
             ? "border-white/20 bg-white text-slate-900 hover:bg-slate-100"
             : "border-[var(--divide)] bg-white/80 text-[var(--text-primary)] hover:bg-[var(--mock-row)]"
         }`}
       >
-        Download
-      </Link>
+        <span>Whitelist</span>
+      </button>
       <button
         type="button"
         aria-expanded={open}
@@ -89,18 +107,18 @@ export default function MobileNav({ isHome = false }: { isHome?: boolean }) {
       {open && (
         <div
           id={menuId}
-          className="absolute top-12 right-0 z-50 w-56 rounded-2xl border border-[var(--divide)] bg-[var(--card)] p-3 shadow-2xl backdrop-blur-xl"
+          className="absolute top-12 right-0 z-50 w-56 rounded-2xl border border-[var(--divide)] bg-[var(--card)] p-3 shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in-95"
         >
           <div className="flex flex-col gap-1">
             {links.map((link) => (
-              <Link
+              <a
                 key={link.href}
                 href={link.href}
-                onClick={() => setOpen(false)}
+                onClick={handleLinkClick("anchor" in link ? link.anchor : undefined)}
                 className="rounded-lg px-3 py-2 text-[13px] font-medium text-[var(--text-primary)] transition-colors hover:bg-[var(--mock-row)]"
               >
                 {link.label}
-              </Link>
+              </a>
             ))}
             <a
               href="https://x.com/caideorg"

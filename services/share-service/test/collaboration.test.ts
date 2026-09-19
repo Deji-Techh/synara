@@ -11,7 +11,5 @@ test("applyTextChanges applies Monaco changes from the end of the document", () 
 });
 
 test("applyTextChanges rejects an out-of-range edit", () => {
-  assert.throws(() =>
-    applyTextChanges("abc", [{ rangeOffset: 5, rangeLength: 0, text: "x" }]),
-  );
+  assert.throws(() => applyTextChanges("abc", [{ rangeOffset: 5, rangeLength: 0, text: "x" }]));
 });

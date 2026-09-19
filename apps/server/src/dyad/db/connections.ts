@@ -47,10 +47,15 @@ function appLinkFile(appPath: string): string {
 function readAppLinkFile(appPath: string): DbLink | undefined {
   try {
     const parsed = JSON.parse(fs.readFileSync(appLinkFile(appPath), "utf8")) as Partial<DbLink>;
-    if (parsed && (parsed.provider === "supabase" || parsed.provider === "neon" || parsed.provider === "custom")) {
+    if (
+      parsed &&
+      (parsed.provider === "supabase" || parsed.provider === "neon" || parsed.provider === "custom")
+    ) {
       const link: DbLink = { provider: parsed.provider };
-      if (typeof parsed.databaseUrl === "string" && parsed.databaseUrl) link.databaseUrl = parsed.databaseUrl;
-      if (typeof parsed.projectId === "string" && parsed.projectId) link.projectId = parsed.projectId;
+      if (typeof parsed.databaseUrl === "string" && parsed.databaseUrl)
+        link.databaseUrl = parsed.databaseUrl;
+      if (typeof parsed.projectId === "string" && parsed.projectId)
+        link.projectId = parsed.projectId;
       if (typeof parsed.organizationSlug === "string" && parsed.organizationSlug) {
         link.organizationSlug = parsed.organizationSlug;
       }
@@ -70,7 +75,9 @@ export function linkAppDatabase(appPath: string, link: DbLink): void {
   appLinkCache.set(appPath, { ...persistable });
   try {
     fs.mkdirSync(path.join(appPath, ".caide"), { recursive: true });
-    fs.writeFileSync(appLinkFile(appPath), `${JSON.stringify(persistable, null, 2)}\n`, { mode: 0o600 });
+    fs.writeFileSync(appLinkFile(appPath), `${JSON.stringify(persistable, null, 2)}\n`, {
+      mode: 0o600,
+    });
     try {
       fs.chmodSync(appLinkFile(appPath), 0o600);
     } catch {
@@ -111,7 +118,10 @@ function readEnvFile(appPath: string, file: string): Record<string, string> {
       const m = line.match(/^\s*([A-Za-z_][\w]*)\s*=\s*(.*)\s*$/);
       if (!m) continue;
       let value = m[2].trim();
-      if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+      if (
+        (value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'"))
+      ) {
         value = value.slice(1, -1);
       }
       out[m[1]] = value;

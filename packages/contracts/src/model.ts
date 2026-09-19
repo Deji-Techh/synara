@@ -943,7 +943,11 @@ export const MODEL_OPTIONS_BY_PROVIDER = {
     { slug: "glm-5", name: "GLM 5", capabilities: API_MODEL_CAPABILITIES },
     { slug: "deepseek-v4-pro", name: "DeepSeek V4 Pro", capabilities: API_MODEL_CAPABILITIES },
     { slug: "deepseek-v4-flash", name: "DeepSeek V4 Flash", capabilities: API_MODEL_CAPABILITIES },
-    { slug: "deepseek-v4-flash-vision-exp", name: "DeepSeek V4 Flash Vision Exp", capabilities: API_MODEL_CAPABILITIES },
+    {
+      slug: "deepseek-v4-flash-vision-exp",
+      name: "DeepSeek V4 Flash Vision Exp",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
     { slug: "qwen3.8-max", name: "Qwen 3.8 Max", capabilities: API_MODEL_CAPABILITIES },
     { slug: "qwen3.8-flash", name: "Qwen 3.8 Flash", capabilities: API_MODEL_CAPABILITIES },
     { slug: "qwen3.7-max", name: "Qwen 3.7 Max", capabilities: API_MODEL_CAPABILITIES },
@@ -960,8 +964,16 @@ export const MODEL_OPTIONS_BY_PROVIDER = {
     { slug: "gpt-5.6-luna", name: "GPT-5.6 Luna", capabilities: API_MODEL_CAPABILITIES },
     { slug: "grok-4.6", name: "Grok 4.6", capabilities: API_MODEL_CAPABILITIES },
     { slug: "grok-4.5", name: "Grok 4.5", capabilities: API_MODEL_CAPABILITIES },
-    { slug: "muse-spark-1.3-contributor", name: "Muse Spark 1.3 Contributor", capabilities: API_MODEL_CAPABILITIES },
-    { slug: "muse-spark-1.2-contributor", name: "Muse Spark 1.2 Contributor", capabilities: API_MODEL_CAPABILITIES },
+    {
+      slug: "muse-spark-1.3-contributor",
+      name: "Muse Spark 1.3 Contributor",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
+    {
+      slug: "muse-spark-1.2-contributor",
+      name: "Muse Spark 1.2 Contributor",
+      capabilities: API_MODEL_CAPABILITIES,
+    },
     { slug: "omen-alpha", name: "Omen Alpha", capabilities: API_MODEL_CAPABILITIES },
   ],
   custom: [
@@ -1099,7 +1111,8 @@ export const MODEL_CAPABILITIES_INDEX = Object.fromEntries(
 
 export type DisplayableProviderKind = Exclude<ProviderKind, "engine">;
 
-export const PROVIDER_DISPLAY_NAMES: Record<DisplayableProviderKind, string> & Partial<Record<ProviderKind, string>> = {
+export const PROVIDER_DISPLAY_NAMES: Record<DisplayableProviderKind, string> &
+  Partial<Record<ProviderKind, string>> = {
   openai: "OpenAI",
   anthropic: "Anthropic",
   google: "Google",

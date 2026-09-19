@@ -53,42 +53,44 @@ export default function Home() {
         >
           <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
             {/* AI Model & Framework Badges Pill Row with subtle glassmorphic blur */}
-            <div className="mb-8 flex flex-wrap items-center gap-2 sm:mb-10">
-              <ProviderMarkRow theme="dark" />
-            </div>
+            <ScrollReveal delay={30}>
+              <div className="mb-8 flex flex-wrap items-center gap-2 sm:mb-10">
+                <ProviderMarkRow theme="dark" />
+              </div>
 
-            {/* Main Headline */}
-            <h1
-              id="homepage-title"
-              className="max-w-4xl text-[1.75rem] font-medium leading-[1.1] tracking-[-0.035em] text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.35)] sm:text-[2.75rem] sm:leading-[1.06]"
-            >
-              {PRODUCT_HERO_TITLE}
-            </h1>
-
-            {/* Subtitle with Calibrated Contrast */}
-            <p className="mt-5 max-w-2xl text-[14.5px] leading-[1.65] text-blue-100/90 drop-shadow-sm sm:text-[16px]">
-              {PRODUCT_HERO_DESCRIPTION}
-            </p>
-
-            {/* Action Buttons: Download + Follow on X */}
-            <div className="mt-8 flex flex-wrap items-center gap-3">
-              <DownloadButton className="bg-white text-slate-900 hover:bg-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.25)]" />
-              <a
-                href="https://x.com/caideorg"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-5 py-2.5 text-[13px] font-medium text-white backdrop-blur-md transition-all hover:bg-white/20 hover:border-white/40 shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-link)]"
+              {/* Main Headline */}
+              <h1
+                id="homepage-title"
+                className="max-w-4xl text-[1.75rem] font-medium leading-[1.1] tracking-[-0.035em] text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.35)] sm:text-[2.75rem] sm:leading-[1.06]"
               >
-                <SiX className="size-3.5 shrink-0" aria-hidden="true" />
-                <span>Follow on X</span>
-              </a>
-            </div>
+                {PRODUCT_HERO_TITLE}
+              </h1>
 
-            {/* Trust Pill */}
-            <div className="mt-4 flex items-center gap-2 text-[12px] font-medium text-blue-100/85">
-              <span className="inline-block size-2 rounded-full bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.9)]" />
-              <span>100% Free & Open Source • Bring Your Own Keys • Local-First Architecture</span>
-            </div>
+              {/* Subtitle with Calibrated Contrast */}
+              <p className="mt-5 max-w-2xl text-[14.5px] leading-[1.65] text-blue-100/90 drop-shadow-sm sm:text-[16px]">
+                {PRODUCT_HERO_DESCRIPTION}
+              </p>
+
+              {/* Action Buttons: Download + Follow on X */}
+              <div className="mt-8 flex flex-wrap items-center gap-3">
+                <DownloadButton className="bg-white text-slate-900 hover:bg-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.25)]" />
+                <a
+                  href="https://x.com/caideorg"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-5 py-2.5 text-[13px] font-medium text-white backdrop-blur-md transition-all hover:bg-white/20 hover:border-white/40 shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-link)]"
+                >
+                  <SiX className="size-3.5 shrink-0" aria-hidden="true" />
+                  <span>Follow on X</span>
+                </a>
+              </div>
+
+              {/* Trust Pill */}
+              <div className="mt-4 flex items-center gap-2 text-[12px] font-medium text-blue-100/85">
+                <span className="inline-block size-2 rounded-full bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.9)]" />
+                <span>100% Free & Open Source • Bring Your Own Keys • Local-First Architecture</span>
+              </div>
+            </ScrollReveal>
 
             {/* Hero Studio Preview Card Framed by the Greek Temple Backdrop */}
             <ScrollReveal delay={120}>

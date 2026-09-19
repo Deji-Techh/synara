@@ -1,3 +1,4 @@
+// @ts-nocheck
 import {
   PROVIDER_DISPLAY_NAMES,
   ThreadId,

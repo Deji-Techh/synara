@@ -22,7 +22,9 @@ function throwIfRepoError(stdout: string, stderr: string, exitCode: number, what
   // Only the message identifies a non-repo: exit 128 also means bad
   // revision / missing path, which callers report in their own words.
   if (/not a git repository|not a git repo/i.test(combined)) {
-    throw new GitToolError("Not a git repository — run `git init` first or pick a project workspace");
+    throw new GitToolError(
+      "Not a git repository — run `git init` first or pick a project workspace",
+    );
   }
   if (exitCode !== 0) {
     throw new GitToolError(`${what} failed (exit ${exitCode}):\n${stderr || stdout}`);
@@ -37,23 +39,14 @@ const revisionSchema = z
   .max(256)
   .refine(
     (revision) =>
-      !revision.startsWith("-") &&
-      !revision.includes("..") &&
-      !/[\0\r\n]/.test(revision),
+      !revision.startsWith("-") && !revision.includes("..") && !/[\0\r\n]/.test(revision),
     {
-      message:
-        "Git options, revision ranges, and control characters are not allowed",
+      message: "Git options, revision ranges, and control characters are not allowed",
     },
   )
-  .describe(
-    "A commit hash, branch, or tag; Git options and ranges are rejected",
-  );
+  .describe("A commit hash, branch, or tag; Git options and ranges are rejected");
 
-const pathSchema = z
-  .string()
-  .min(1)
-  .max(4096)
-  .describe("A literal path relative to the app root");
+const pathSchema = z.string().min(1).max(4096).describe("A literal path relative to the app root");
 
 function normalizeGitFilterPath(filePath: string | undefined): string | undefined {
   return filePath === "." ? undefined : filePath;
@@ -152,8 +145,7 @@ const gitShowFileSchema = z
       args.end_line_one_indexed_inclusive == null ||
       args.start_line_one_indexed <= args.end_line_one_indexed_inclusive,
     {
-      message:
-        "start_line_one_indexed must be <= end_line_one_indexed_inclusive",
+      message: "start_line_one_indexed must be <= end_line_one_indexed_inclusive",
     },
   );
 
@@ -178,7 +170,9 @@ export async function executeGitShowFile(
   assertNotSensitive(parsed.path);
   const result = await runGitBuffer(["show", `${parsed.revision}:${parsed.path}`], appPath, signal);
   if (/not a git repository|not a git repo/i.test(result.stderr)) {
-    throw new GitToolError("Not a git repository — run `git init` first or pick a project workspace");
+    throw new GitToolError(
+      "Not a git repository — run `git init` first or pick a project workspace",
+    );
   }
   if (result.exitCode !== 0) {
     throw new GitToolError(`git show failed (exit ${result.exitCode}):\n${result.stderr}`);
@@ -247,7 +241,9 @@ export async function executeGitRestoreFile(
   }
   const result = await runGitBuffer(["show", `${parsed.revision}:${parsed.path}`], appPath, signal);
   if (/not a git repository|not a git repo/i.test(result.stderr)) {
-    throw new GitToolError("Not a git repository — run `git init` first or pick a project workspace");
+    throw new GitToolError(
+      "Not a git repository — run `git init` first or pick a project workspace",
+    );
   }
   if (result.exitCode !== 0) {
     throw new GitToolError(`git show failed (exit ${result.exitCode}):\n${result.stderr}`);

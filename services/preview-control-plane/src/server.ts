@@ -1,10 +1,6 @@
 import "dotenv/config";
 import crypto from "node:crypto";
-import express, {
-  type NextFunction,
-  type Request,
-  type Response,
-} from "express";
+import express, { type NextFunction, type Request, type Response } from "express";
 import cors from "cors";
 import helmet from "helmet";
 import { Pool } from "pg";
@@ -28,8 +24,7 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false },
 });
 
-const hash = (value: string) =>
-  crypto.createHash("sha256").update(value).digest("hex");
+const hash = (value: string) => crypto.createHash("sha256").update(value).digest("hex");
 const token = () => crypto.randomBytes(32).toString("base64url");
 
 const RegisterSchema = z.object({
@@ -52,10 +47,9 @@ app.get("/health", async (_req, res) => {
 app.post("/v1/installations/register", async (req, res, next) => {
   try {
     const input = RegisterSchema.parse(req.body);
-    const existing = await pool.query(
-      `SELECT id FROM preview_installations WHERE device_id=$1`,
-      [input.deviceId],
-    );
+    const existing = await pool.query(`SELECT id FROM preview_installations WHERE device_id=$1`, [
+      input.deviceId,
+    ]);
     if (existing.rows[0]) {
       res.status(409).json({
         error:

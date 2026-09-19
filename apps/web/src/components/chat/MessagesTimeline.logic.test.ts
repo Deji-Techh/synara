@@ -834,9 +834,7 @@ describe("resolveAssistantMessageDisplayText", () => {
     expect(
       resolveAssistantMessageDisplayText({
         message: { text: "", streaming: false },
-        inlineWorkEntries: [
-          { ...base, activityKind: "tool.completed", tone: "error" as const },
-        ],
+        inlineWorkEntries: [{ ...base, activityKind: "tool.completed", tone: "error" as const }],
       }),
     ).toBe("(empty response)");
   });

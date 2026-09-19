@@ -737,7 +737,11 @@ export function ChatHeader({
                   </span>
                 )}
                 {titlePending ? (
-                  <Skeleton className="h-3 w-28 rounded-full" role="status" aria-label="Naming chat…" />
+                  <Skeleton
+                    className="h-3 w-28 rounded-full"
+                    role="status"
+                    aria-label="Naming chat…"
+                  />
                 ) : (
                   <h2
                     key={titleRevealed ? activeThreadTitle : "settled"}

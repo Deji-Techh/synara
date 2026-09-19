@@ -96,7 +96,9 @@ export class McpConnection {
       this.buffer = this.buffer.slice(idx + 1);
       if (!line) continue;
       try {
-        this.onMessage(JSON.parse(line) as { id?: number; result?: unknown; error?: { message?: string } });
+        this.onMessage(
+          JSON.parse(line) as { id?: number; result?: unknown; error?: { message?: string } },
+        );
       } catch {
         // non-JSON stdout from the server — ignore
       }
@@ -156,7 +158,11 @@ export class McpConnection {
       const res = await fetch(this.sseUrl!, {
         method: "POST",
         signal: controller.signal,
-        headers: { "content-type": "application/json", accept: "application/json, text/event-stream", ...this.sseHeaders },
+        headers: {
+          "content-type": "application/json",
+          accept: "application/json, text/event-stream",
+          ...this.sseHeaders,
+        },
         body,
       });
       if (!res.ok) throw new McpError(`MCP HTTP ${res.status} on ${method}`);
@@ -179,7 +185,9 @@ export class McpConnection {
       return msg.result;
     } catch (err) {
       if (err instanceof McpError) throw err;
-      throw new McpError(`MCP SSE request failed (${method}): ${err instanceof Error ? err.message : String(err)}`);
+      throw new McpError(
+        `MCP SSE request failed (${method}): ${err instanceof Error ? err.message : String(err)}`,
+      );
     } finally {
       clearTimeout(timer);
     }
@@ -193,8 +201,12 @@ export class McpConnection {
     });
   }
 
-  async listTools(): Promise<Array<{ name: string; description?: string; inputSchema: JsonSchema }>> {
-    const result = (await this.request("tools/list")) as { tools?: Array<{ name: string; description?: string; inputSchema: JsonSchema }> };
+  async listTools(): Promise<
+    Array<{ name: string; description?: string; inputSchema: JsonSchema }>
+  > {
+    const result = (await this.request("tools/list")) as {
+      tools?: Array<{ name: string; description?: string; inputSchema: JsonSchema }>;
+    };
     return result.tools ?? [];
   }
 
@@ -223,7 +235,9 @@ export class McpManager {
   private connections = new Map<string, { server: ManagedMcpServer; conn: McpConnection }>();
 
   /** Start new/changed servers, stop removed/disabled ones. Returns status per server. */
-  async sync(servers: ManagedMcpServer[]): Promise<Array<{ id: string; name: string; ok: boolean; message: string }>> {
+  async sync(
+    servers: ManagedMcpServer[],
+  ): Promise<Array<{ id: string; name: string; ok: boolean; message: string }>> {
     const wanted = new Map(servers.filter((s) => s.enabled).map((s) => [s.id, s]));
     const results: Array<{ id: string; name: string; ok: boolean; message: string }> = [];
 
@@ -250,7 +264,10 @@ export class McpManager {
         ) {
           const access = getStoredOAuthAccessToken(server.id);
           if (access) {
-            config = { ...config, headers: { ...(config.headers ?? {}), Authorization: `Bearer ${access}` } };
+            config = {
+              ...config,
+              headers: { ...(config.headers ?? {}), Authorization: `Bearer ${access}` },
+            };
           }
         }
         const conn =
@@ -259,7 +276,12 @@ export class McpManager {
             : await McpConnection.sse(config);
         this.connections.set(server.id, { server, conn });
         const { toolCount } = await conn.test();
-        results.push({ id: server.id, name: server.name, ok: true, message: `${toolCount} tool(s)` });
+        results.push({
+          id: server.id,
+          name: server.name,
+          ok: true,
+          message: `${toolCount} tool(s)`,
+        });
       } catch (err) {
         results.push({
           id: server.id,
@@ -305,7 +327,11 @@ export class McpManager {
     return defs.length;
   }
 
-  async callTool(serverId: string, toolName: string, args: Record<string, unknown>): Promise<unknown> {
+  async callTool(
+    serverId: string,
+    toolName: string,
+    args: Record<string, unknown>,
+  ): Promise<unknown> {
     const entry = this.connections.get(serverId);
     if (!entry) throw new McpError(`MCP server not connected: ${serverId}`);
     return entry.conn.callTool(toolName, args);

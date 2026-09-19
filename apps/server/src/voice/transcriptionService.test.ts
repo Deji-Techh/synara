@@ -140,7 +140,15 @@ describe("transcriptionService", () => {
     process.env.OPENCODE_ZEN_API_KEY = "test-zen-key";
     process.env.OPENCODE_GO_API_KEY = "test-go-key";
     try {
-      for (const preferred of ["ai-model", "auto", undefined, "opencodeZen", "opencodeGo", "google", "groq"]) {
+      for (const preferred of [
+        "ai-model",
+        "auto",
+        undefined,
+        "opencodeZen",
+        "opencodeGo",
+        "google",
+        "groq",
+      ]) {
         const order = resolveAllVoiceProviders(preferred).map((p) => p.provider);
         expect(order[0]).toBe("groq");
         expect(order.slice(-2)).toEqual(["opencodeZen", "opencodeGo"]);
@@ -204,8 +212,14 @@ describe("transcriptionService", () => {
     process.env.GEMINI_API_KEY = "bad-key";
     process.env.GROQ_API_KEY = "test-groq-key";
     const fetchMock = vi.fn();
-    fetchMock.mockRejectedValueOnce(Object.assign(new Error("Gemini API key rejected (HTTP 403)."), {}));
-    fetchMock.mockResolvedValue({ ok: true, status: 200, json: async () => ({ text: "via groq" }) });
+    fetchMock.mockRejectedValueOnce(
+      Object.assign(new Error("Gemini API key rejected (HTTP 403)."), {}),
+    );
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ text: "via groq" }),
+    });
     globalThis.fetch = fetchMock as any;
 
     try {

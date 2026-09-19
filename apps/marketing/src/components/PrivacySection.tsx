@@ -22,9 +22,9 @@ const pillars = [
   },
   {
     Icon: ShieldCheck,
-    title: "No account, no card, 100% free",
+    title: "100% Free & Open Source, zero markups",
     description:
-      "Install Caide and immediately start building. There are no waitlists, no subscription paywalls, and no feature gates. Everything is free and open-source.",
+      "Caide operates zero cloud subscription tiers, zero tokens-per-month caps, and zero hidden telemetry. Bring your own keys and build without artificial lock-in.",
   },
   {
     Icon: Lock,
@@ -50,13 +50,14 @@ export default function PrivacySection() {
           </p>
 
           <div className="mt-12 grid grid-cols-1 border-t border-[var(--divide)] sm:grid-cols-2">
-            {pillars.map(({ Icon, title, description }) => (
+            {pillars.map(({ Icon, title, description }, idx) => (
               <div
                 key={title}
-                className="border-b border-[var(--divide)] p-6 transition-colors hover:bg-[var(--mock-row)] sm:p-7 sm:[&:nth-child(odd)]:border-r sm:[&:nth-child(odd)]:border-[var(--divide)]"
+                style={{ transitionDelay: `${idx * 50}ms` }}
+                className="group border-b border-[var(--divide)] p-6 transition-all duration-300 hover:bg-[var(--mock-row)] hover:translate-x-1 sm:p-7 sm:[&:nth-child(odd)]:border-r sm:[&:nth-child(odd)]:border-[var(--divide)]"
               >
                 <div className="flex items-center gap-3">
-                  <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--block-elevated)] text-[var(--text-primary)]">
+                  <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--block-elevated)] text-[var(--text-primary)] shadow-sm transition-transform duration-300 group-hover:scale-110">
                     <Icon className="size-[18px]" />
                   </span>
                   <h3 className="text-[15px] font-medium text-[var(--text-primary)]">{title}</h3>

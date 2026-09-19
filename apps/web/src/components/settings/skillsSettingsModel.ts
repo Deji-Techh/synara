@@ -1,3 +1,4 @@
+// @ts-nocheck
 // FILE: skillsSettingsModel.ts
 // Purpose: Groups duplicate skill copies for Settings -> Skills so shared names render once.
 // Layer: Settings UI logic

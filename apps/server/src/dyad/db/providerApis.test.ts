@@ -8,7 +8,14 @@ import * as os from "node:os";
 import * as path from "node:path";
 import type { AddressInfo } from "node:net";
 import { afterAll, beforeAll, describe, expect, it, vi, afterEach } from "vitest";
-import { listNeonBranches, listNeonProjects, createNeonBranch, createNeonProject, deleteNeonBranch, deleteNeonProject } from "./neonApi.ts";
+import {
+  listNeonBranches,
+  listNeonProjects,
+  createNeonBranch,
+  createNeonProject,
+  deleteNeonBranch,
+  deleteNeonProject,
+} from "./neonApi.ts";
 import {
   createSupabaseProject,
   createSupabaseTestUser,
@@ -50,7 +57,9 @@ function handler(req: http.IncomingMessage, res: http.ServerResponse): void {
   if (url.pathname === "/v1/organizations") return json(200, [{ id: "o1", name: "Acme" }]);
   if (url.pathname === "/v1/projects") {
     if (req.method === "POST") return json(201, { id: "r2", name: "NewApp" });
-    return json(200, [{ id: "r1", name: "App", organization_id: "o1", region: "eu-west", status: "ACTIVE" }]);
+    return json(200, [
+      { id: "r1", name: "App", organization_id: "o1", region: "eu-west", status: "ACTIVE" },
+    ]);
   }
   if (url.pathname === "/v1/projects/r1/api-keys") {
     return json(200, [
@@ -111,18 +120,40 @@ describe("dyad provider management apis (c8)", () => {
     });
     expect(created).toEqual({ id: "r2", name: "NewApp" });
     await expect(
-      createSupabaseProject({ token: "good", name: "  ", organizationId: "o1", baseUrl: supabaseBase }),
+      createSupabaseProject({
+        token: "good",
+        name: "  ",
+        organizationId: "o1",
+        baseUrl: supabaseBase,
+      }),
     ).rejects.toThrow(/required/);
 
-    const keys = await getSupabaseProjectApiKeys({ token: "good", projectId: "r1", reveal: true, baseUrl: supabaseBase });
+    const keys = await getSupabaseProjectApiKeys({
+      token: "good",
+      projectId: "r1",
+      reveal: true,
+      baseUrl: supabaseBase,
+    });
     expect(keys).toHaveLength(2);
     expect(keys.find((k) => k.name === "service_role")?.apiKey).toBe("sk-secret-value");
 
     await expect(
-      deploySupabaseFunction({ token: "good", projectId: "r1", slug: "hello", bundleB64: "e30=", baseUrl: supabaseBase }),
+      deploySupabaseFunction({
+        token: "good",
+        projectId: "r1",
+        slug: "hello",
+        bundleB64: "e30=",
+        baseUrl: supabaseBase,
+      }),
     ).resolves.toBeUndefined();
     await expect(
-      deploySupabaseFunction({ token: "bad", projectId: "r1", slug: "hello", bundleB64: "e30=", baseUrl: supabaseBase }),
+      deploySupabaseFunction({
+        token: "bad",
+        projectId: "r1",
+        slug: "hello",
+        bundleB64: "e30=",
+        baseUrl: supabaseBase,
+      }),
     ).rejects.toThrow(/401/);
   });
 
@@ -182,7 +213,9 @@ describe("dyad provider management apis (c8)", () => {
     ]);
     const projects = await listSupabaseProjects({ token: "good", baseUrl: supabaseBase });
     expect(projects[0]).toMatchObject({ id: "r1", name: "App", region: "eu-west" });
-    await expect(listSupabaseProjects({ token: "bad", baseUrl: supabaseBase })).rejects.toThrow(/401/);
+    await expect(listSupabaseProjects({ token: "bad", baseUrl: supabaseBase })).rejects.toThrow(
+      /401/,
+    );
   });
 
   it("writes migration files with timestamped slugs", async () => {

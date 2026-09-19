@@ -92,7 +92,10 @@ describe("dyad sandbox transplant (m2b)", () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "caide-sbx-"));
     fs.writeFileSync(path.join(dir, "a.txt"), "data");
     const out = (await executeSandboxScriptTool.execute(
-      { script: "const files = await list_files('.');\nresult = files.join(',');", description: "List files" },
+      {
+        script: "const files = await list_files('.');\nresult = files.join(',');",
+        description: "List files",
+      },
       toolCtx(dir),
     )) as string;
     expect(out).toMatch(/Sandbox script finished in \d+ms\./);
@@ -111,7 +114,9 @@ describe("dyad sandbox transplant (m2b)", () => {
   });
 
   it("forks skills through the injected runner, validating ids", async () => {
-    await expect(executeForkSkill({ skill_id: "nope", task: "t" })).rejects.toThrow(/Unknown skill/);
+    await expect(executeForkSkill({ skill_id: "nope", task: "t" })).rejects.toThrow(
+      /Unknown skill/,
+    );
     const unwired = await executeForkSkill({ skill_id: "motion-interaction", task: "review" });
     expect(unwired).toMatch(/not wired yet/);
 
@@ -143,7 +148,10 @@ describe("dyad sandbox transplant (m2b)", () => {
     expect(await checkSubagentStatusTool.execute({ task_id: sub.id }, toolCtx("/tmp"))).toContain(
       "is still running",
     );
-    settleSubagentTask(sub.id, { status: "completed", result: { stepCount: 3, finalText: "LGTM" } });
+    settleSubagentTask(sub.id, {
+      status: "completed",
+      result: { stepCount: 3, finalText: "LGTM" },
+    });
     const done = await checkSubagentStatusTool.execute({ task_id: sub.id }, toolCtx("/tmp"));
     expect(done).toContain("completed in 3 steps");
     expect(done).toContain("LGTM");
@@ -191,18 +199,18 @@ describe("dyad sandbox transplant (m2b)", () => {
 
   it("queues messages and follow-ups onto threads", async () => {
     clearTaskRegistries();
-    expect(await sendMessageTool.execute({ thread_id: "nope", message: "hi" }, toolCtx("/tmp"))).toMatch(
-      /not found/,
-    );
+    expect(
+      await sendMessageTool.execute({ thread_id: "nope", message: "hi" }, toolCtx("/tmp")),
+    ).toMatch(/not found/);
     // Idle thread with no worker deps wakes vacuously (no llm to run).
     const idle = registerSubagentTask("explorer", "test-session");
     settleSubagentTask(idle.id, { status: "idle" });
-    expect(await sendMessageTool.execute({ thread_id: idle.id, message: "hi again" }, toolCtx("/tmp"))).toBe(
-      "Message queued durably.",
-    );
-    expect(await followupTaskTool.execute({ thread_id: idle.id, message: "do more" }, toolCtx("/tmp"))).toBe(
-      "Follow-up queued durably.",
-    );
+    expect(
+      await sendMessageTool.execute({ thread_id: idle.id, message: "hi again" }, toolCtx("/tmp")),
+    ).toBe("Message queued durably.");
+    expect(
+      await followupTaskTool.execute({ thread_id: idle.id, message: "do more" }, toolCtx("/tmp")),
+    ).toBe("Follow-up queued durably.");
     expect(sendMessageTool.presentCall?.({ thread_id: idle.id })).toContain(idle.id);
     expect(followupTaskTool.presentCall?.({ thread_id: idle.id })).toContain(idle.id);
     clearTaskRegistries();

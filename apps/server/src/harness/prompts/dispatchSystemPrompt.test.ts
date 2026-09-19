@@ -39,17 +39,17 @@ describe("resolveDispatchSystemPromptOverride", () => {
   });
 
   it("trims the override", () => {
-    expect(
-      resolveDispatchSystemPromptOverride({ CAIDE_DISPATCH_SYSTEM_PROMPT: "  hi  " }),
-    ).toBe("hi");
+    expect(resolveDispatchSystemPromptOverride({ CAIDE_DISPATCH_SYSTEM_PROMPT: "  hi  " })).toBe(
+      "hi",
+    );
   });
 });
 
 describe("applyDispatchSystemPromptOverride", () => {
   it("replaces the assembled prompt when set", () => {
-    expect(applyDispatchSystemPromptOverride("assembled", { CAIDE_DISPATCH_SYSTEM_PROMPT: "x" })).toBe(
-      "x",
-    );
+    expect(
+      applyDispatchSystemPromptOverride("assembled", { CAIDE_DISPATCH_SYSTEM_PROMPT: "x" }),
+    ).toBe("x");
   });
 
   it("passes the assembled prompt through when unset", () => {

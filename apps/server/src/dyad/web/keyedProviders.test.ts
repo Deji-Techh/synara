@@ -28,10 +28,14 @@ function handler(req: http.IncomingMessage, res: http.ServerResponse): void {
       res.end(JSON.stringify(payload));
     };
     if (url.pathname === "/search" && req.method === "POST") {
-      return json(200, { results: [{ title: "T", url: "https://t.dev", content: "snippet here" }] });
+      return json(200, {
+        results: [{ title: "T", url: "https://t.dev", content: "snippet here" }],
+      });
     }
     if (url.pathname === "/res/v1/web/search") {
-      return json(200, { web: { results: [{ title: "B", url: "https://b.dev", description: "desc here" }] } });
+      return json(200, {
+        web: { results: [{ title: "B", url: "https://b.dev", description: "desc here" }] },
+      });
     }
     if (url.pathname === "/v1/images/generations") {
       return json(200, { data: [{ b64_json: Buffer.from([1, 2, 3]).toString("base64") }] });
@@ -64,8 +68,12 @@ afterAll(async () => {
 /** Redirect all fetches to the loopback server, preserving path+query. */
 function redirectFetchToLoopback(): void {
   const realFetch = globalThis.fetch;
-  (globalThis as { fetch: typeof fetch }).fetch = ((input: string | URL | Request, init?: RequestInit) => {
-    const target = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+  (globalThis as { fetch: typeof fetch }).fetch = ((
+    input: string | URL | Request,
+    init?: RequestInit,
+  ) => {
+    const target =
+      typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
     const rewritten = new URL(target);
     const loopback = new URL(base);
     rewritten.protocol = loopback.protocol;
@@ -110,7 +118,10 @@ describe("keyed web providers + web3 rpc (c9/c11)", () => {
 
   it("tests EVM and Solana RPCs with donor shapes", async () => {
     await expect(testEvmRpc(`${base}/evm`)).resolves.toEqual({ chainId: "0x1", block: "0xabc" });
-    await expect(testSolanaRpc(`${base}/sol`)).resolves.toEqual({ version: "2.0.0", height: 12345 });
+    await expect(testSolanaRpc(`${base}/sol`)).resolves.toEqual({
+      version: "2.0.0",
+      height: 12345,
+    });
     await expect(testEvmRpc("http://127.0.0.1:1/evm")).rejects.toThrow();
   });
 
@@ -123,8 +134,22 @@ describe("keyed web providers + web3 rpc (c9/c11)", () => {
       ),
     ).toMatch(/No blockchain networks/);
     setBlockchainNetworks([
-      { id: "e1", chainKind: "evm", chainId: "1", name: "Local EVM", rpcUrl: `${base}/evm`, isActive: true },
-      { id: "s1", chainKind: "solana", chainId: "local", name: "Local Sol", rpcUrl: `${base}/sol`, isActive: true },
+      {
+        id: "e1",
+        chainKind: "evm",
+        chainId: "1",
+        name: "Local EVM",
+        rpcUrl: `${base}/evm`,
+        isActive: true,
+      },
+      {
+        id: "s1",
+        chainKind: "solana",
+        chainId: "local",
+        name: "Local Sol",
+        rpcUrl: `${base}/sol`,
+        isActive: true,
+      },
     ]);
     expect(listBlockchainNetworks()).toHaveLength(2);
     const out = (await testRpcTool.execute(

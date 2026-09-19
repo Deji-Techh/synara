@@ -29,7 +29,12 @@ const FRAMEWORKS: Array<{
   description: string;
   hint: string;
 }> = [
-  { id: "blank", label: "Blank", description: "Standard codebase without preview runner", hint: "No preview" },
+  {
+    id: "blank",
+    label: "Blank",
+    description: "Standard codebase without preview runner",
+    hint: "No preview",
+  },
   {
     id: "react-native",
     label: "React Native",
@@ -113,7 +118,8 @@ export function ImportProjectDialog(props: {
       const picked = await api.dialogs.pickFolder();
       if (picked) {
         setFolderPath(picked);
-        const folderBaseName = picked.split(/[/\\]/).findLast((s: string) => s.length > 0) ?? picked;
+        const folderBaseName =
+          picked.split(/[/\\]/).findLast((s: string) => s.length > 0) ?? picked;
         setTitle(folderBaseName);
         void detectFrameworkForPath(picked);
       }
@@ -125,7 +131,11 @@ export function ImportProjectDialog(props: {
   const handlePathBlur = useCallback(() => {
     if (folderPath.trim()) {
       if (!title.trim()) {
-        const folderBaseName = folderPath.trim().split(/[/\\]/).findLast((s: string) => s.length > 0) ?? folderPath;
+        const folderBaseName =
+          folderPath
+            .trim()
+            .split(/[/\\]/)
+            .findLast((s: string) => s.length > 0) ?? folderPath;
         setTitle(folderBaseName);
       }
       void detectFrameworkForPath(folderPath.trim());
@@ -138,7 +148,8 @@ export function ImportProjectDialog(props: {
       setError("Please specify a project folder path.");
       return;
     }
-    const trimmedTitle = title.trim() || trimmedPath.split(/[/\\]/).findLast((s: string) => s.length > 0) || "App";
+    const trimmedTitle =
+      title.trim() || trimmedPath.split(/[/\\]/).findLast((s: string) => s.length > 0) || "App";
 
     setSubmitting(true);
     setError(null);
@@ -162,7 +173,8 @@ export function ImportProjectDialog(props: {
         <DialogHeader>
           <DialogTitle>Import existing project</DialogTitle>
           <DialogDescription>
-            Link an existing codebase into Caide. Choose or verify its framework to configure previews, tools, and build workflows.
+            Link an existing codebase into Caide. Choose or verify its framework to configure
+            previews, tools, and build workflows.
           </DialogDescription>
         </DialogHeader>
 
@@ -220,7 +232,8 @@ export function ImportProjectDialog(props: {
                 <span className="text-[11px] text-muted-foreground animate-pulse">Detecting…</span>
               ) : detectedFramework ? (
                 <Badge variant="secondary" size="sm" className="text-[10px]">
-                  Detected: {FRAMEWORKS.find((f) => f.id === detectedFramework)?.label ?? detectedFramework}
+                  Detected:{" "}
+                  {FRAMEWORKS.find((f) => f.id === detectedFramework)?.label ?? detectedFramework}
                 </Badge>
               ) : null}
             </div>
@@ -292,7 +305,8 @@ export function ImportProjectDialog(props: {
               })}
             </div>
             <p className="text-[11px] text-muted-foreground">
-              You can override the detected framework if needed. This setting configures how previews and build commands run.
+              You can override the detected framework if needed. This setting configures how
+              previews and build commands run.
             </p>
           </div>
 
@@ -300,11 +314,7 @@ export function ImportProjectDialog(props: {
         </DialogPanel>
 
         <DialogFooter>
-          <Button
-            variant="ghost"
-            onClick={() => props.onOpenChange(false)}
-            disabled={submitting}
-          >
+          <Button variant="ghost" onClick={() => props.onOpenChange(false)} disabled={submitting}>
             Cancel
           </Button>
           <Button

@@ -27,7 +27,8 @@ describe("stagedDraftNavigation", () => {
     expect(calls).toEqual(["stage", "navigate", "check", "finalize"]);
   });
 
-  it("rolls back a staged draft when a newer navigation wins", async () => {    const finalize = vi.fn();
+  it("rolls back a staged draft when a newer navigation wins", async () => {
+    const finalize = vi.fn();
     const rollback = vi.fn();
 
     const committed = await stageDraftNavigation({

@@ -85,7 +85,13 @@ export async function listSupabaseProjects(input: {
     input.token,
     "/v1/projects",
     input.signal,
-  )) as Array<{ id: string; name: string; organization_id?: string; region?: string; status?: string }>;
+  )) as Array<{
+    id: string;
+    name: string;
+    organization_id?: string;
+    region?: string;
+    status?: string;
+  }>;
   return (Array.isArray(data) ? data : []).map((p) => ({
     id: p.id,
     name: p.name,
@@ -135,7 +141,10 @@ async function supabasePost(
 function randomDbPassword(): string {
   const bytes = new Uint8Array(24);
   crypto.getRandomValues(bytes);
-  return Array.from(bytes, (b) => "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*"[b % 72]).join("");
+  return Array.from(
+    bytes,
+    (b) => "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*"[b % 72],
+  ).join("");
 }
 
 /** Create a Supabase project. The generated db password is never stored —
@@ -186,14 +195,21 @@ export async function getSupabaseProjectApiKeys(input: {
 }): Promise<SupabaseApiKey[]> {
   if (!input.token.trim()) throw new SupabaseApiError("Supabase token is required.");
   const path = `/v1/projects/${encodeURIComponent(input.projectId)}/api-keys${input.reveal ? "?reveal=true" : ""}`;
-  const data = (await supabaseFetch(input.baseUrl ?? SUPABASE_API_BASE_URL, input.token, path, input.signal)) as Array<{
+  const data = (await supabaseFetch(
+    input.baseUrl ?? SUPABASE_API_BASE_URL,
+    input.token,
+    path,
+    input.signal,
+  )) as Array<{
     name?: string;
     api_key?: string;
     apiKey?: string;
   }>;
   return (Array.isArray(data) ? data : []).map((k) => ({
     name: k.name ?? "",
-    ...((typeof k.api_key === "string" || typeof k.apiKey === "string") && { apiKey: (k.api_key ?? k.apiKey) as string }),
+    ...((typeof k.api_key === "string" || typeof k.apiKey === "string") && {
+      apiKey: (k.api_key ?? k.apiKey) as string,
+    }),
   }));
 }
 
@@ -256,7 +272,9 @@ export async function createSupabaseTestUser(input: {
     return { id: data.id, email: data.email ?? email };
   } catch (err) {
     if (err instanceof SupabaseApiError) throw err;
-    throw new SupabaseApiError(`Test user create failed: ${err instanceof Error ? err.message : String(err)}`);
+    throw new SupabaseApiError(
+      `Test user create failed: ${err instanceof Error ? err.message : String(err)}`,
+    );
   } finally {
     clearTimeout(timer);
   }
@@ -286,7 +304,9 @@ export async function deleteSupabaseTestUser(input: {
     }
   } catch (err) {
     if (err instanceof SupabaseApiError) throw err;
-    throw new SupabaseApiError(`Test user delete failed: ${err instanceof Error ? err.message : String(err)}`);
+    throw new SupabaseApiError(
+      `Test user delete failed: ${err instanceof Error ? err.message : String(err)}`,
+    );
   } finally {
     clearTimeout(timer);
   }

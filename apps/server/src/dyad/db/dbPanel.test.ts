@@ -45,7 +45,10 @@ describe("dyad database panel control", () => {
       revealDatabase: (sessionId, reason) => seen.push({ sessionId, reason }),
     });
     try {
-      const out = (await openDatabasePanelTool.execute({ reason: "provision check" }, toolCtx())) as any;
+      const out = (await openDatabasePanelTool.execute(
+        { reason: "provision check" },
+        toolCtx(),
+      )) as any;
       expect(out.opened).toBe(true);
       expect(out.delivered).toBe(true);
       expect(out.pane).toBe("database");

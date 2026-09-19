@@ -44,21 +44,26 @@ jobRoutes.get("/jobs", (c) => {
   );
 });
 
-jobRoutes.post("/jobs/:name/run", requireAuth(), zValidator("param", z.object({ name: z.string().min(1) })), async (c) => {
-  const requestId = c.get("requestId") ?? "unknown";
-  const { name } = c.req.valid("param");
-  const job = jobs.get(name);
-  if (!job) {
-    return c.json(error("NOT_FOUND", `Unknown job: ${name}`, requestId), 404);
-  }
-  emitEvent({ name: "job.started", requestId, attrs: { job: name } });
-  try {
-    const result = await job.run();
-    emitEvent({ name: "job.finished", requestId, attrs: { job: name, message: result.message } });
-    return c.json(success({ job: name, ...result }, requestId));
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    emitEvent({ name: "job.failed", requestId, attrs: { job: name, message } });
-    return c.json(error("JOB_FAILED", message, requestId), 500);
-  }
-});
+jobRoutes.post(
+  "/jobs/:name/run",
+  requireAuth(),
+  zValidator("param", z.object({ name: z.string().min(1) })),
+  async (c) => {
+    const requestId = c.get("requestId") ?? "unknown";
+    const { name } = c.req.valid("param");
+    const job = jobs.get(name);
+    if (!job) {
+      return c.json(error("NOT_FOUND", `Unknown job: ${name}`, requestId), 404);
+    }
+    emitEvent({ name: "job.started", requestId, attrs: { job: name } });
+    try {
+      const result = await job.run();
+      emitEvent({ name: "job.finished", requestId, attrs: { job: name, message: result.message } });
+      return c.json(success({ job: name, ...result }, requestId));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      emitEvent({ name: "job.failed", requestId, attrs: { job: name, message } });
+      return c.json(error("JOB_FAILED", message, requestId), 500);
+    }
+  },
+);

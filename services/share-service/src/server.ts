@@ -1,26 +1,12 @@
 import { randomUUID } from "node:crypto";
 import cors from "cors";
-import express, {
-  type NextFunction,
-  type Request,
-  type Response,
-} from "express";
+import express, { type NextFunction, type Request, type Response } from "express";
 import helmet from "helmet";
 import { z } from "zod";
 import { config } from "./config.js";
 import { findShareByPublicTokenHash, pool, publicMetadata } from "./db.js";
-import {
-  landingPage,
-  serviceHomePage,
-  shareCardSvg,
-  unavailableSharePage,
-} from "./landing.js";
-import {
-  bearerToken,
-  createToken,
-  hashToken,
-  tokenMatches,
-} from "./security.js";
+import { landingPage, serviceHomePage, shareCardSvg, unavailableSharePage } from "./landing.js";
+import { bearerToken, createToken, hashToken, tokenMatches } from "./security.js";
 import {
   deleteObject,
   headObject,
@@ -56,21 +42,19 @@ app.use(
     },
   }),
 );
-app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (native mobile apps, server-to-server)
-    // or from known dev origins
-    if (
-      !origin ||
-      origin.startsWith("capacitor://") ||
-      origin.startsWith("http://localhost")
-    ) {
-      callback(null, true);
-    } else {
-      callback(null, false);
-    }
-  },
-}));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (native mobile apps, server-to-server)
+      // or from known dev origins
+      if (!origin || origin.startsWith("capacitor://") || origin.startsWith("http://localhost")) {
+        callback(null, true);
+      } else {
+        callback(null, false);
+      }
+    },
+  }),
+);
 app.use(express.json({ limit: "24mb" }));
 
 const rateWindows = new Map<string, { count: number; resetAt: number }>();
@@ -81,9 +65,7 @@ function apiRateLimit(req: Request, res: Response, next: NextFunction) {
   const key = req.ip || req.socket.remoteAddress || "unknown";
   const current = rateWindows.get(key);
   const windowState =
-    !current || current.resetAt <= now
-      ? { count: 0, resetAt: now + RATE_WINDOW_MS }
-      : current;
+    !current || current.resetAt <= now ? { count: 0, resetAt: now + RATE_WINDOW_MS } : current;
   windowState.count += 1;
   rateWindows.set(key, windowState);
   res.setHeader("RateLimit-Limit", config.API_RATE_LIMIT_PER_MINUTE);
@@ -163,11 +145,7 @@ app.post("/v1/shares", async (req, res, next) => {
       shareId: id,
       publicToken,
       manageToken,
-      uploadUrl: await signedUploadUrl(
-        objectKey,
-        input.packageSize,
-        input.checksum,
-      ),
+      uploadUrl: await signedUploadUrl(objectKey, input.packageSize, input.checksum),
       shareUrl: `${config.SHARE_PUBLIC_BASE_URL}/s/${publicToken}`,
       expiresAt: expiresAt.toISOString(),
     });
@@ -188,10 +166,7 @@ app.post("/v1/shares/:id/complete", async (req, res, next) => {
       res.status(401).json({ error: "Management token required" });
       return;
     }
-    const result = await pool.query(
-      `SELECT * FROM project_shares WHERE id=$1`,
-      [shareId.data],
-    );
+    const result = await pool.query(`SELECT * FROM project_shares WHERE id=$1`, [shareId.data]);
     const row = result.rows[0];
     if (!row || !tokenMatches(manageToken, row.manage_token_hash)) {
       res.status(404).json({ error: "Share not found" });
@@ -213,18 +188,13 @@ app.post("/v1/shares/:id/complete", async (req, res, next) => {
       res.status(409).json({ error: "Uploaded object size does not match" });
       return;
     }
-    if (
-      head.ContentType &&
-      head.ContentType !== "application/vnd.caide.project+gzip"
-    ) {
+    if (head.ContentType && head.ContentType !== "application/vnd.caide.project+gzip") {
       res.status(409).json({ error: "Uploaded object type does not match" });
       return;
     }
     const uploadedChecksum = await sha256Object(row.object_key);
     if (uploadedChecksum !== row.checksum) {
-      res
-        .status(409)
-        .json({ error: "Uploaded object checksum does not match" });
+      res.status(409).json({ error: "Uploaded object checksum does not match" });
       return;
     }
     await pool.query(
@@ -256,9 +226,7 @@ app.get("/v1/shares/:token", async (req, res, next) => {
     }
     if (row.status !== "active") {
       res
-        .status(
-          row.status === "revoked" || row.status === "expired" ? 410 : 409,
-        )
+        .status(row.status === "revoked" || row.status === "expired" ? 410 : 409)
         .json({ error: `Share is ${row.status}` });
       return;
     }
@@ -297,10 +265,9 @@ app.post("/v1/shares/:token/download", async (req, res, next) => {
       return;
     }
     const downloadUrl = await signedDownloadUrl(row.object_key);
-    await client.query(
-      `UPDATE project_shares SET download_count=download_count+1 WHERE id=$1`,
-      [row.id],
-    );
+    await client.query(`UPDATE project_shares SET download_count=download_count+1 WHERE id=$1`, [
+      row.id,
+    ]);
     await client.query("COMMIT");
     res.json({ downloadUrl, checksum: row.checksum, shareId: row.id });
   } catch (error) {
@@ -323,17 +290,13 @@ app.delete("/v1/shares/:id", async (req, res, next) => {
       res.status(401).json({ error: "Management token required" });
       return;
     }
-    const found = await pool.query(`SELECT * FROM project_shares WHERE id=$1`, [
-      shareId.data,
-    ]);
+    const found = await pool.query(`SELECT * FROM project_shares WHERE id=$1`, [shareId.data]);
     const row = found.rows[0];
     if (!row || !tokenMatches(token, row.manage_token_hash)) {
       res.status(404).json({ error: "Share not found" });
       return;
     }
-    await pool.query(`UPDATE project_shares SET status='revoked' WHERE id=$1`, [
-      row.id,
-    ]);
+    await pool.query(`UPDATE project_shares SET status='revoked' WHERE id=$1`, [row.id]);
     await deleteObject(row.object_key).catch(() => undefined);
     res.status(204).end();
   } catch (error) {
@@ -381,9 +344,7 @@ app.get("/healthz", async (_req, res, next) => {
       "SELECT to_regclass('public.project_shares') AS project_shares",
     );
     if (!query.rows[0]?.project_shares) {
-      res
-        .status(503)
-        .json({ ok: false, error: "project_shares table missing" });
+      res.status(503).json({ ok: false, error: "project_shares table missing" });
       return;
     }
     res.json({ ok: true, service: "caide-share-service" });
@@ -399,15 +360,11 @@ app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
     return;
   }
   const status =
-    error instanceof Error &&
-    Number.isInteger((error as Error & { status?: number }).status)
+    error instanceof Error && Number.isInteger((error as Error & { status?: number }).status)
       ? (error as Error & { status: number }).status
       : 500;
   res.status(status).json({
-    error:
-      status >= 500
-        ? "Internal server error"
-        : String((error as Error).message),
+    error: status >= 500 ? "Internal server error" : String((error as Error).message),
   });
 });
 
@@ -418,9 +375,7 @@ async function expireOldShares() {
      WHERE expires_at <= now() AND status IN ('pending', 'active')
      RETURNING object_key`,
   );
-  await Promise.allSettled(
-    expired.rows.map((row) => deleteObject(row.object_key)),
-  );
+  await Promise.allSettled(expired.rows.map((row) => deleteObject(row.object_key)));
 }
 
 async function startServer() {

@@ -78,7 +78,9 @@ function ProviderModelRadioItem(
         title={`Taste ${taste}/10 — design judgment, code quality, copy. Higher is better for UI work.`}
         className={cn(
           "ml-1.5 inline-flex shrink-0 items-center rounded px-1 py-px font-mono text-[10px] font-medium tabular-nums",
-          taste >= 7 ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" : "bg-muted text-muted-foreground/80",
+          taste >= 7
+            ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+            : "bg-muted text-muted-foreground/80",
         )}
       >
         <span aria-hidden="true">taste {taste}</span>

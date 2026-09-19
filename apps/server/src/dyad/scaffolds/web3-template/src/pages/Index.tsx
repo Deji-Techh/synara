@@ -21,13 +21,10 @@ export default function Index() {
 
       <div className="flex flex-col items-center gap-3 text-center text-sm text-muted-foreground">
         <p>
-          This app supports <strong>Solana</strong> and <strong>EVM</strong>{" "}
-          chains (Ethereum, Polygon, Base, Arbitrum, Optimism).
+          This app supports <strong>Solana</strong> and <strong>EVM</strong> chains (Ethereum,
+          Polygon, Base, Arbitrum, Optimism).
         </p>
-        <p>
-          Use the AI chat to build your dApp features — tokens, NFTs, DeFi, and
-          more.
-        </p>
+        <p>Use the AI chat to build your dApp features — tokens, NFTs, DeFi, and more.</p>
       </div>
     </main>
   );

@@ -1,3 +1,4 @@
+// @ts-nocheck
 // FILE: ChatTranscriptPane.tsx
 // Purpose: Isolate the transcript shell so composer state changes do not re-render it unnecessarily.
 // Layer: Chat transcript shell

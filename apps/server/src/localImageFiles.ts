@@ -30,8 +30,7 @@ function resolveGeneratedImagesRoots(homePath?: string): readonly string[] {
   const runtimeHome = process.env.CAIDE_HOME?.trim();
   const overlayRoot = runtimeHome || path.join(path.dirname(source), ".caide", "runtime");
   const overlay = path.join(overlayRoot, "codex-home-overlay");
-  const homes =
-    path.resolve(source) === path.resolve(overlay) ? [source] : [source, overlay];
+  const homes = path.resolve(source) === path.resolve(overlay) ? [source] : [source, overlay];
   return homes.map((home) => path.join(home, "generated_images"));
 }
 

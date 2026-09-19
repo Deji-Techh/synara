@@ -13,27 +13,44 @@ import { SettingsRow, SettingsSection } from "./SettingsPanelPrimitives";
 import { SettingsSelectControl } from "./SettingControls";
 
 const SOURCE_OPTIONS = [
-  { value: "auto", label: "Auto (recommended)", hint: "Turn model if image-capable, else Gemini, OpenAI, Pollinations, placeholder." },
-  { value: "turn-model", label: "Turn model", hint: "Only when the turn model itself generates images; otherwise falls through." },
-  { value: "gemini", label: "Gemini", hint: "Needs a Google/Gemini key. Falls through when unconfigured." },
-  { value: "openai", label: "OpenAI", hint: "Needs an OpenAI key. Falls through when unconfigured." },
+  {
+    value: "auto",
+    label: "Auto (recommended)",
+    hint: "Turn model if image-capable, else Gemini, OpenAI, Pollinations, placeholder.",
+  },
+  {
+    value: "turn-model",
+    label: "Turn model",
+    hint: "Only when the turn model itself generates images; otherwise falls through.",
+  },
+  {
+    value: "gemini",
+    label: "Gemini",
+    hint: "Needs a Google/Gemini key. Falls through when unconfigured.",
+  },
+  {
+    value: "openai",
+    label: "OpenAI",
+    hint: "Needs an OpenAI key. Falls through when unconfigured.",
+  },
   { value: "pollinations", label: "Pollinations", hint: "Keyless. Always available." },
-  { value: "placeholder", label: "Illustrated placeholder", hint: "Skips generation; writes a designed SVG placeholder." },
+  {
+    value: "placeholder",
+    label: "Illustrated placeholder",
+    hint: "Skips generation; writes a designed SVG placeholder.",
+  },
 ] as const;
 
 export function ImageGenerationSection() {
-  const {
-    providers,
-    connected,
-    defaultImageProviderId,
-    defaultImageModelId,
-    saveDefaults,
-  } = useDyadProviderSettings();
+  const { providers, connected, defaultImageProviderId, defaultImageModelId, saveDefaults } =
+    useDyadProviderSettings();
   const [modelDraft, setModelDraft] = useState<string | null>(null);
 
   const source = defaultImageProviderId || "auto";
   const model = modelDraft ?? defaultImageModelId ?? "";
-  const googleConfigured = providers.some((p) => (p.id === "google" || p.id === "gemini") && p.configured);
+  const googleConfigured = providers.some(
+    (p) => (p.id === "google" || p.id === "gemini") && p.configured,
+  );
   const openaiConfigured = providers.some((p) => p.id === "openai" && p.configured);
   const needsKey =
     (source === "gemini" && !googleConfigured) || (source === "openai" && !openaiConfigured);
@@ -43,13 +60,21 @@ export function ImageGenerationSection() {
       <SettingsRow
         title="Preferred source"
         description="The agent tries this first for generate_image, then falls through silently — no probing, no waiting. Placeholders are only written when every leg fails and you provided no asset."
-        status={!connected ? "Harness offline" : needsKey ? "Needs key — falls through meanwhile" : undefined}
+        status={
+          !connected
+            ? "Harness offline"
+            : needsKey
+              ? "Needs key — falls through meanwhile"
+              : undefined
+        }
         control={
           <SettingsSelectControl
             value={SOURCE_OPTIONS.some((o) => o.value === source) ? source : "auto"}
             onValueChange={(v) => saveDefaults({ imageProviderId: v === "auto" ? "" : v })}
             ariaLabel="Preferred image source"
-            valueContent={SOURCE_OPTIONS.find((o) => o.value === source)?.label ?? "Auto (recommended)"}
+            valueContent={
+              SOURCE_OPTIONS.find((o) => o.value === source)?.label ?? "Auto (recommended)"
+            }
           >
             {SOURCE_OPTIONS.map((o) => (
               <SelectItem key={o.value} value={o.value}>

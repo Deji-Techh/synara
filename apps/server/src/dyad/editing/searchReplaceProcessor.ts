@@ -23,8 +23,7 @@ function unescapeMarkers(content: string): string {
 type LineComparator = (fileLine: string, patternLine: string) => boolean;
 
 /** Pass 1: Exact Match — file_line == pattern_line */
-const exactMatch: LineComparator = (fileLine, patternLine) =>
-  fileLine === patternLine;
+const exactMatch: LineComparator = (fileLine, patternLine) => fileLine === patternLine;
 
 /** Pass 2: Trailing Whitespace Ignored */
 const trailingWhitespaceIgnored: LineComparator = (fileLine, patternLine) =>
@@ -134,8 +133,7 @@ export function applySearchReplace(
     replaceContent = unescapeMarkers(replaceContent);
 
     let searchLines = searchContent === "" ? [] : searchContent.split(/\r?\n/);
-    const replaceLines =
-      replaceContent === "" ? [] : replaceContent.split(/\r?\n/);
+    const replaceLines = replaceContent === "" ? [] : replaceContent.split(/\r?\n/);
 
     if (searchLines.length === 0) {
       return {

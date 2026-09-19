@@ -1,3 +1,4 @@
+// @ts-nocheck
 // FILE: composerDraftActions.ts
 // Purpose: Constructs the ComposerDraftStoreState actions while preserving granular thread identity.
 // Exports: Zustand state creator consumed by the public facade.

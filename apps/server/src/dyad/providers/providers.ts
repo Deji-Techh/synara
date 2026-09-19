@@ -354,13 +354,15 @@ export function validateProviderSettings(
   if (providerId === "azure" && !entry.resourceName?.trim()) {
     return {
       ok: false,
-      message: "Azure OpenAI needs a Resource Name (the resource endpoint host). Saved without it; turns will fail until it is set.",
+      message:
+        "Azure OpenAI needs a Resource Name (the resource endpoint host). Saved without it; turns will fail until it is set.",
     };
   }
   if (providerId === "custom" && !entry.apiBaseUrl?.trim()) {
     return {
       ok: false,
-      message: "Custom providers need an API Base URL. Saved without it; turns will fail until it is set.",
+      message:
+        "Custom providers need an API Base URL. Saved without it; turns will fail until it is set.",
     };
   }
   if (providerId === "vertex") {
@@ -373,11 +375,15 @@ export function validateProviderSettings(
   if (def.transport === "needs-work") {
     return {
       ok: false,
-      message: `${def.displayName} is not on fetch streaming yet. ${def.transportNote ?? ""}`.trim(),
+      message:
+        `${def.displayName} is not on fetch streaming yet. ${def.transportNote ?? ""}`.trim(),
     };
   }
   if (!entry.apiKey?.trim() && !def.envVarName) {
-    return { ok: true, message: `${def.displayName} saved (no key stored here; provide one at turn time or via gateway settings).` };
+    return {
+      ok: true,
+      message: `${def.displayName} saved (no key stored here; provide one at turn time or via gateway settings).`,
+    };
   }
   return { ok: true, message: `${def.displayName} settings saved.` };
 }

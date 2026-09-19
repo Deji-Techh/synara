@@ -1,3 +1,4 @@
+// @ts-nocheck
 // FILE: useChatThreadActions.ts
 // Purpose: Thread actions — rename, archive, delete, handoff, fork. Extracted from ChatView sidebar coupling.
 

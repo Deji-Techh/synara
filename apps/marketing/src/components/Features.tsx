@@ -92,7 +92,10 @@ export default function Features() {
   return (
     <div>
       {/* SECTION 1: IMMUTABLE FRAMEWORKS */}
-      <section id="frameworks" className="border-t border-[var(--divide)] py-14 sm:py-20">
+      <section
+        id="frameworks"
+        className="scroll-mt-24 border-t border-[var(--divide)] py-14 sm:py-20"
+      >
         <div className={container}>
           <ScrollReveal>
             <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--accent-link)]">
@@ -108,23 +111,24 @@ export default function Features() {
             </p>
 
             <div className="mt-12 grid grid-cols-1 border-t border-[var(--divide)] sm:grid-cols-2">
-              {SUPPORTED_FRAMEWORKS.map((fw) => {
+              {SUPPORTED_FRAMEWORKS.map((fw, idx) => {
                 const IconComp = frameworkIcons[fw.id] || Box;
                 return (
                   <div
                     key={fw.id}
-                    className="border-b border-[var(--divide)] p-6 transition-colors hover:bg-[var(--mock-row)] sm:p-7 sm:[&:nth-child(odd)]:border-r sm:[&:nth-child(odd)]:border-[var(--divide)]"
+                    style={{ transitionDelay: `${idx * 60}ms` }}
+                    className="group border-b border-[var(--divide)] p-6 transition-all duration-300 hover:bg-[var(--mock-row)] hover:translate-x-1 sm:p-7 sm:[&:nth-child(odd)]:border-r sm:[&:nth-child(odd)]:border-[var(--divide)]"
                   >
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex min-w-0 items-center gap-3">
-                        <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--block-elevated)] text-[var(--text-primary)]">
+                        <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--block-elevated)] text-[var(--text-primary)] shadow-sm transition-transform duration-300 group-hover:scale-110">
                           <IconComp className="size-[18px]" />
                         </span>
                         <span className="truncate text-[15px] font-medium text-[var(--text-primary)]">
                           {fw.name}
                         </span>
                       </div>
-                      <span className="shrink-0 rounded-full border border-sky-500/20 bg-sky-500/5 px-2.5 py-0.5 text-[11px] font-medium text-sky-700">
+                      <span className="shrink-0 rounded-full border border-sky-500/20 bg-sky-500/5 px-2.5 py-0.5 text-[11px] font-medium text-sky-700 transition-colors group-hover:bg-sky-500/10">
                         {fw.badge}
                       </span>
                     </div>
@@ -137,31 +141,36 @@ export default function Features() {
             </div>
           </ScrollReveal>
 
-          <SplitShowcase
-            kicker="Framework Scaffolding"
-            title="Start with full native toolchain support"
-            description="Create a new React Native Expo project, Flutter mobile app, or Next.js web application. Caide boots your local environment, installs exact dependencies, and spins up the live Metro or Vite watcher automatically."
-            reverse
-          >
-            <ScreenshotPlaceholder
-              badge="FRAMEWORK CREATION"
-              title="Create Project: Stack Selection & Toolchain Health"
-              description="Shows Caide Create App dialog with the 4 immutable framework options, toolchain health check status (Node, Bun, Flutter SDK, Metro), and directory path configuration."
-              checklist={[
-                "4 Immutable framework cards with badges",
-                "Toolchain prerequisite health indicators",
-                "Project directory and template selector",
-                "Live dev server port configuration",
-              ]}
-              specs="3200 × 2000 • 2x Retina"
-              targetPath="/public/screenshots/framework-creation.png"
-            />
-          </SplitShowcase>
+          <ScrollReveal delay={80}>
+            <SplitShowcase
+              kicker="Framework Scaffolding"
+              title="Start with full native toolchain support"
+              description="Create a new React Native Expo project, Flutter mobile app, or Next.js web application. Caide boots your local environment, installs exact dependencies, and spins up the live Metro or Vite watcher automatically."
+              reverse
+            >
+              <ScreenshotPlaceholder
+                badge="FRAMEWORK CREATION"
+                title="Create Project: Stack Selection & Toolchain Health"
+                description="Shows Caide Create App dialog with the 4 immutable framework options, toolchain health check status (Node, Bun, Flutter SDK, Metro), and directory path configuration."
+                checklist={[
+                  "4 Immutable framework cards with badges",
+                  "Toolchain prerequisite health indicators",
+                  "Project directory and template selector",
+                  "Live dev server port configuration",
+                ]}
+                specs="3200 × 2000 • 2x Retina"
+                targetPath="/public/screenshots/framework-creation.png"
+              />
+            </SplitShowcase>
+          </ScrollReveal>
         </div>
       </section>
 
       {/* SECTION 2: BYOK MULTI-MODEL INTELLIGENCE */}
-      <section id="providers" className="border-t border-[var(--divide)] py-14 sm:py-20">
+      <section
+        id="providers"
+        className="scroll-mt-24 border-t border-[var(--divide)] py-14 sm:py-20"
+      >
         <div className={container}>
           <ScrollReveal>
             <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--accent-link)]">
@@ -177,21 +186,22 @@ export default function Features() {
             </p>
 
             <div className="mt-12 grid grid-cols-1 border-t border-[var(--divide)] sm:grid-cols-2">
-              {activeProviders.map(({ name, tagline, Icon, accent, status }) => (
+              {activeProviders.map(({ name, tagline, Icon, accent, status }, idx) => (
                 <div
                   key={name}
-                  className="border-b border-[var(--divide)] p-6 transition-colors hover:bg-[var(--mock-row)] sm:p-7 sm:[&:nth-child(odd)]:border-r sm:[&:nth-child(odd)]:border-[var(--divide)]"
+                  style={{ transitionDelay: `${idx * 50}ms` }}
+                  className="group border-b border-[var(--divide)] p-6 transition-all duration-300 hover:bg-[var(--mock-row)] hover:translate-x-1 sm:p-7 sm:[&:nth-child(odd)]:border-r sm:[&:nth-child(odd)]:border-[var(--divide)]"
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-3">
-                      <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--block-elevated)]">
+                      <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--block-elevated)] shadow-sm transition-transform duration-300 group-hover:scale-110">
                         <Icon className={`size-[18px] ${accent}`} />
                       </span>
                       <span className="truncate text-[15px] font-medium text-[var(--text-primary)]">
                         {name}
                       </span>
                     </div>
-                    <span className="shrink-0 rounded-full border border-sky-500/20 bg-sky-500/5 px-2.5 py-0.5 text-[11px] font-medium text-sky-700">
+                    <span className="shrink-0 rounded-full border border-sky-500/20 bg-sky-500/5 px-2.5 py-0.5 text-[11px] font-medium text-sky-700 transition-colors group-hover:bg-sky-500/10">
                       {status}
                     </span>
                   </div>
@@ -203,26 +213,28 @@ export default function Features() {
             </div>
           </ScrollReveal>
 
-          <SplitShowcase
-            kicker="BYOK Model Hub"
-            title="Direct provider connections. Zero gateway limits."
-            description="Configure your keys once in Caide secure storage. Switch between Claude 3.7 for deep refactoring, GPT-4o for complex JSON contracts, and local Ollama for offline rapid edits without ever being throttled."
-            reverse={false}
-          >
-            <ScreenshotPlaceholder
-              badge="MODEL HUB & BYOK"
-              title="Model Settings: Provider Catalog & Custom Endpoints"
-              description="Shows Caide Model Settings dialog with active provider accounts, API key validation status, temperature/thinking controls, and custom local endpoint configuration."
-              checklist={[
-                "Provider list with Anthropic, OpenAI, DeepSeek, Groq, Ollama",
-                "Key verification badge and quota indicator",
-                "Model picker with thinking levels and context limits",
-                "Custom OpenAI-compatible base URL input",
-              ]}
-              specs="3200 × 2000 • 2x Retina"
-              targetPath="/public/screenshots/model-catalog.png"
-            />
-          </SplitShowcase>
+          <ScrollReveal delay={80}>
+            <SplitShowcase
+              kicker="BYOK Model Hub"
+              title="Direct provider connections. Zero gateway limits."
+              description="Configure your keys once in Caide secure storage. Switch between Claude 3.7 for deep refactoring, GPT-4o for complex JSON contracts, and local Ollama for offline rapid edits without ever being throttled."
+              reverse={false}
+            >
+              <ScreenshotPlaceholder
+                badge="MODEL HUB & BYOK"
+                title="Model Settings: Provider Catalog & Custom Endpoints"
+                description="Shows Caide Model Settings dialog with active provider accounts, API key validation status, temperature/thinking controls, and custom local endpoint configuration."
+                checklist={[
+                  "Provider list with Anthropic, OpenAI, DeepSeek, Groq, Ollama",
+                  "Key verification badge and quota indicator",
+                  "Model picker with thinking levels and context limits",
+                  "Custom OpenAI-compatible base URL input",
+                ]}
+                specs="3200 × 2000 • 2x Retina"
+                targetPath="/public/screenshots/model-catalog.png"
+              />
+            </SplitShowcase>
+          </ScrollReveal>
         </div>
       </section>
     </div>

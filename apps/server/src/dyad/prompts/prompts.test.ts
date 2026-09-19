@@ -75,7 +75,9 @@ describe("dyad prompt transplant (m1)", () => {
     // nouns leak into either target).
     expect(CAIDE_MOBILE_UI_SKILL_PACK).toContain("<appllama-mobile-laws>");
     expect(CAIDE_MOBILE_UI_SKILL_PACK).toContain("one-way doors");
-    expect(CAIDE_MOBILE_UI_SKILL_PACK).toContain("runtime appendix matching this project's Caide framework is inlined directly below");
+    expect(CAIDE_MOBILE_UI_SKILL_PACK).toContain(
+      "runtime appendix matching this project's Caide framework is inlined directly below",
+    );
     for (const leak of ["Vite", "shadcn", "GoRouter", "Riverpod", "Dart", "flutter pub"]) {
       expect(CAIDE_MOBILE_UI_SKILL_PACK).not.toContain(leak);
     }
@@ -83,9 +85,7 @@ describe("dyad prompt transplant (m1)", () => {
     // Companion registry advertises both skills for execute_fork_skill depth.
     for (const id of ["appllama-design", "appllama-research"]) {
       expect(Object.keys(COMPANION_SKILL_FRONTMATTERS)).toContain(id);
-      expect(
-        COMPANION_SKILL_FRONTMATTERS[id].description ?? "",
-      ).not.toHaveLength(0);
+      expect(COMPANION_SKILL_FRONTMATTERS[id].description ?? "").not.toHaveLength(0);
     }
 
     // All transplant files are on disk and non-trivial.
@@ -278,7 +278,15 @@ describe("dyad prompt transplant (m1)", () => {
     expect(flutter).toContain("Dart");
     expect(flutter).toContain("flutter pub");
     expect(flutter).toContain("Bottom tab bar"); // mobile target contract
-    for (const leak of ["shadcn", "React Router", "Vite", "npm", "sonner", "src/pages", "Tailwind"]) {
+    for (const leak of [
+      "shadcn",
+      "React Router",
+      "Vite",
+      "npm",
+      "sonner",
+      "src/pages",
+      "Tailwind",
+    ]) {
       expect(flutter, `flutter leak: ${leak}`).not.toContain(leak);
     }
 
@@ -366,7 +374,9 @@ describe("dyad prompt transplant (m1)", () => {
 
   it("appends git provenance blocks only when requested, builds reminders", () => {
     const base = { aiRules: undefined, enableTurboEditsV2: false } as const;
-    expect(constructSystemPrompt({ ...base, chatMode: "local-agent" })).not.toContain("<git_context>");
+    expect(constructSystemPrompt({ ...base, chatMode: "local-agent" })).not.toContain(
+      "<git_context>",
+    );
     expect(constructSystemPrompt({ ...base, chatMode: "build" })).not.toContain("<git_context>");
 
     const agent = constructSystemPrompt({ ...base, chatMode: "local-agent", gitProvenance: true });
@@ -389,12 +399,20 @@ describe("dyad prompt transplant (m1)", () => {
 
   it("appends Turbo-Edits guidance only when enabled", () => {
     const base = { aiRules: undefined, enableTurboEditsV2: false } as const;
-    expect(constructSystemPrompt({ ...base, chatMode: "build" })).not.toContain("SURGICAL EDITS ONLY");
-    expect(constructSystemPrompt({ ...base, chatMode: "local-agent" })).not.toContain("SURGICAL EDITS ONLY");
+    expect(constructSystemPrompt({ ...base, chatMode: "build" })).not.toContain(
+      "SURGICAL EDITS ONLY",
+    );
+    expect(constructSystemPrompt({ ...base, chatMode: "local-agent" })).not.toContain(
+      "SURGICAL EDITS ONLY",
+    );
     const build = constructSystemPrompt({ ...base, chatMode: "build", enableTurboEditsV2: true });
     expect(build).toContain("SURGICAL EDITS ONLY");
     expect(build).toContain("edits array");
-    const agent = constructSystemPrompt({ ...base, chatMode: "local-agent", enableTurboEditsV2: true });
+    const agent = constructSystemPrompt({
+      ...base,
+      chatMode: "local-agent",
+      enableTurboEditsV2: true,
+    });
     expect(agent).toContain("SURGICAL EDITS ONLY");
     expect(TURBO_EDITS_V2_SYSTEM_PROMPT).toContain("SEARCH/REPLACE");
   });
@@ -491,14 +509,26 @@ describe("dyad prompt transplant (m1)", () => {
     for (const chatMode of ["local-agent", "build"] as const) {
       const blank = constructSystemPrompt({ ...base, chatMode, caideFramework: "blank" });
       expect(blank).toContain("BLANK project");
-      for (const leak of ["bottom tab", "expo-", "44×44", "viewportsVerified", "<appllama-mobile-laws>", "design-spec.json"]) {
+      for (const leak of [
+        "bottom tab",
+        "expo-",
+        "44×44",
+        "viewportsVerified",
+        "<appllama-mobile-laws>",
+        "design-spec.json",
+      ]) {
         expect(blank, `${chatMode} leak: ${leak}`).not.toContain(leak);
       }
     }
   });
 
-  it("plan mode uses framework stack rules and web3 pack on demand (F0)", () => {    const base = { aiRules: undefined, enableTurboEditsV2: false } as const;
-    const flutterPlan = constructSystemPrompt({ ...base, chatMode: "plan", caideFramework: "flutter" });
+  it("plan mode uses framework stack rules and web3 pack on demand (F0)", () => {
+    const base = { aiRules: undefined, enableTurboEditsV2: false } as const;
+    const flutterPlan = constructSystemPrompt({
+      ...base,
+      chatMode: "plan",
+      caideFramework: "flutter",
+    });
     expect(flutterPlan).toContain("Flutter application");
     expect(flutterPlan).not.toContain("Vue");
     const web3Plan = constructSystemPrompt({ ...base, chatMode: "plan", isWeb3App: true });
@@ -509,12 +539,20 @@ describe("dyad prompt transplant (m1)", () => {
 
   it("quality contract appendices match the framework (F1)", () => {
     const base = { aiRules: undefined, enableTurboEditsV2: false } as const;
-    const flutter = constructSystemPrompt({ ...base, chatMode: "local-agent", caideFramework: "flutter" });
+    const flutter = constructSystemPrompt({
+      ...base,
+      chatMode: "local-agent",
+      caideFramework: "flutter",
+    });
     expect(flutter).toContain("<design_quality_flutter>");
     expect(flutter).toContain("HapticFeedback");
     expect(flutter).not.toContain("expo-haptics");
     expect(flutter).not.toContain("expo-symbols");
-    const rn = constructSystemPrompt({ ...base, chatMode: "local-agent", caideFramework: "react-native" });
+    const rn = constructSystemPrompt({
+      ...base,
+      chatMode: "local-agent",
+      caideFramework: "react-native",
+    });
     expect(rn).toContain("<design_quality_rn>");
     expect(rn).toContain("expo-image");
     const web = constructSystemPrompt({ ...base, chatMode: "build", caideFramework: "website" });

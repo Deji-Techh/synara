@@ -13,7 +13,14 @@ export interface DomainEvent {
   attrs?: Record<string, string | number | boolean | null>;
 }
 
-const SENSITIVE_KEYS = [/token/i, /secret/i, /password/i, /authorization/i, /cookie/i, /api[-_]?key/i];
+const SENSITIVE_KEYS = [
+  /token/i,
+  /secret/i,
+  /password/i,
+  /authorization/i,
+  /cookie/i,
+  /api[-_]?key/i,
+];
 
 function scrub(value: unknown): unknown {
   if (value === null || value === undefined) return value;

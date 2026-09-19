@@ -36,7 +36,8 @@ export const BackgroundGlow: React.FC<BackgroundGlowProps> = ({ intensity = 1 })
           width: "900px",
           height: "900px",
           transform: `translate(-50%, -50%) scale(${pulse * intensity})`,
-          background: "radial-gradient(circle, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.01) 45%, transparent 70%)",
+          background:
+            "radial-gradient(circle, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.01) 45%, transparent 70%)",
           filter: "blur(80px)",
           pointerEvents: "none",
         }}
@@ -47,7 +48,8 @@ export const BackgroundGlow: React.FC<BackgroundGlowProps> = ({ intensity = 1 })
         style={{
           position: "absolute",
           inset: 0,
-          background: "radial-gradient(circle at center, transparent 50%, rgba(5, 5, 5, 0.85) 100%)",
+          background:
+            "radial-gradient(circle at center, transparent 50%, rgba(5, 5, 5, 0.85) 100%)",
           pointerEvents: "none",
         }}
       />

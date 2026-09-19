@@ -58,7 +58,10 @@ export const CaideDevice: React.FC = () => {
   });
 
   const chartPath = chartPoints
-    .map(([px, py], i) => `${i === 0 ? "M" : "L"} ${px} ${py + Math.sin((frame + i * 15) * 0.08) * 3.5}`)
+    .map(
+      ([px, py], i) =>
+        `${i === 0 ? "M" : "L"} ${px} ${py + Math.sin((frame + i * 15) * 0.08) * 3.5}`,
+    )
     .join(" ");
 
   const fillPath = `${chartPath} L 290 120 L 10 120 Z`;
@@ -115,7 +118,14 @@ export const CaideDevice: React.FC = () => {
             paddingRight: "10px",
           }}
         >
-          <div style={{ width: "10px", height: "10px", borderRadius: "50%", backgroundColor: "#1c1917" }} />
+          <div
+            style={{
+              width: "10px",
+              height: "10px",
+              borderRadius: "50%",
+              backgroundColor: "#1c1917",
+            }}
+          />
         </div>
 
         {/* Screen Bezel Container */}
@@ -149,20 +159,60 @@ export const CaideDevice: React.FC = () => {
             <span>9:41</span>
             <div style={{ display: "flex", gap: "5px", alignItems: "center" }}>
               <span>5G</span>
-              <div style={{ width: "20px", height: "10px", borderRadius: "3px", border: "1px solid white", padding: "1px" }}>
-                <div style={{ width: "80%", height: "100%", backgroundColor: "white", borderRadius: "1px" }} />
+              <div
+                style={{
+                  width: "20px",
+                  height: "10px",
+                  borderRadius: "3px",
+                  border: "1px solid white",
+                  padding: "1px",
+                }}
+              >
+                <div
+                  style={{
+                    width: "80%",
+                    height: "100%",
+                    backgroundColor: "white",
+                    borderRadius: "1px",
+                  }}
+                />
               </div>
             </div>
           </div>
 
           {/* App Header */}
-          <div style={{ padding: "10px 20px 4px 20px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div
+            style={{
+              padding: "10px 20px 4px 20px",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "flex-start",
+            }}
+          >
             <div>
-              <div style={{ fontSize: "11px", color: CAIDE_THEME.colors.mutedForeground, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+              <div
+                style={{
+                  fontSize: "11px",
+                  color: CAIDE_THEME.colors.mutedForeground,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                }}
+              >
                 Live Portfolio
               </div>
-              <div style={{ fontSize: "28px", fontWeight: 800, color: "#ffffff", letterSpacing: "-0.02em" }}>
-                ${balance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              <div
+                style={{
+                  fontSize: "28px",
+                  fontWeight: 800,
+                  color: "#ffffff",
+                  letterSpacing: "-0.02em",
+                }}
+              >
+                $
+                {balance.toLocaleString("en-US", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
               </div>
             </div>
 
@@ -213,19 +263,63 @@ export const CaideDevice: React.FC = () => {
                 </linearGradient>
               </defs>
               <path d={fillPath} fill="url(#chartGlow)" />
-              <path d={chartPath} fill="none" stroke="#6366f1" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+              <path
+                d={chartPath}
+                fill="none"
+                stroke="#6366f1"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
               {/* Pulsing Live Node */}
-              <circle cx="290" cy={(chartPoints[7]?.[1] ?? 18) + Math.sin((frame + 105) * 0.08) * 3.5} r="5" fill="#ffffff" />
-              <circle cx="290" cy={(chartPoints[7]?.[1] ?? 18) + Math.sin((frame + 105) * 0.08) * 3.5} r="11" fill="#6366f1" opacity="0.4" />
+              <circle
+                cx="290"
+                cy={(chartPoints[7]?.[1] ?? 18) + Math.sin((frame + 105) * 0.08) * 3.5}
+                r="5"
+                fill="#ffffff"
+              />
+              <circle
+                cx="290"
+                cy={(chartPoints[7]?.[1] ?? 18) + Math.sin((frame + 105) * 0.08) * 3.5}
+                r="11"
+                fill="#6366f1"
+                opacity="0.4"
+              />
             </svg>
           </div>
 
           {/* Asset Rows */}
-          <div style={{ flex: 1, padding: "8px 18px", display: "flex", flexDirection: "column", gap: "8px" }}>
+          <div
+            style={{
+              flex: 1,
+              padding: "8px 18px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "8px",
+            }}
+          >
             {[
-              { name: "Bitcoin", symbol: "BTC", price: "$96,420.00", change: "+4.2%", color: "#f59e0b" },
-              { name: "Ethereum", symbol: "ETH", price: "$3,480.12", change: "+6.8%", color: "#6366f1" },
-              { name: "Solana", symbol: "SOL", price: "$210.80", change: "+18.4%", color: "#10b981" },
+              {
+                name: "Bitcoin",
+                symbol: "BTC",
+                price: "$96,420.00",
+                change: "+4.2%",
+                color: "#f59e0b",
+              },
+              {
+                name: "Ethereum",
+                symbol: "ETH",
+                price: "$3,480.12",
+                change: "+6.8%",
+                color: "#6366f1",
+              },
+              {
+                name: "Solana",
+                symbol: "SOL",
+                price: "$210.80",
+                change: "+18.4%",
+                color: "#10b981",
+              },
             ].map((coin) => (
               <div
                 key={coin.symbol}
@@ -257,14 +351,24 @@ export const CaideDevice: React.FC = () => {
                     {coin.symbol[0]}
                   </div>
                   <div>
-                    <div style={{ fontSize: "13px", fontWeight: 600, color: "#ffffff" }}>{coin.name}</div>
-                    <div style={{ fontSize: "11px", color: CAIDE_THEME.colors.subtleForeground }}>{coin.symbol}</div>
+                    <div style={{ fontSize: "13px", fontWeight: 600, color: "#ffffff" }}>
+                      {coin.name}
+                    </div>
+                    <div style={{ fontSize: "11px", color: CAIDE_THEME.colors.subtleForeground }}>
+                      {coin.symbol}
+                    </div>
                   </div>
                 </div>
 
                 <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: "13px", fontWeight: 600, color: "#ffffff" }}>{coin.price}</div>
-                  <div style={{ fontSize: "11px", color: CAIDE_THEME.colors.emerald, fontWeight: 600 }}>{coin.change}</div>
+                  <div style={{ fontSize: "13px", fontWeight: 600, color: "#ffffff" }}>
+                    {coin.price}
+                  </div>
+                  <div
+                    style={{ fontSize: "11px", color: CAIDE_THEME.colors.emerald, fontWeight: 600 }}
+                  >
+                    {coin.change}
+                  </div>
                 </div>
               </div>
             ))}

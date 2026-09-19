@@ -22,9 +22,9 @@ function httpError(status: number, message: string): Error & { status: number } 
   return Object.assign(new Error(message), { status });
 }
 
-async function authenticateSession(
-  req: { header(name: string): string | undefined },
-): Promise<{ id: string; email: string; name: string | null } | null> {
+async function authenticateSession(req: {
+  header(name: string): string | undefined;
+}): Promise<{ id: string; email: string; name: string | null } | null> {
   const token = bearerToken(req.header("authorization"));
   if (!token) return null;
   const result = await pool.query(
@@ -133,10 +133,9 @@ export function registerAuthRoutes(app: Express): void {
       const tokenHash = hashToken(input.token);
 
       // Find the auth token
-      const tokenResult = await pool.query(
-        `SELECT * FROM auth_tokens WHERE token_hash = $1`,
-        [tokenHash],
-      );
+      const tokenResult = await pool.query(`SELECT * FROM auth_tokens WHERE token_hash = $1`, [
+        tokenHash,
+      ]);
       const authToken = tokenResult.rows[0];
 
       if (!authToken) {
@@ -150,10 +149,7 @@ export function registerAuthRoutes(app: Express): void {
       }
 
       // Mark token as used
-      await pool.query(
-        `UPDATE auth_tokens SET used_at = now() WHERE id = $1`,
-        [authToken.id],
-      );
+      await pool.query(`UPDATE auth_tokens SET used_at = now() WHERE id = $1`, [authToken.id]);
 
       // Upsert user (in case of race condition with magic-link route)
       const userResult = await pool.query(
@@ -176,10 +172,7 @@ export function registerAuthRoutes(app: Express): void {
       );
 
       // Update last_seen_at
-      await pool.query(
-        `UPDATE users SET last_seen_at = now() WHERE id = $1`,
-        [user.id],
-      );
+      await pool.query(`UPDATE users SET last_seen_at = now() WHERE id = $1`, [user.id]);
 
       res.json({
         token: sessionToken,

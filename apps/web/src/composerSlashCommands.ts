@@ -503,7 +503,8 @@ export function buildFixPrompt(existingPrompt: string): string {
 
 export function buildMcpPrompt(existingPrompt: string): string {
   const trimmedPrompt = existingPrompt.trim();
-  const template = "Use MCP tool <server>__<tool> with args {…} (replace with the real server, tool, and JSON args).";
+  const template =
+    "Use MCP tool <server>__<tool> with args {…} (replace with the real server, tool, and JSON args).";
   return trimmedPrompt.length > 0 ? `${trimmedPrompt}\n\n${template}` : template;
 }
 

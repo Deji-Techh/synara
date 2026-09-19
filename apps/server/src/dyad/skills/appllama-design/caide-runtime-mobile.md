@@ -6,17 +6,17 @@ replacements — use exactly this mapping.
 
 ## Stack mapping (Caide RN scaffold)
 
-| Skill assumes | Caide equivalent |
-|---|---|
-| expo-router file routes | `app/` — already scaffolded; tabs in `app/(tabs)/_layout.tsx` |
-| zustand + React Query + zod | Installed. Stores in `src/store/`, validation inline in forms |
-| UI kit | `src/components/` (AppButton, AppTextInput, Card, ListRow, Badge, EmptyState) — extend it, never parallel it |
-| `react-native-reanimated` | NOT installed. For gesture/velocity work, add it via `install_package` (`react-native-reanimated` + `react-native-gesture-handler` + `react-native-worklets`), then follow motion.md verbatim |
-| FlashList | NOT installed. Use FlatList with `getItemLayout` + `removeClippedSubviews` until lists grow, then add `@shopify/flash-list` via `install_package` |
-| `expo-haptics` | NOT installed. Add via `install_package` when the screen needs haptic punctuation |
-| SF Symbols / expo-symbols | NOT installed. Use `@expo/vector-icons` (add via `install_package`) with Ionicons/MaterialIcons until symbols are needed |
-| `expo-image` | NOT installed. Use React Native `Image` with explicit sizes + `resizeMode`; add `expo-image` for recycling lists or blurhash placeholders |
-| MMKV | NOT installed. zustand + AsyncStorage (add `@react-native-async-storage/async-storage`) only when latency shows |
+| Skill assumes               | Caide equivalent                                                                                                                                                                              |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| expo-router file routes     | `app/` — already scaffolded; tabs in `app/(tabs)/_layout.tsx`                                                                                                                                 |
+| zustand + React Query + zod | Installed. Stores in `src/store/`, validation inline in forms                                                                                                                                 |
+| UI kit                      | `src/components/` (AppButton, AppTextInput, Card, ListRow, Badge, EmptyState) — extend it, never parallel it                                                                                  |
+| `react-native-reanimated`   | NOT installed. For gesture/velocity work, add it via `install_package` (`react-native-reanimated` + `react-native-gesture-handler` + `react-native-worklets`), then follow motion.md verbatim |
+| FlashList                   | NOT installed. Use FlatList with `getItemLayout` + `removeClippedSubviews` until lists grow, then add `@shopify/flash-list` via `install_package`                                             |
+| `expo-haptics`              | NOT installed. Add via `install_package` when the screen needs haptic punctuation                                                                                                             |
+| SF Symbols / expo-symbols   | NOT installed. Use `@expo/vector-icons` (add via `install_package`) with Ionicons/MaterialIcons until symbols are needed                                                                      |
+| `expo-image`                | NOT installed. Use React Native `Image` with explicit sizes + `resizeMode`; add `expo-image` for recycling lists or blurhash placeholders                                                     |
+| MMKV                        | NOT installed. zustand + AsyncStorage (add `@react-native-async-storage/async-storage`) only when latency shows                                                                               |
 
 Never claim one of the above is present — check `package.json` first.
 

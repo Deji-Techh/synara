@@ -180,7 +180,8 @@ export async function testProviderConnection(input: {
     case "ollama":
     case "lmstudio": {
       const fallback = providerId === "ollama" ? "http://localhost:11434" : "http://localhost:1234";
-      const probe = providerId === "ollama" ? `${base || fallback}/api/tags` : `${base || fallback}/v1/models`;
+      const probe =
+        providerId === "ollama" ? `${base || fallback}/api/tags` : `${base || fallback}/v1/models`;
       try {
         const { status } = await get(probe, {}, signal);
         return status === 200
@@ -201,12 +202,17 @@ export async function testProviderConnection(input: {
         opencodeGo: "https://opencode.ai/zen/go/v1",
         "opencode-go": "https://opencode.ai/zen/go/v1",
       };
-      const { status, json } = await get(`${base || defaults[providerId]}/models`, { authorization: `Bearer ${key}` }, signal);
+      const { status, json } = await get(
+        `${base || defaults[providerId]}/models`,
+        { authorization: `Bearer ${key}` },
+        signal,
+      );
       if (status === 200) {
         const names = modelNames(json);
         return { ok: true, message: `Connected — ${names.length} model(s) listed.` };
       }
-      if (status === 401 || status === 403) return { ok: false, message: "Key rejected (401/403). Check the key." };
+      if (status === 401 || status === 403)
+        return { ok: false, message: "Key rejected (401/403). Check the key." };
       return { ok: false, message: `HTTP ${status}. Check the base URL.` };
     }
     case "deepseek":
@@ -231,20 +237,30 @@ export async function testProviderConnection(input: {
     }
     case "anthropic": {
       if (!key) return { ok: false, message: "API key is required." };
-      const { status } = await get(`${base || "https://api.anthropic.com"}/v1/models`, {
-        "x-api-key": key,
-        "anthropic-version": "2023-06-01",
-      }, signal);
+      const { status } = await get(
+        `${base || "https://api.anthropic.com"}/v1/models`,
+        {
+          "x-api-key": key,
+          "anthropic-version": "2023-06-01",
+        },
+        signal,
+      );
       if (status === 200) return { ok: true, message: "Connected — Anthropic answered." };
-      if (status === 401 || status === 403) return { ok: false, message: "Key rejected (401/403). Check the key." };
+      if (status === 401 || status === 403)
+        return { ok: false, message: "Key rejected (401/403). Check the key." };
       return { ok: false, message: `HTTP ${status}. Check the base URL.` };
     }
     case "google": {
       if (!key) return { ok: false, message: "API key is required." };
       const root = base || "https://generativelanguage.googleapis.com";
-      const { status } = await get(`${root}/v1beta/models?key=${encodeURIComponent(key)}`, {}, signal);
+      const { status } = await get(
+        `${root}/v1beta/models?key=${encodeURIComponent(key)}`,
+        {},
+        signal,
+      );
       if (status === 200) return { ok: true, message: "Connected — Google answered." };
-      if (status === 400 || status === 403) return { ok: false, message: "Key rejected. Check the key." };
+      if (status === 400 || status === 403)
+        return { ok: false, message: "Key rejected. Check the key." };
       return { ok: false, message: `HTTP ${status}. Check the base URL.` };
     }
     case "chatgpt": {
@@ -252,7 +268,10 @@ export async function testProviderConnection(input: {
       // authenticated models listing (real Codex call, same as discovery).
       const { readChatGPTSession, listChatGPTModels } = await import("./chatgptAuth.ts");
       if (!readChatGPTSession()) {
-        return { ok: false, message: "Connect a ChatGPT account in Settings before using this model." };
+        return {
+          ok: false,
+          message: "Connect a ChatGPT account in Settings before using this model.",
+        };
       }
       try {
         const models = await listChatGPTModels();

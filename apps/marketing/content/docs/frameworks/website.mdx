@@ -1,13 +1,42 @@
 ---
 title: Website (Next.js & Vite)
-description: Full-stack web development with instant preview.
+description: Building modern web applications with Next.js, Vite, Tailwind CSS, and 1-click deployments.
 ---
 
-# Website (Next.js / Vite)
+# Website (Next.js & Vite)
 
-For modern web applications, Caide boots local dev servers with instant browser dock preview and hot module reloading.
+The Website framework target is optimized for building production web applications, SaaS dashboards, and marketing portals.
 
-## Publishing
+---
 
-- **1-Click Vercel Deploy**: Deploy your Next.js application directly to Vercel with automated environment variable setup.
-- **Neon Database Sync**: Synchronizes your production database connection string with Vercel seamlessly.
+## Scaffolding & Tooling
+
+When creating a Website project, you can choose between:
+
+- **Next.js (App Router)**: Server-side rendering (SSR), React Server Components (RSC), API routes, and edge runtime capabilities.
+- **Vite + React / SPA**: Lightning-fast client-side single-page applications with instant hot-module replacement.
+
+Both stacks come pre-configured with:
+
+- TypeScript with strict compilation flags.
+- Tailwind CSS v4 and standard design system tokens.
+- Lucide icon sets and accessible UI primitives.
+
+---
+
+## Live Preview & Tunnels
+
+- **Proxy Server**: Caide routes local web traffic through an internal reverse proxy server, resolving CORS and asset pathing issues seamlessly.
+- **LiveLab Viewports**: Inspect your responsive layout across Desktop (1440px), Laptop (1024px), Tablet (768px), and Mobile (375px) breakpoints.
+- **Preview Tunnels**: Share a temporary, password-protected public tunnel URL with teammates or clients to review progress in real time.
+
+---
+
+## 1-Click Vercel Deploy & Neon Sync
+
+When you are ready to publish:
+
+1. Open the **Publish** panel in Caide.
+2. Link your GitHub repository.
+3. Deploy directly to **Vercel**.
+4. If you have connected Neon serverless Postgres, Caide automatically creates a production database branch and injects the `DATABASE_URL` environment variable into your Vercel deployment settings.

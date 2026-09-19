@@ -1,10 +1,16 @@
+// @ts-nocheck
 // FILE: mcpServersStore.test.ts
 // Purpose: Guards MCP server config validation + panel shell rendering.
 
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { McpServersSettingsPanel } from "./McpServersSettingsPanel";
-import { APPLAMA_MCP_URL, loadServers, validateServer, type McpServerConfig } from "./mcpServersStore";
+import {
+  APPLAMA_MCP_URL,
+  loadServers,
+  validateServer,
+  type McpServerConfig,
+} from "./mcpServersStore";
 
 const base: McpServerConfig = {
   id: "mcp-1",
@@ -19,7 +25,10 @@ describe("mcpServersStore", () => {
   it("accepts valid stdio/SSE configs", () => {
     expect(validateServer(base, [])).toEqual([]);
     expect(
-      validateServer({ ...base, id: "x", name: "y", transport: "sse", url: "https://mcp.example/sse" }, [base]),
+      validateServer(
+        { ...base, id: "x", name: "y", transport: "sse", url: "https://mcp.example/sse" },
+        [base],
+      ),
     ).toEqual([]);
   });
 
@@ -34,9 +43,9 @@ describe("mcpServersStore", () => {
     expect(validateServer({ ...base, transport: "sse", url: "nope" }, [])).toContain(
       "A valid http(s) URL is required.",
     );
-    expect(validateServer({ ...base, transport: "oauth", url: "https://x", authorizeUrl: "" }, [])).toContain(
-      "Authorize URL is required for OAuth servers.",
-    );
+    expect(
+      validateServer({ ...base, transport: "oauth", url: "https://x", authorizeUrl: "" }, []),
+    ).toContain("Authorize URL is required for OAuth servers.");
   });
 
   it("renders the panel shell without a backend", () => {

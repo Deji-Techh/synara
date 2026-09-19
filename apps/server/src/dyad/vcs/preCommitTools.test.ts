@@ -34,7 +34,9 @@ function addHuskyHook(dir: string, body: string): void {
 describe("dyad run_pre_commit tool", () => {
   it("registers with donor consent preview", () => {
     expect(ALL_PRE_COMMIT_TOOLS.map((t) => t.name)).toEqual(["run_pre_commit"]);
-    expect(runPreCommitTool.presentCall?.({})).toBe("Stage all changes and run the pre-commit hook");
+    expect(runPreCommitTool.presentCall?.({})).toBe(
+      "Stage all changes and run the pre-commit hook",
+    );
   });
 
   it("reports unavailable when no hook is configured", async () => {

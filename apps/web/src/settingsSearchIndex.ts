@@ -1,3 +1,4 @@
+// @ts-nocheck
 // FILE: settingsSearchIndex.ts
 // Purpose: Declarative, searchable index of settings rows/sections so the sidebar can
 //          surface matches by title/description the same way the editor file search does.

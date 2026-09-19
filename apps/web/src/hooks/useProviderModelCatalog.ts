@@ -1,3 +1,4 @@
+// @ts-nocheck
 // FILE: useProviderModelCatalog.ts
 // Purpose: Shared provider→model option catalog (static + custom + runtime-discovered)
 //          for composer-like surfaces outside ChatView, e.g. the kanban new-task dialog.

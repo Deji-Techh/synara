@@ -116,12 +116,8 @@ export function resolveConnection(
 
   if (providerId === "azure") {
     const testBase = process.env.TEST_AZURE_BASE_URL?.trim();
-    const resource =
-      input?.resourceName?.trim() || process.env.AZURE_RESOURCE_NAME?.trim();
-    const apiKey = resolveApiKeyOrThrow(
-      settingsApiKey(input) ?? env(def.envVarName),
-      displayName,
-    );
+    const resource = input?.resourceName?.trim() || process.env.AZURE_RESOURCE_NAME?.trim();
+    const apiKey = resolveApiKeyOrThrow(settingsApiKey(input) ?? env(def.envVarName), displayName);
     if (testBase) {
       return {
         providerId,
@@ -146,12 +142,9 @@ export function resolveConnection(
   }
 
   if (providerId === "custom") {
-    const baseUrl =
-      settingsBaseUrl(input) ?? (def.baseUrl ? def.baseUrl : undefined);
+    const baseUrl = settingsBaseUrl(input) ?? (def.baseUrl ? def.baseUrl : undefined);
     if (!baseUrl) {
-      throw new Error(
-        `Custom provider is missing the API Base URL. Set it in Settings.`,
-      );
+      throw new Error(`Custom provider is missing the API Base URL. Set it in Settings.`);
     }
     return {
       providerId,
@@ -221,10 +214,7 @@ export function resolveProviderDefaultModel(
 }
 
 /** Has the user configured this provider (settings key or env key)? */
-export function hasProviderKey(
-  providerId: string,
-  settings: SettingsLike = {},
-): boolean {
+export function hasProviderKey(providerId: string, settings: SettingsLike = {}): boolean {
   const def = resolveProviderDef(providerId);
   if (!def) return false;
   if (def.local === true) return true;

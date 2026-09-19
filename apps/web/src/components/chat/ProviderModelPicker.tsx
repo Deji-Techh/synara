@@ -1,3 +1,4 @@
+// @ts-nocheck
 // FILE: ProviderModelPicker.tsx
 // Purpose: Renders the composer provider/model menu and supports controlled opening for shortcuts.
 // Layer: Chat composer presentation

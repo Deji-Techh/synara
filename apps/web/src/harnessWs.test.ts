@@ -102,9 +102,7 @@ describe("harness socket send contract", () => {
   it("feeds server events into the harness store", async () => {
     connectHarnessWs({ url: "ws://127.0.0.1:1/harness", sessionId: "s-evt" });
     sockets[0]!.open();
-    sockets[0]!.receive(
-      JSON.stringify({ type: "token", sessionId: "s-evt", content: "hello" }),
-    );
+    sockets[0]!.receive(JSON.stringify({ type: "token", sessionId: "s-evt", content: "hello" }));
     await new Promise((r) => setTimeout(r, 0));
     const tokens = harnessStore.getState().sessions["s-evt"]?.tokens ?? [];
     expect(tokens.join("")).toContain("hello");

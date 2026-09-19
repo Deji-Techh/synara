@@ -54,7 +54,10 @@ describe("dispatch system prompt smoke (item b)", () => {
   it("streams to completion on a low-token override prompt", async () => {
     const seen: { messages: ChatMessage[] | null } = { messages: null };
     const runner = await withEnv(
-      { CAIDE_DISPATCH_SYSTEM_PROMPT: "Reply with exactly: SMOKE-OK", DYAD_DEFAULT_SYSTEM_PROMPT: undefined },
+      {
+        CAIDE_DISPATCH_SYSTEM_PROMPT: "Reply with exactly: SMOKE-OK",
+        DYAD_DEFAULT_SYSTEM_PROMPT: undefined,
+      },
       () => runSmokeTurn(seen),
     );
     expect(runner.getStatus()).toBe("completed");

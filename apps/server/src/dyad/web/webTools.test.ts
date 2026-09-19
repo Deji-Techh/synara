@@ -37,7 +37,10 @@ function workspace(): string {
     path.join(dir, "src", "auth.ts"),
     "export function signIn(email: string) {\n  return authenticateUser(email);\n}\n\nexport class AuthSession {}\n",
   );
-  fs.writeFileSync(path.join(dir, "src", "index.ts"), "import { signIn } from './auth';\nconsole.log(signIn);\n");
+  fs.writeFileSync(
+    path.join(dir, "src", "index.ts"),
+    "import { signIn } from './auth';\nconsole.log(signIn);\n",
+  );
   return dir;
 }
 
@@ -47,7 +50,9 @@ beforeAll(async () => {
   server = http.createServer((req, res) => {
     if (req.url === "/doc") {
       res.writeHead(200, { "content-type": "text/html" });
-      res.end("<html><head><title>Docs</title></head><body><nav>menu</nav><script>var x=1;</script><h1>Guide</h1><p>Hello world</p></body></html>");
+      res.end(
+        "<html><head><title>Docs</title></head><body><nav>menu</nav><script>var x=1;</script><h1>Guide</h1><p>Hello world</p></body></html>",
+      );
     } else if (req.url === "/text") {
       res.writeHead(200, { "content-type": "text/plain" });
       res.end("plain body");
@@ -65,7 +70,9 @@ afterAll(async () => {
 
 describe("dyad web backends transplant (m2b)", () => {
   it("extracts readable text and fetches locally", async () => {
-    const { title, text } = htmlToText("<title>T</title><script>bad()</script><p>Keep <b>this</b></p>");
+    const { title, text } = htmlToText(
+      "<title>T</title><script>bad()</script><p>Keep <b>this</b></p>",
+    );
     expect(title).toBe("T");
     expect(text).toContain("Keep this");
     expect(text).not.toContain("bad()");
@@ -82,7 +89,9 @@ describe("dyad web backends transplant (m2b)", () => {
   });
 
   it("searches through the injected provider, degrading gracefully", async () => {
-    setWebSearchProvider(async () => [{ title: "Expo docs", url: "https://docs.expo.dev", snippet: "router" }]);
+    setWebSearchProvider(async () => [
+      { title: "Expo docs", url: "https://docs.expo.dev", snippet: "router" },
+    ]);
     try {
       const out = await executeWebSearch("expo router");
       expect(out).toContain("Expo docs");
@@ -145,7 +154,11 @@ describe("dyad web backends transplant (m2b)", () => {
     expect(hits[0].path).toBe(path.join("src", "auth.ts"));
 
     const defs = await lookupSymbol(dir, "signIn");
-    expect(defs[0]).toMatchObject({ path: path.join("src", "auth.ts"), line: 1, kind: "definition" });
+    expect(defs[0]).toMatchObject({
+      path: path.join("src", "auth.ts"),
+      line: 1,
+      kind: "definition",
+    });
     const cls = await lookupSymbol(dir, "AuthSession");
     expect(cls[0].kind).toBe("definition");
     expect(await lookupSymbol(dir, "nope-missing")).toEqual([]);
@@ -156,9 +169,9 @@ describe("dyad web backends transplant (m2b)", () => {
 
     setExplorerRunner(async () => "SYNTHESIZED MAP");
     try {
-      await expect(
-        executeExploreCode({ intent: "explain", target: "signIn" }, dir),
-      ).resolves.toBe("SYNTHESIZED MAP");
+      await expect(executeExploreCode({ intent: "explain", target: "signIn" }, dir)).resolves.toBe(
+        "SYNTHESIZED MAP",
+      );
     } finally {
       setExplorerRunner(null);
     }

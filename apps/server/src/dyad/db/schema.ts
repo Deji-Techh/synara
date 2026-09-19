@@ -49,7 +49,9 @@ export function ensureDyadSchema(db: DatabaseSync): string[] {
   db.exec(MCP_SERVERS_DDL);
   db.exec(MCP_TOOL_CONSENTS_DDL);
   const rows = db
-    .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE 'mcp\\_%' ESCAPE '\\'")
+    .prepare(
+      "SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE 'mcp\\_%' ESCAPE '\\'",
+    )
     .all() as Array<{ name: string }>;
   return rows.map((r) => r.name).sort();
 }

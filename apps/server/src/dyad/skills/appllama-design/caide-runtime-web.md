@@ -13,7 +13,7 @@ with the mobile skill text, this file wins for website targets.
   fixed bottom tab strip on a desktop viewport.
 - **No sheets-as-navigation, no haptics, no SF Symbols.** Sheets become
   dialogs/drawers (`Dialog` kit component); haptics don't exist — use motion
-  + state change as the only feedback; icons are lucide-react, one family.
+  - state change as the only feedback; icons are lucide-react, one family.
 - **No Dynamic Island / safe-area / home-indicator logic.** The analogues
   are: sticky headers with backdrop blur, content clearing fixed footers,
   and `100dvh` viewport units on mobile browsers.
@@ -38,7 +38,7 @@ with the mobile skill text, this file wins for website targets.
   updates with loud rollback.
 - **Image pipeline**: style system first, @1x/@2x densities, theme twins
   where surfaces differ, < 200 KB per screen-level asset.
-- **Research method**: study winning *websites* in the category with the
+- **Research method**: study winning _websites_ in the category with the
   same playbooks (replace "screens" with "pages/flows", "paywall position"
   with "pricing-page structure"). The cross-app grammar extraction and the
   saturation stop-rule apply unchanged.
@@ -58,13 +58,13 @@ with the mobile skill text, this file wins for website targets.
 
 ## Stack mapping (Caide website scaffold)
 
-| Skill assumes | Caide equivalent |
-|---|---|
-| expo-router routes | `react-router` `HashRouter` in `src/App.tsx`; pages in `src/pages/` |
-| zustand + React Query + zod | Installed. Slices in `src/store/`, forms validated with zod |
-| UI kit | `src/components/ui/` (Button, Input, Card, Dialog, Badge, Tabs, Switch, Avatar, Skeleton, EmptyState) — extend it, never parallel it |
-| Auth session | `useAuthStore` demo session; wire Supabase/Neon Auth into store + LoginForm |
-| Verification | vitest unit + Playwright `e2e/` smoke (boots its own preview server). Add specs for new user flows |
+| Skill assumes               | Caide equivalent                                                                                                                     |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| expo-router routes          | `react-router` `HashRouter` in `src/App.tsx`; pages in `src/pages/`                                                                  |
+| zustand + React Query + zod | Installed. Slices in `src/store/`, forms validated with zod                                                                          |
+| UI kit                      | `src/components/ui/` (Button, Input, Card, Dialog, Badge, Tabs, Switch, Avatar, Skeleton, EmptyState) — extend it, never parallel it |
+| Auth session                | `useAuthStore` demo session; wire Supabase/Neon Auth into store + LoginForm                                                          |
+| Verification                | vitest unit + Playwright `e2e/` smoke (boots its own preview server). Add specs for new user flows                                   |
 
 ## Verification loop (replaces simctl)
 

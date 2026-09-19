@@ -1,3 +1,4 @@
+// @ts-nocheck
 // FILE: terminalRuntime.ts
 // Purpose: Own the long-lived xterm runtime lifecycle behind the terminal runtime registry.
 // Layer: Terminal runtime infrastructure

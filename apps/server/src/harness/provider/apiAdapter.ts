@@ -19,7 +19,11 @@ export class ProviderApiError extends Error {
 export function endpointForModel(modelId: string, baseUrl?: string): ApiEndpoint {
   const lower = modelId.toLowerCase();
   if (baseUrl && baseUrl.includes("openrouter.ai")) return "chat/completions";
-  if (lower.startsWith("gemini-") || (baseUrl && baseUrl.includes("generativelanguage.googleapis.com"))) return "gemini";
+  if (
+    lower.startsWith("gemini-") ||
+    (baseUrl && baseUrl.includes("generativelanguage.googleapis.com"))
+  )
+    return "gemini";
   // Per user-provided endpoint tables (2026-09-02): responses for gpt/grok/muse-spark across both Zen and Go
   if (
     lower.startsWith("gpt-") ||

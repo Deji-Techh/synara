@@ -49,7 +49,9 @@ export function geminiImageProvider(apiKey: string, model?: string): ImageProvid
             signal: controller.signal,
             headers: { "content-type": "application/json", "x-goog-api-key": apiKey },
             body: JSON.stringify({
-              contents: [{ parts: [{ text: `Generate an image (${width}x${height}): ${prompt}` }] }],
+              contents: [
+                { parts: [{ text: `Generate an image (${width}x${height}): ${prompt}` }] },
+              ],
               generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
             }),
           },
@@ -59,7 +61,9 @@ export function geminiImageProvider(apiKey: string, model?: string): ImageProvid
           continue;
         }
         const data = (await res.json()) as {
-          candidates?: Array<{ content?: { parts?: Array<{ inlineData?: { mimeType?: string; data?: string } }> } }>;
+          candidates?: Array<{
+            content?: { parts?: Array<{ inlineData?: { mimeType?: string; data?: string } }> };
+          }>;
         };
         const parts = data.candidates?.[0]?.content?.parts ?? [];
         const img = parts.find((p) => p.inlineData?.data);
@@ -85,7 +89,14 @@ export function geminiImageProvider(apiKey: string, model?: string): ImageProvid
 /** OpenAI Images: POST /v1/images/generations → b64_json. */
 export function openaiImageProvider(apiKey: string, model = "dall-e-3"): ImageProvider {
   return async ({ prompt, width, height, signal }) => {
-    const size = width >= 1792 || height >= 1792 ? "1792x1024" : width > height ? "1792x1024" : height > width ? "1024x1792" : "1024x1024";
+    const size =
+      width >= 1792 || height >= 1792
+        ? "1792x1024"
+        : width > height
+          ? "1792x1024"
+          : height > width
+            ? "1024x1792"
+            : "1024x1024";
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 120_000);
     const onAbort = () => controller.abort();
@@ -116,7 +127,13 @@ export function autoImageProvider(): ImageProvider | null {
   return openaiImageProvider(key, process.env.OPENAI_IMAGE_MODEL?.trim() || "dall-e-3");
 }
 
-export type ImagePreference = "auto" | "turn-model" | "gemini" | "openai" | "pollinations" | "placeholder";
+export type ImagePreference =
+  | "auto"
+  | "turn-model"
+  | "gemini"
+  | "openai"
+  | "pollinations"
+  | "placeholder";
 
 export function normalizeImagePreference(value: unknown): ImagePreference {
   return value === "turn-model" ||
@@ -143,12 +160,14 @@ function openaiKey(): string | null {
  * through silently. "placeholder" returns [] — the caller skips generation
  * entirely. Pure — unit-testable without network.
  */
-export function resolveImageLegs(options: {
-  preferred?: ImagePreference | string | null;
-  imageModel?: string | null;
-  turnProviderId?: string | null;
-  turnModelId?: string | null;
-} = {}): CascadeLeg[] {
+export function resolveImageLegs(
+  options: {
+    preferred?: ImagePreference | string | null;
+    imageModel?: string | null;
+    turnProviderId?: string | null;
+    turnModelId?: string | null;
+  } = {},
+): CascadeLeg[] {
   const preferred = normalizeImagePreference(options.preferred ?? "auto");
   if (preferred === "placeholder") return [];
   const imageModel = options.imageModel?.trim() || undefined;
@@ -158,10 +177,18 @@ export function resolveImageLegs(options: {
   const oaiKey = openaiKey();
 
   const geminiLeg: CascadeLeg | null = googleKey
-    ? { leg: "gemini", label: "Gemini Imagen", run: taggedRun("gemini", geminiImageProvider(googleKey, imageModel)) }
+    ? {
+        leg: "gemini",
+        label: "Gemini Imagen",
+        run: taggedRun("gemini", geminiImageProvider(googleKey, imageModel)),
+      }
     : null;
   const openaiLeg: CascadeLeg | null = oaiKey
-    ? { leg: "openai", label: "OpenAI Images", run: taggedRun("openai", openaiImageProvider(oaiKey, imageModel)) }
+    ? {
+        leg: "openai",
+        label: "OpenAI Images",
+        run: taggedRun("openai", openaiImageProvider(oaiKey, imageModel)),
+      }
     : null;
 
   // Turn-model leg: only when the turn model is itself image-capable
@@ -169,9 +196,17 @@ export function resolveImageLegs(options: {
   let turnLeg: CascadeLeg | null = null;
   if (/imagen|gpt-image|dall-e|image-generation|image-preview/i.test(turnModel)) {
     if (turnProvider === "google" && googleKey) {
-      turnLeg = { leg: "turn-model", label: `Turn model (${turnModel})`, run: taggedRun("turn-model", geminiImageProvider(googleKey, turnModel)) };
+      turnLeg = {
+        leg: "turn-model",
+        label: `Turn model (${turnModel})`,
+        run: taggedRun("turn-model", geminiImageProvider(googleKey, turnModel)),
+      };
     } else if (turnProvider === "openai" && oaiKey) {
-      turnLeg = { leg: "turn-model", label: `Turn model (${turnModel})`, run: taggedRun("turn-model", openaiImageProvider(oaiKey, turnModel)) };
+      turnLeg = {
+        leg: "turn-model",
+        label: `Turn model (${turnModel})`,
+        run: taggedRun("turn-model", openaiImageProvider(oaiKey, turnModel)),
+      };
     }
   }
 
@@ -188,7 +223,8 @@ export function resolveImageLegs(options: {
   auto.push(pollinationsLeg);
 
   if (preferred === "auto") return auto;
-  if (preferred === "pollinations") return [pollinationsLeg, ...auto.filter((l) => l.leg !== "pollinations")];
+  if (preferred === "pollinations")
+    return [pollinationsLeg, ...auto.filter((l) => l.leg !== "pollinations")];
   const pick = auto.find((l) => l.leg === preferred);
   if (!pick) return auto; // preferred leg has no key — silent fallback to auto
   return [pick, ...auto.filter((l) => l.leg !== preferred)];
@@ -210,6 +246,8 @@ export function cascadeImageProvider(legs: CascadeLeg[]): ImageProvider {
         errors.push(`${leg.label}: ${err instanceof Error ? err.message : String(err)}`);
       }
     }
-    throw new Error(`Image generation failed across all configured legs:\n${errors.map((e, i) => `  ${i + 1}. ${e}`).join("\n")}`);
+    throw new Error(
+      `Image generation failed across all configured legs:\n${errors.map((e, i) => `  ${i + 1}. ${e}`).join("\n")}`,
+    );
   };
 }

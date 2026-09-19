@@ -7,18 +7,18 @@ Cupertino where the scaffold uses it.
 
 ## Stack mapping (Caide Flutter scaffold)
 
-| Skill assumes | Caide equivalent |
-|---|---|
-| expo-router tabs + stacks | `go_router` `StatefulShellRoute.indexedStack` in `lib/router.dart` — already scaffolded |
-| zustand + React Query | `flutter_riverpod` providers in `lib/providers/` + Dio client in `lib/services/api_client.dart` |
-| UI kit | `lib/widgets/` (AppButton, AppTextField, AppCard, SettingsRow, EmptyState, LoadingView) — extend it, never parallel it |
-| Reanimated springs | Implicit animations (`AnimatedContainer`, `AnimatedOpacity`) for narrative motion; `AnimationController` + `SpringSimulation` for gesture velocity. Same frequency gate, same 150–300 ms timing, same ease-out curves |
-| Gesture handler | `GestureDetector` with velocity from `onEnd` details; interruptible by rebuilding from the current value |
-| Haptics | `HapticFeedback` from `flutter/services.dart` — built in, no package needed |
-| Lists | `ListView.builder` / `GridView.builder` with stable keys; add `scrollable_positioned_list` only for jump-to-index needs |
-| Images | `Image` with `cacheWidth`/`cacheHeight` + `gaplessPlayback` in lists; `cached_network_image` via `install` only when remote-image caching proves necessary |
-| Forms | `AppTextField` + local validation state (see `LoginForm`); `TextInputAction.next` chains, validate on submit/blur |
-| Offline | `OfflineBanner` is mounted in `main.dart` — keep it mounted |
+| Skill assumes             | Caide equivalent                                                                                                                                                                                                      |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| expo-router tabs + stacks | `go_router` `StatefulShellRoute.indexedStack` in `lib/router.dart` — already scaffolded                                                                                                                               |
+| zustand + React Query     | `flutter_riverpod` providers in `lib/providers/` + Dio client in `lib/services/api_client.dart`                                                                                                                       |
+| UI kit                    | `lib/widgets/` (AppButton, AppTextField, AppCard, SettingsRow, EmptyState, LoadingView) — extend it, never parallel it                                                                                                |
+| Reanimated springs        | Implicit animations (`AnimatedContainer`, `AnimatedOpacity`) for narrative motion; `AnimationController` + `SpringSimulation` for gesture velocity. Same frequency gate, same 150–300 ms timing, same ease-out curves |
+| Gesture handler           | `GestureDetector` with velocity from `onEnd` details; interruptible by rebuilding from the current value                                                                                                              |
+| Haptics                   | `HapticFeedback` from `flutter/services.dart` — built in, no package needed                                                                                                                                           |
+| Lists                     | `ListView.builder` / `GridView.builder` with stable keys; add `scrollable_positioned_list` only for jump-to-index needs                                                                                               |
+| Images                    | `Image` with `cacheWidth`/`cacheHeight` + `gaplessPlayback` in lists; `cached_network_image` via `install` only when remote-image caching proves necessary                                                            |
+| Forms                     | `AppTextField` + local validation state (see `LoginForm`); `TextInputAction.next` chains, validate on submit/blur                                                                                                     |
+| Offline                   | `OfflineBanner` is mounted in `main.dart` — keep it mounted                                                                                                                                                           |
 
 ## Navigation translation
 
@@ -48,5 +48,6 @@ Cupertino where the scaffold uses it.
 ## Theme + tokens
 
 `lib/theme/tokens.dart` + `app_theme.dart` (Material3, seed from accent)
-+ `.caide/design-spec.json` are the single source of truth. Never hard-code
-colors; never mix grey families; one corner scale per the anti-slop lock.
+
+- `.caide/design-spec.json` are the single source of truth. Never hard-code
+  colors; never mix grey families; one corner scale per the anti-slop lock.

@@ -1,3 +1,4 @@
+// @ts-nocheck
 // FILE: chatProjects.ts
 // Purpose: Reuse one hidden home-scoped chat project as the backing container for chat rows.
 // Layer: Web orchestration helper

@@ -27,26 +27,17 @@ export function securityHeaders(): MiddlewareHandler {
 
     if (isProd) {
       // Force HTTPS for 1 year, include subdomains
-      c.header(
-        "Strict-Transport-Security",
-        "max-age=31536000; includeSubDomains",
-      );
+      c.header("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
 
       // Restrictive CSP: API only serves JSON so default-src none is safe.
       // Adjust this if you serve HTML, images, or other resources.
-      c.header(
-        "Content-Security-Policy",
-        "default-src 'none'; frame-ancestors 'none'",
-      );
+      c.header("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'");
 
       // Don't leak the referrer to cross-origin requests
       c.header("Referrer-Policy", "strict-origin-when-cross-origin");
 
       // Prevent browsers from using deprecated features
-      c.header(
-        "Permissions-Policy",
-        "geolocation=(), microphone=(), camera=()",
-      );
+      c.header("Permissions-Policy", "geolocation=(), microphone=(), camera=()");
 
       // Remove the server banner
       c.header("X-Powered-By", "");

@@ -1,0 +1,59 @@
+---
+title: Model Context Protocol (MCP)
+description: Extend Caide's capabilities with custom tools and servers via the Anthropic MCP standard.
+---
+
+# Model Context Protocol (MCP)
+
+Caide features full support for the **Model Context Protocol (MCP)**, the open standard enabling AI assistants to securely connect to external tools, databases, and third-party APIs.
+
+---
+
+## Supported Transports
+
+Caide supports both primary MCP communication transports:
+
+1. **stdio**: Launch local binaries or scripts (e.g. Node.js, Python, Go) that communicate over standard input/output streams.
+2. **Server-Sent Events (SSE)**: Connect to remote MCP servers over HTTP/SSE endpoints.
+
+---
+
+## Adding an MCP Server
+
+MCP servers can be configured globally in **Settings** → **MCP Servers** or scoped per project in `.caide/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "ghp_your_token_here"
+      }
+    },
+    "postgres": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-postgres",
+        "postgresql://user:pass@localhost:5432/mydb"
+      ]
+    },
+    "filesystem-extra": {
+      "command": "node",
+      "args": ["/home/user/custom-mcp-tools/index.js"]
+    }
+  }
+}
+```
+
+---
+
+## Tool Discovery & Consent Gating
+
+Once an MCP server connects:
+
+- Caide queries its tool definitions and schemas dynamically.
+- The tools become available in the model’s turn context alongside built-in file and shell tools.
+- **Explicit Consent**: By default, calls to external MCP tools require explicit approval unless marked as auto-approved in your security settings.

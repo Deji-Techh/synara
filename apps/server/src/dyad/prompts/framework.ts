@@ -6,12 +6,7 @@
 // (blank | react-native | flutter | website) — its stack, layout, commands,
 // preview, and constraints. Mirrors the M15 scaffold + framework registry.
 
-export const CAIDE_FRAMEWORKS = [
-  "blank",
-  "react-native",
-  "flutter",
-  "website",
-] as const;
+export const CAIDE_FRAMEWORKS = ["blank", "react-native", "flutter", "website"] as const;
 export type CaideFramework = (typeof CAIDE_FRAMEWORKS)[number];
 
 export function normalizeCaideFramework(value: unknown): CaideFramework | undefined {
@@ -161,8 +156,7 @@ export function appTargetForFramework(
 // Correct per framework (donor-exact when no framework is set).
 // ============================================================================
 
-const NPM_REINSTALL_SENTENCE =
-  "then it re-installs the npm packages and then starts";
+const NPM_REINSTALL_SENTENCE = "then it re-installs the npm packages and then starts";
 
 const NPM_IMPORT_SENTENCE = "anything that would come from npm";
 
@@ -198,22 +192,19 @@ export function applyFrameworkCommandTerms(
 
 const AGENT_INSPECTION_EXAMPLES =
   "(e.g. `src/pages/`, `components/`, `src/pages/Profile.tsx`, or `lib/toast`)";
-const BUILD_INSPECTION_EXAMPLES =
-  "(e.g. `src/pages/`, `Profile.tsx`, `lib/toast`)";
+const BUILD_INSPECTION_EXAMPLES = "(e.g. `src/pages/`, `Profile.tsx`, `lib/toast`)";
 const DIR_RULE_SENTENCE =
   "Directory names MUST be all lower-case (src/pages, src/components, etc.). File names may use mixed-case if you like.";
 
 const FLUTTER_AGENT_INSPECTION =
   "(e.g. `lib/screens/`, `widgets/`, `lib/screens/profile.dart`, or `lib/utils/toast.dart`)";
-const FLUTTER_BUILD_INSPECTION =
-  "(e.g. `lib/screens/`, `profile.dart`, `lib/utils/toast.dart`)";
+const FLUTTER_BUILD_INSPECTION = "(e.g. `lib/screens/`, `profile.dart`, `lib/utils/toast.dart`)";
 const FLUTTER_DIR_RULE =
   "Directory names MUST be all lower-case (lib/screens, lib/widgets, etc.). File names use snake_case Dart convention (profile_card.dart).";
 
 const RN_AGENT_INSPECTION =
   "(e.g. `app/src/screens/`, `components/`, `app/src/screens/Profile.tsx`, or `lib/toast`)";
-const RN_BUILD_INSPECTION =
-  "(e.g. `app/src/screens/`, `Profile.tsx`, `lib/toast`)";
+const RN_BUILD_INSPECTION = "(e.g. `app/src/screens/`, `Profile.tsx`, `lib/toast`)";
 const RN_DIR_RULE =
   "Directory names MUST be all lower-case (app/src/screens, app/src/components, etc.). File names may use mixed-case if you like.";
 
@@ -253,8 +244,7 @@ export function applyFrameworkPathTerms(
 // swapped per framework. Donor-exact for website/blank/unset.
 // ============================================================================
 
-const DONOR_TOAST_LINE =
-  `- Use toast components to inform the user about important events. Prefer Sonner (already installed in the scaffold as 'import { toast } from "sonner"') over any other toast library.`;
+const DONOR_TOAST_LINE = `- Use toast components to inform the user about important events. Prefer Sonner (already installed in the scaffold as 'import { toast } from "sonner"') over any other toast library.`;
 
 const RN_TOAST_LINE = `- Use the scaffold's toast utility to inform the user about important events.`;
 

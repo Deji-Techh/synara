@@ -48,10 +48,15 @@ export async function pollinationsGenerate(input: {
 }
 
 const generateImageSchema = z.object({
-  prompt: z.string().describe("Detailed prompt: subject, style, colors, composition, mood, aspect ratio"),
+  prompt: z
+    .string()
+    .describe("Detailed prompt: subject, style, colors, composition, mood, aspect ratio"),
   width: z.number().int().min(256).max(2048).default(1024).describe("Image width in px"),
   height: z.number().int().min(256).max(2048).default(1024).describe("Image height in px"),
-  filename: z.string().optional().describe("Descriptive filename (defaults to generated-image-<ts>.<ext>)"),
+  filename: z
+    .string()
+    .optional()
+    .describe("Descriptive filename (defaults to generated-image-<ts>.<ext>)"),
 });
 
 export const generateImageTool = defineTool({
@@ -80,13 +85,27 @@ export async function executeGenerateImage(
       height: parsed.height,
       ...(signal ? { signal } : {}),
     });
-    const ext = /png/.test(image.mimeType) ? "png" : /webp/.test(image.mimeType) ? "webp" : /svg/.test(image.mimeType) ? "svg" : "jpg";
-    const name = (parsed.filename ?? `generated-image-${Date.now()}`).replace(/[^a-zA-Z0-9-_]+/g, "-");
+    const ext = /png/.test(image.mimeType)
+      ? "png"
+      : /webp/.test(image.mimeType)
+        ? "webp"
+        : /svg/.test(image.mimeType)
+          ? "svg"
+          : "jpg";
+    const name = (parsed.filename ?? `generated-image-${Date.now()}`).replace(
+      /[^a-zA-Z0-9-_]+/g,
+      "-",
+    );
     const rel = path.join(".caide", "media", `${name}.${ext}`);
     const full = path.join(appPath, rel);
     await fs.promises.mkdir(path.dirname(full), { recursive: true });
     await fs.promises.writeFile(full, image.bytes);
-    await appendImageManifest(appPath, { prompt: parsed.prompt, leg: image.leg ?? "default", file: rel, at: Date.now() });
+    await appendImageManifest(appPath, {
+      prompt: parsed.prompt,
+      leg: image.leg ?? "default",
+      file: rel,
+      at: Date.now(),
+    });
     return [
       `Image saved to ${rel} (${image.bytes.length} bytes) via ${image.leg ?? "default"}.`,
       `Use copy_file to move it to the project's asset directory (web: public/, Flutter: assets/ + pubspec) with a descriptive filename, then reference the copied path in code.`,
@@ -98,7 +117,12 @@ export async function executeGenerateImage(
     // user provided no asset of their own prior (the tool is only called for
     // images the app still needs).
     const rel = await writeIllustratedPlaceholder(appPath, parsed.prompt, parsed.filename);
-    await appendImageManifest(appPath, { prompt: parsed.prompt, leg: "placeholder", file: rel, at: Date.now() });
+    await appendImageManifest(appPath, {
+      prompt: parsed.prompt,
+      leg: "placeholder",
+      file: rel,
+      at: Date.now(),
+    });
     const cause = err instanceof Error ? err.message.split("\n")[0] : String(err);
     return [
       `All image-generation legs failed (${cause}). Wrote a designed illustrated placeholder to ${rel} instead.`,
@@ -109,7 +133,11 @@ export async function executeGenerateImage(
 }
 
 function escapeXml(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 /**
@@ -150,7 +178,10 @@ export interface ImageManifestEntry {
 }
 
 /** Provenance log for every image/placeholder the agent materializes. */
-export async function appendImageManifest(appPath: string, entry: ImageManifestEntry): Promise<void> {
+export async function appendImageManifest(
+  appPath: string,
+  entry: ImageManifestEntry,
+): Promise<void> {
   const file = path.join(appPath, ".caide", "media", "manifest.json");
   try {
     await fs.promises.mkdir(path.dirname(file), { recursive: true });

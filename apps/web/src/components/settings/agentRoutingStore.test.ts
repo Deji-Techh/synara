@@ -2,11 +2,7 @@
 // Purpose: Routing settings load/save/normalize round-trip.
 
 import { beforeEach, describe, expect, it } from "vitest";
-import {
-  DEFAULT_ROUTING,
-  loadAgentRouting,
-  saveAgentRouting,
-} from "./agentRoutingStore";
+import { DEFAULT_ROUTING, loadAgentRouting, saveAgentRouting } from "./agentRoutingStore";
 
 beforeEach(() => {
   localStorage.clear();

@@ -129,7 +129,10 @@ export function appendSubagentTranscript(id: string, message: SubagentMessage): 
 }
 
 /** Queue a message for the thread worker (bounded: rejects past 20). */
-export function queueSubagentMessage(id: string, message: string): "queued" | "missing" | "full" | "terminal" {
+export function queueSubagentMessage(
+  id: string,
+  message: string,
+): "queued" | "missing" | "full" | "terminal" {
   const task = subagentTasks.get(id);
   if (!task) return "missing";
   // Failed threads stay dead (start anew); completed threads accept

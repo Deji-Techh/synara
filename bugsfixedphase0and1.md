@@ -7,6 +7,7 @@ except the approved fix-in-transit ledger (007 §6).
 ## A. Real bugs found and fixed
 
 ### 1. Turbo appendix default-on for build — HIGH (fixed)
+
 M6 set `enableTurboEditsV2: chatMode === "build"`. V1's
 `isTurboEditsV2Enabled` (`lib/schemas.ts:540-545`) requires an explicit
 `proLazyEditsMode === "v2"` opt-in — **default off**. My change appended the
@@ -15,6 +16,7 @@ V1 default. Fixed: back to `false` until the 018 Turbo setting lands (which
 will enable build-only, ask/plan forced off, exactly like the donor).
 
 ### 2. `add_integration` hidden on bare-URL links — MEDIUM (fixed)
+
 M2 hid `add_integration` on any link (`hasDbLink === true`). V1's
 `isEnabled` keys off project IDs (`!supabaseProjectId && !neonProjectId`,
 `add_integration.ts:28`): a bare-URL link is NOT a managed connection, so V1
@@ -24,6 +26,7 @@ keeps offering integration to allow upgrading. Fixed: new tri-state
 it. Covered by managed-vs-bare test postures.
 
 ### 3. MCP search fail-open without a registry — LOW/MEDIUM (fixed)
+
 M2 passed `mcpSearchEnabled: registry ? true : undefined`, leaving the tools
 offered when no registry exists. V1 hides them when search is unavailable
 (`isEnabled: !!ctx.isMcpToolSearchAvailable`, itself gated on sandbox +
@@ -31,6 +34,7 @@ setting + size threshold). Fixed: explicit `input.mcpRegistry != null`.
 (Legacy callers passing nothing keep legacy behavior; no existing tests broke.)
 
 ### 4. Missing consent previews on ask-default tools — MEDIUM (fixed)
+
 M1 plumbed previews but `run_command`, `install_package`, `build_project`,
 `lint_project`, `test_project` had no `presentCall`, so their cards showed
 bare args. V1 defines `getConsentPreview` for all of them (`$ <cmd>`,
@@ -39,11 +43,13 @@ added in V1's exact formats (run_command mirrors the `$ cmd (in ./dir)` shape
 against the V2 schema). `git_commit`/`execute_sql` already had theirs.
 
 ### 5. Deleted `rawCmd` line during preview edit — WOULD-BE CRITICAL (caught instantly)
+
 While adding the run_command preview I dropped the `const rawCmd = ...` line
 the executor depends on. Caught on immediate re-read, restored, and verified
 by reading the region plus tests. No commit ever contained it.
 
 ### 6. Dynamic import for the scaffold marker — LOW (cleaned)
+
 `scaffoldProject` used `await import(blueprintStore)`; the store imports only
 node builtins, so no cycle is possible. Replaced with a static import.
 
@@ -113,8 +119,8 @@ node builtins, so no cycle is possible. Replaced with a static import.
 ## E. Known gaps remaining (owners, not bugs)
 
 016: `codeExplorerAvailable` wiring + explorer readiness. 014: `themePrompt`,
-  `appSkillPack`, theme generator. 018: `testingEnabled`, `appTarget`,
-  Turbo/master/blueprint/sandbox toggles, full-access default flip. 013:
-  client-code snippets, Neon email-verification feed. Later milestone: build
-  XML-tag pipeline, post-turn pipeline stages. Pre-existing red: video,
-  contracts, one prompts narration test.
+`appSkillPack`, theme generator. 018: `testingEnabled`, `appTarget`,
+Turbo/master/blueprint/sandbox toggles, full-access default flip. 013:
+client-code snippets, Neon email-verification feed. Later milestone: build
+XML-tag pipeline, post-turn pipeline stages. Pre-existing red: video,
+contracts, one prompts narration test.

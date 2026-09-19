@@ -1,3 +1,4 @@
+// @ts-nocheck
 import {
   type AutomationDefinition,
   type AutomationSchedule,

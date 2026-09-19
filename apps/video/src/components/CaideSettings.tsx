@@ -50,7 +50,9 @@ export const CaideSettings: React.FC = () => {
           gap: "4px",
         }}
       >
-        <div style={{ padding: "0 8px 12px 8px", fontSize: "14px", fontWeight: 600, color: "#ffffff" }}>
+        <div
+          style={{ padding: "0 8px 12px 8px", fontSize: "14px", fontWeight: 600, color: "#ffffff" }}
+        >
           Settings
         </div>
 
@@ -76,13 +78,28 @@ export const CaideSettings: React.FC = () => {
           </div>
         ))}
 
-        <div style={{ marginTop: "auto", padding: "8px 10px", fontSize: "11px", color: CAIDE_THEME.colors.subtleForeground }}>
+        <div
+          style={{
+            marginTop: "auto",
+            padding: "8px 10px",
+            fontSize: "11px",
+            color: CAIDE_THEME.colors.subtleForeground,
+          }}
+        >
           Caide v0.9.0
         </div>
       </div>
 
       {/* Main Settings Content */}
-      <div style={{ flex: 1, padding: "24px 28px", display: "flex", flexDirection: "column", gap: "18px" }}>
+      <div
+        style={{
+          flex: 1,
+          padding: "24px 28px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "18px",
+        }}
+      >
         <div>
           <h3 style={{ fontSize: "16px", fontWeight: 600, margin: "0 0 4px 0", color: "#ffffff" }}>
             Providers & Model Routing
@@ -115,7 +132,8 @@ export const CaideSettings: React.FC = () => {
                   alignItems: "center",
                   justifyContent: "space-between",
                   padding: "14px 18px",
-                  borderBottom: i < PROVIDERS_DATA.length - 1 ? "1px solid rgba(255, 255, 255, 0.06)" : "none",
+                  borderBottom:
+                    i < PROVIDERS_DATA.length - 1 ? "1px solid rgba(255, 255, 255, 0.06)" : "none",
                 }}
               >
                 <div>
@@ -135,7 +153,14 @@ export const CaideSettings: React.FC = () => {
                       {prov.badge}
                     </span>
                   </div>
-                  <div style={{ fontSize: "11px", color: CAIDE_THEME.colors.subtleForeground, fontFamily: CAIDE_THEME.typography.fontMono, marginTop: "2px" }}>
+                  <div
+                    style={{
+                      fontSize: "11px",
+                      color: CAIDE_THEME.colors.subtleForeground,
+                      fontFamily: CAIDE_THEME.typography.fontMono,
+                      marginTop: "2px",
+                    }}
+                  >
                     {prov.models}
                   </div>
                 </div>

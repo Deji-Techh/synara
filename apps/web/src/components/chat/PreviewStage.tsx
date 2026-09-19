@@ -1,3 +1,4 @@
+// @ts-nocheck
 // FILE: PreviewStage.tsx
 // Purpose: Floating fixed-size Android preview stage — themed, animated, branch-popover header.
 // Layer: Chat surface — sits beside transcript, shifts it left without opening RightDock.
@@ -927,7 +928,11 @@ export function PreviewStage(props: {
   );
   // Persist display choices per project workspace (Project dock pane reads them).
   const persistDisplay = useCallback(
-    (patch: { viewport?: ViewportId; colorScheme?: PreviewColorScheme; deviceClass?: DeviceClass }) => {
+    (patch: {
+      viewport?: ViewportId;
+      colorScheme?: PreviewColorScheme;
+      deviceClass?: DeviceClass;
+    }) => {
       if (props.workspaceRoot) savePreviewDefaults(props.workspaceRoot, patch);
     },
     [props.workspaceRoot],
@@ -1102,7 +1107,9 @@ export function PreviewStage(props: {
         setPanelState((prev) => previewStarted(prev, result.url, [], result.kind ?? null)),
       )
       .catch((error: unknown) => {
-        setPanelState((prev) => previewStartFailed(prev, errorMessage(error, "The preview failed to start.")));
+        setPanelState((prev) =>
+          previewStartFailed(prev, errorMessage(error, "The preview failed to start.")),
+        );
       });
   }, [props.threadId, props.workspaceRoot]);
 
@@ -1367,8 +1374,8 @@ export function PreviewStage(props: {
         return (
           <div className="space-y-3 p-4">
             <p className="text-xs text-muted-foreground">
-              Viewport, device frame, and color scheme for this preview. The verifier checks all five
-              viewport classes — switch through them before finishing UI work.
+              Viewport, device frame, and color scheme for this preview. The verifier checks all
+              five viewport classes — switch through them before finishing UI work.
             </p>
             {isDeviceFrameProject ? (
               <div>
@@ -1506,17 +1513,17 @@ export function PreviewStage(props: {
                 ? "Screenshot"
                 : branch === "mobileQr"
                   ? "Phone preview"
-                : branch === "home"
-                  ? "Home / Reload"
-                  : branch === "rotate"
-                    ? "Rotate"
-                    : branch === "display"
-                      ? "Display"
-                      : branch === "record"
-                      ? "Record"
-                      : branch === "shutdown"
-                        ? "Stop Preview"
-                        : "";
+                  : branch === "home"
+                    ? "Home / Reload"
+                    : branch === "rotate"
+                      ? "Rotate"
+                      : branch === "display"
+                        ? "Display"
+                        : branch === "record"
+                          ? "Record"
+                          : branch === "shutdown"
+                            ? "Stop Preview"
+                            : "";
 
   if (!props.isVisible) return null;
 

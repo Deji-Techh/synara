@@ -15,7 +15,9 @@ describe("template scaffolds (d)", () => {
     expect(files.length).toBeGreaterThan(5);
     expect(files).toContain("package.json");
     expect(files.some((f) => f.includes("node_modules"))).toBe(false);
-    const pkg = JSON.parse(fs.readFileSync(path.join(dir, "package.json"), "utf8")) as { name: string };
+    const pkg = JSON.parse(fs.readFileSync(path.join(dir, "package.json"), "utf8")) as {
+      name: string;
+    };
     expect(pkg.name).toBe("mydapp");
   });
 
@@ -24,7 +26,9 @@ describe("template scaffolds (d)", () => {
     const files = await scaffoldApi(dir, "MyApi");
     expect(files.length).toBeGreaterThan(5);
     expect(files.some((f) => f.endsWith("Dockerfile"))).toBe(true);
-    const pkg = JSON.parse(fs.readFileSync(path.join(dir, "package.json"), "utf8")) as { name: string };
+    const pkg = JSON.parse(fs.readFileSync(path.join(dir, "package.json"), "utf8")) as {
+      name: string;
+    };
     expect(pkg.name).toBe("myapi");
   });
 });

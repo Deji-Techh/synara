@@ -29,7 +29,11 @@ export const ASK_DEFAULT_TOOLS: readonly AskDefaultTool[] = [
   { name: "execute_fork_skill", label: "Skill subagents", hint: "Deferred analysis" },
   { name: "build_apk", label: "APK builds", hint: "Long mobile builds" },
   { name: "git_restore_file", label: "Git file restores", hint: "Overwrites working files" },
-  { name: "reinstall_and_restart_app", label: "Dependency reinstalls", hint: "Deletes node_modules" },
+  {
+    name: "reinstall_and_restart_app",
+    label: "Dependency reinstalls",
+    hint: "Deletes node_modules",
+  },
 ];
 
 const OVERRIDES_KEY = "caide.tool-approvals.v1";

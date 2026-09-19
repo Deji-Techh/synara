@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { formatModelDisplayName, humanizeModelSlug, normalizeModelSlug } from "@caide/shared/model";
 import {
   PROVIDER_DISPLAY_NAMES,

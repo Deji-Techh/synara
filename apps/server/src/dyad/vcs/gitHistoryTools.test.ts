@@ -66,14 +66,24 @@ describe("dyad git history tools", () => {
     expect(whole).toContain("lines 1-3 of 3");
     expect(whole).toContain("one\ntwo\nthree");
     const range = await executeGitShowFile(
-      { revision: "HEAD", path: "a.txt", start_line_one_indexed: 2, end_line_one_indexed_inclusive: 3 },
+      {
+        revision: "HEAD",
+        path: "a.txt",
+        start_line_one_indexed: 2,
+        end_line_one_indexed_inclusive: 3,
+      },
       dir,
     );
     expect(range).toContain("lines 2-3 of 4");
     expect(range).toContain("TWO\nthree");
     await expect(
       executeGitShowFile(
-        { revision: "HEAD", path: "a.txt", start_line_one_indexed: 3, end_line_one_indexed_inclusive: 2 },
+        {
+          revision: "HEAD",
+          path: "a.txt",
+          start_line_one_indexed: 3,
+          end_line_one_indexed_inclusive: 2,
+        },
         dir,
       ),
     ).rejects.toThrow();
@@ -99,9 +109,9 @@ describe("dyad git history tools", () => {
     fs.writeFileSync(path.join(dir, ".env"), "SECRET=1\n");
     execFileSync("git", ["add", "-A"], { cwd: dir });
     execFileSync("git", ["commit", "-m", "env"], { cwd: dir });
-    await expect(executeGitShowFile({ revision: "HEAD", path: ".env" }, dir)).rejects.toBeInstanceOf(
-      GitToolError,
-    );
+    await expect(
+      executeGitShowFile({ revision: "HEAD", path: ".env" }, dir),
+    ).rejects.toBeInstanceOf(GitToolError);
     fs.symlinkSync("a.txt", path.join(dir, "link.txt"));
     await expect(
       executeGitRestoreFile({ revision: "HEAD", path: "link.txt" }, dir),
@@ -135,9 +145,9 @@ describe("dyad git history tools", () => {
     fs.writeFileSync(path.join(dir, "blob.bin"), Buffer.from([0, 1, 2, 0, 255, 254]));
     execFileSync("git", ["add", "-A"], { cwd: dir });
     execFileSync("git", ["commit", "-m", "bin"], { cwd: dir });
-    await expect(
-      executeGitShowFile({ revision: "HEAD", path: "blob.bin" }, dir),
-    ).rejects.toThrow(/inary/);
+    await expect(executeGitShowFile({ revision: "HEAD", path: "blob.bin" }, dir)).rejects.toThrow(
+      /inary/,
+    );
     // Binary restore round-trips byte-identical.
     fs.unlinkSync(path.join(dir, "blob.bin"));
     await executeGitRestoreFile({ revision: "HEAD", path: "blob.bin" }, dir);

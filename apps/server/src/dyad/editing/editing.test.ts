@@ -26,7 +26,9 @@ function workspace(): string {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "caide-edit-"));
   fs.writeFileSync(
     path.join(dir, "app.ts"),
-    ["import { x } from './x';", "", "export function hello() {", "  return 'hi';", "}", ""].join("\n"),
+    ["import { x } from './x';", "", "export function hello() {", "  return 'hi';", "}", ""].join(
+      "\n",
+    ),
   );
   return dir;
 }
@@ -65,23 +67,38 @@ describe("dyad editing transplant (m2b)", () => {
     const tricky = "=======\nkeep";
     const escaped = escapeSearchReplaceMarkers(tricky);
     expect(escaped).toBe("\\=======\nkeep");
-    const ok = applySearchReplace(`${tricky}\nkeep\n`, `<<<<<<< SEARCH\n${escaped}\n=======\n${escaped}\n>>>>>>> REPLACE`);
+    const ok = applySearchReplace(
+      `${tricky}\nkeep\n`,
+      `<<<<<<< SEARCH\n${escaped}\n=======\n${escaped}\n>>>>>>> REPLACE`,
+    );
     expect(ok.success).toBe(true);
   });
 
   it("matches exact, whitespace-fuzzy, and unicode variants; rejects ambiguity", () => {
     const file = "line one  \nline two\nline three\n";
-    const exact = applySearchReplace(file, "<<<<<<< SEARCH\nline two\n=======\nLINE TWO\n>>>>>>> REPLACE");
+    const exact = applySearchReplace(
+      file,
+      "<<<<<<< SEARCH\nline two\n=======\nLINE TWO\n>>>>>>> REPLACE",
+    );
     expect(exact).toEqual({ success: true, content: "line one  \nLINE TWO\nline three\n" });
 
-    const fuzzy = applySearchReplace(file, "<<<<<<< SEARCH\nline one\n=======\nLINE ONE\n>>>>>>> REPLACE");
+    const fuzzy = applySearchReplace(
+      file,
+      "<<<<<<< SEARCH\nline one\n=======\nLINE ONE\n>>>>>>> REPLACE",
+    );
     expect(fuzzy.success).toBe(true);
     expect(fuzzy.content).toContain("LINE ONE");
 
-    const smart = applySearchReplace("it’s here\n", "<<<<<<< SEARCH\nit's here\n=======\nIT IS HERE\n>>>>>>> REPLACE");
+    const smart = applySearchReplace(
+      "it’s here\n",
+      "<<<<<<< SEARCH\nit's here\n=======\nIT IS HERE\n>>>>>>> REPLACE",
+    );
     expect(smart.success).toBe(true);
 
-    const dup = applySearchReplace("same\nsame\n", "<<<<<<< SEARCH\nsame\n=======\nother\n>>>>>>> REPLACE");
+    const dup = applySearchReplace(
+      "same\nsame\n",
+      "<<<<<<< SEARCH\nsame\n=======\nother\n>>>>>>> REPLACE",
+    );
     expect(dup.success).toBe(false);
     expect(dup.error).toMatch(/ambiguous/);
 
@@ -174,7 +191,11 @@ describe("dyad editing transplant (m2b)", () => {
         file_path: "app.ts",
         chunks: [
           { startLine: 1, endLine: 1, replacementContent: "import { y } from './y';" },
-          { startLine: 3, endLine: 4, replacementContent: "export function hello() {\n  return 'yo';\n}" },
+          {
+            startLine: 3,
+            endLine: 4,
+            replacementContent: "export function hello() {\n  return 'yo';\n}",
+          },
         ],
       },
       toolCtx(dir),
@@ -218,7 +239,10 @@ describe("dyad editing transplant (m2b)", () => {
       copyFileTool.execute({ from: "../../etc/passwd", to: "x" }, toolCtx(dir)),
     ).rejects.toThrow(UnsafePathError);
 
-    const renamed = await renameFileTool.execute({ from: "bak/app.ts", to: "bak/app2.ts" }, toolCtx(dir));
+    const renamed = await renameFileTool.execute(
+      { from: "bak/app.ts", to: "bak/app2.ts" },
+      toolCtx(dir),
+    );
     expect(renamed).toContain("app2.ts");
     await expect(
       renameFileTool.execute({ from: "bak/app2.ts", to: "app.ts" }, toolCtx(dir)),

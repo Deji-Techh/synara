@@ -30,10 +30,7 @@ export function loadCustomModelsForProvider(providerId: string): ModelOption[] {
 
 export function saveCustomModelsForProvider(providerId: string, models: ModelOption[]): void {
   try {
-    localStorage.setItem(
-      `${CUSTOM_MODELS_STORAGE_PREFIX}${providerId}`,
-      JSON.stringify(models),
-    );
+    localStorage.setItem(`${CUSTOM_MODELS_STORAGE_PREFIX}${providerId}`, JSON.stringify(models));
   } catch {
     // ignore
   }
@@ -72,10 +69,7 @@ export function ModelsSection({ providerId, allowCustomModels = true }: ModelsSe
     if (remoteModels.length > 0) return remoteModels;
     return getBuiltInModelsForProvider(providerId);
   }, [providerId, remoteModels]);
-  const loadedCustomModels = useMemo(
-    () => loadCustomModelsForProvider(providerId),
-    [providerId],
-  );
+  const loadedCustomModels = useMemo(() => loadCustomModelsForProvider(providerId), [providerId]);
 
   const allModels: ModelOption[] = useMemo(() => {
     return [...builtInModels, ...loadedCustomModels];
@@ -153,9 +147,7 @@ export function ModelsSection({ providerId, allowCustomModels = true }: ModelsSe
             >
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium text-foreground">
-                    {model.displayName}
-                  </span>
+                  <span className="text-xs font-medium text-foreground">{model.displayName}</span>
                   <code className="rounded bg-muted/70 px-1 py-0.5 font-mono text-[10px] text-muted-foreground">
                     {model.name}
                   </code>
@@ -227,7 +219,9 @@ export function ModelsSection({ providerId, allowCustomModels = true }: ModelsSe
               onSubmit={handleAddCustomModel}
               className="rounded-lg border border-border/70 bg-card p-3 space-y-2.5"
             >
-              <div className="text-xs font-medium text-foreground">Add Custom Model for {providerId}</div>
+              <div className="text-xs font-medium text-foreground">
+                Add Custom Model for {providerId}
+              </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-[10px] uppercase font-mono text-muted-foreground">
@@ -279,12 +273,7 @@ export function ModelsSection({ providerId, allowCustomModels = true }: ModelsSe
                 <Button size="xs" type="submit">
                   Save Model
                 </Button>
-                <Button
-                  size="xs"
-                  variant="ghost"
-                  type="button"
-                  onClick={() => setIsAddOpen(false)}
-                >
+                <Button size="xs" variant="ghost" type="button" onClick={() => setIsAddOpen(false)}>
                   Cancel
                 </Button>
               </div>

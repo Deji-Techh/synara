@@ -188,9 +188,9 @@ export async function createAppForFirstSend(input: {
   });
 
   return {
-  projectId: created.projectId,
-  seedThreadId: created.threadId,
-  appPath: created.appPath,
-  snapshot,
-};
+    projectId: created.projectId,
+    seedThreadId: created.threadId,
+    appPath: created.appPath,
+    snapshot,
+  };
 }

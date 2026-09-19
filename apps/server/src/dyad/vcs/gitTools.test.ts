@@ -94,9 +94,7 @@ describe("dyad git tools transplant (m2b)", () => {
     await expect(executeGitStatus(plain)).rejects.toThrow(/Not a git repository/);
 
     const dir = initRepo();
-    await expect(executeGitCommit({ message: "empty" }, dir)).rejects.toThrow(
-      /Nothing to commit/,
-    );
+    await expect(executeGitCommit({ message: "empty" }, dir)).rejects.toThrow(/Nothing to commit/);
   });
 
   it("resolves the current commit hash, null outside repos", async () => {

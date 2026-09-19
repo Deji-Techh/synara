@@ -22,18 +22,14 @@ export const Scene04PillComposer: React.FC = () => {
   // 4. Frame 73 -> 83: cursor moves to purple send button (X: 1195, Y: 885)
   // 5. Click send button at frame 84
   // 6. Frame 88 -> 120: cursor relaxes back slightly
-  const cursorX = interpolate(
-    frame,
-    [0, 12, 72, 83, 100],
-    [900, 750, 750, 1195, 1120],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
-  );
-  const cursorY = interpolate(
-    frame,
-    [0, 12, 72, 83, 100],
-    [600, 855, 855, 885, 820],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
-  );
+  const cursorX = interpolate(frame, [0, 12, 72, 83, 100], [900, 750, 750, 1195, 1120], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const cursorY = interpolate(frame, [0, 12, 72, 83, 100], [600, 855, 855, 885, 820], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
 
   const isClick1 = frame >= 12 && frame <= 18;
   const isClick2 = frame >= 83 && frame <= 90;
@@ -52,10 +48,7 @@ export const Scene04PillComposer: React.FC = () => {
   const isAgentRunning = frame >= 90;
 
   // Completed tools count (0 to 4)
-  const completedCount = Math.min(
-    4,
-    Math.max(0, Math.floor((frame - 95) / 18))
-  );
+  const completedCount = Math.min(4, Math.max(0, Math.floor((frame - 95) / 18)));
 
   // Top feature callout
   const bannerOpacity = interpolate(frame, [8, 30, 150, 170], [0, 1, 1, 0]);

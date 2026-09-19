@@ -1,9 +1,7 @@
 import "dotenv/config";
 import { z } from "zod";
 
-const booleanString = z
-  .string()
-  .transform((value) => value.trim().toLowerCase() === "true");
+const booleanString = z.string().transform((value) => value.trim().toLowerCase() === "true");
 
 const ConfigSchema = z.object({
   PORT: z.coerce.number().int().positive().default(8787),
@@ -31,11 +29,7 @@ const ConfigSchema = z.object({
     .int()
     .positive()
     .default(30 * 1024 * 1024),
-  PREVIEW_FREE_CONCURRENT_SESSIONS: z.coerce
-    .number()
-    .int()
-    .positive()
-    .default(1),
+  PREVIEW_FREE_CONCURRENT_SESSIONS: z.coerce.number().int().positive().default(1),
   PREVIEW_FREE_DAILY_SESSIONS: z.coerce.number().int().positive().default(10),
   PREVIEW_SESSION_MAX_SECONDS: z.coerce
     .number()

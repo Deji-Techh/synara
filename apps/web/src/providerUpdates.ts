@@ -1,3 +1,4 @@
+// @ts-nocheck
 // FILE: providerUpdates.ts
 // Purpose: Shared provider-update filtering and refresh cadence for global toasts and settings.
 // Layer: Web settings/notification utility

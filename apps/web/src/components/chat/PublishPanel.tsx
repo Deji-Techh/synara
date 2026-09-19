@@ -13,7 +13,12 @@ import { PanelStateMessage } from "./PanelStateMessage";
 interface PublishLinks {
   github?: { org?: string; repo: string; branch?: string };
   vercel?: { projectId: string; projectName?: string; deploymentUrl?: string; teamId?: string };
-  coolify?: { instanceUrl?: string; projectUuid?: string; domain?: string; applicationUuid?: string };
+  coolify?: {
+    instanceUrl?: string;
+    projectUuid?: string;
+    domain?: string;
+    applicationUuid?: string;
+  };
 }
 
 function parseLinks(raw: string | null | undefined): PublishLinks | null {
@@ -34,7 +39,11 @@ function Row(props: { title: string; lines: string[]; hint: string }) {
       <div className="text-[12px] font-semibold">{props.title}</div>
       <div className="mt-1 space-y-0.5">
         {props.lines.map((line) => (
-          <div key={line} className="truncate font-mono text-[11px] text-muted-foreground" title={line}>
+          <div
+            key={line}
+            className="truncate font-mono text-[11px] text-muted-foreground"
+            title={line}
+          >
             {line}
           </div>
         ))}
@@ -44,9 +53,16 @@ function Row(props: { title: string; lines: string[]; hint: string }) {
   );
 }
 
-export function PublishPanel(props: { threadId: ThreadId; workspaceRoot?: string | null; onClose: () => void }) {
+export function PublishPanel(props: {
+  threadId: ThreadId;
+  workspaceRoot?: string | null;
+  onClose: () => void;
+}) {
   const query = useQuery({
-    ...projectReadFileQueryOptions({ cwd: props.workspaceRoot ?? null, relativePath: ".caide/publish.json" }),
+    ...projectReadFileQueryOptions({
+      cwd: props.workspaceRoot ?? null,
+      relativePath: ".caide/publish.json",
+    }),
   });
   const data = query.data as { contents?: unknown } | undefined;
   const links = parseLinks(typeof data?.contents === "string" ? data.contents : null);
@@ -63,8 +79,8 @@ export function PublishPanel(props: { threadId: ThreadId; workspaceRoot?: string
           <div className="space-y-2">
             <PanelStateMessage>Nothing linked yet.</PanelStateMessage>
             <div className="rounded-lg border border-border/60 px-3 py-2.5 text-[11px] text-muted-foreground">
-              Ask the agent: “create a GitHub repo”, “connect Vercel”, or “connect my Coolify instance”. Links
-              persist here across chats.
+              Ask the agent: “create a GitHub repo”, “connect Vercel”, or “connect my Coolify
+              instance”. Links persist here across chats.
             </div>
           </div>
         ) : (

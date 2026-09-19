@@ -29,13 +29,16 @@ describe("dyad chat mode resolution", () => {
       mode: "ask",
       source: "stored",
     });
-    expect(resolveChatModeForTurn({ requestedChatMode: "bogus", storedChatMode: "bogus" })).toEqual({
-      mode: "agent",
+    expect(resolveChatModeForTurn({ requestedChatMode: "bogus", storedChatMode: "bogus" })).toEqual(
+      {
+        mode: "agent",
+        source: "default",
+      },
+    );
+    expect(resolveChatModeForTurn({ storedChatMode: "bogus", defaultMode: "plan" })).toEqual({
+      mode: "plan",
       source: "default",
     });
-    expect(
-      resolveChatModeForTurn({ storedChatMode: "bogus", defaultMode: "plan" }),
-    ).toEqual({ mode: "plan", source: "default" });
   });
 
   it("passes through the initial chat mode", () => {

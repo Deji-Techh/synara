@@ -69,7 +69,12 @@ function readStoredProviders(baseDir: string): Record<string, StoredEntry> {
       }
       return {};
     }
-    if (parsed && typeof parsed === "object" && parsed.providers && typeof parsed.providers === "object") {
+    if (
+      parsed &&
+      typeof parsed === "object" &&
+      parsed.providers &&
+      typeof parsed.providers === "object"
+    ) {
       return parsed.providers as Record<string, StoredEntry>;
     }
   } catch {
@@ -93,7 +98,11 @@ function decryptProviders(
   key: Buffer,
 ): Record<string, unknown> | null {
   try {
-    const decipher = crypto.createDecipheriv("aes-256-gcm", key, Buffer.from(encrypted.iv, "base64"));
+    const decipher = crypto.createDecipheriv(
+      "aes-256-gcm",
+      key,
+      Buffer.from(encrypted.iv, "base64"),
+    );
     decipher.setAuthTag(Buffer.from(encrypted.tag, "base64"));
     const plain = Buffer.concat([
       decipher.update(Buffer.from(encrypted.data, "base64")),
@@ -117,7 +126,8 @@ function nonEmpty(value: unknown): boolean {
  * server: CAIDE_HOME or ~/.caide).
  */
 export function readProviderKeyPresence(baseDir?: string): ProviderKeyPresenceEntry[] {
-  const home = baseDir?.trim() || process.env.CAIDE_HOME?.trim() || path.join(os.homedir(), ".caide");
+  const home =
+    baseDir?.trim() || process.env.CAIDE_HOME?.trim() || path.join(os.homedir(), ".caide");
   const stored = readStoredProviders(home);
   return KNOWN_PROVIDERS.map((def) => {
     // Mirror the server publicView semantics exactly (local runtimes report

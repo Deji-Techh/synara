@@ -4,10 +4,7 @@ import { config } from "./config.js";
 function escapeHtml(value: string): string {
   return value.replace(
     /[&<>'"]/g,
-    (char) =>
-      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[
-        char
-      ]!,
+    (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[char]!,
   );
 }
 
@@ -45,9 +42,7 @@ function pageShell({
   const safeTitle = escapeHtml(title);
   const safeDescription = escapeHtml(description);
   const safeCanonicalUrl = escapeHtml(canonicalUrl);
-  const socialImageUrl = escapeHtml(
-    `${config.SHARE_PUBLIC_BASE_URL}/assets/caide-share-card.svg`,
-  );
+  const socialImageUrl = escapeHtml(`${config.SHARE_PUBLIC_BASE_URL}/assets/caide-share-card.svg`);
 
   return `<!doctype html>
 <html lang="en">
@@ -550,10 +545,7 @@ export function shareCardSvg(): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="CAIDE project sharing"><defs><radialGradient id="g" cx="50%" cy="0%" r="90%"><stop offset="0%" stop-color="#272b31"/><stop offset="58%" stop-color="#080a0d"/><stop offset="100%" stop-color="#030507"/></radialGradient><filter id="blur"><feGaussianBlur stdDeviation="44"/></filter></defs><rect width="1200" height="630" fill="url(#g)"/><circle cx="1030" cy="90" r="210" fill="#fff" opacity=".08" filter="url(#blur)"/><circle cx="155" cy="590" r="210" fill="#7d8590" opacity=".08" filter="url(#blur)"/><g transform="translate(92 92)"><rect width="108" height="108" rx="30" fill="#0a0c0f" stroke="#fff" stroke-opacity=".12"/><path d="M78 29A40 40 0 1 0 78 79" fill="none" stroke="#fff" stroke-width="12" stroke-linecap="round"/><circle cx="54" cy="54" r="9" fill="#fff"/></g><text x="230" y="142" fill="#fff" font-family="Inter,Arial,sans-serif" font-size="34" font-weight="700">CAIDE</text><text x="92" y="310" fill="#fff" font-family="Inter,Arial,sans-serif" font-size="72" font-weight="750" letter-spacing="-3">Open a shared project</text><text x="92" y="382" fill="#a9b1bd" font-family="Inter,Arial,sans-serif" font-size="30">Review the snapshot, then continue in the CAIDE desktop app.</text><g transform="translate(92 468)"><rect width="310" height="64" rx="18" fill="#fff"/><text x="155" y="42" fill="#08090c" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="22" font-weight="700">Open in CAIDE</text></g><text x="1108" y="548" fill="#7f8793" text-anchor="end" font-family="Inter,Arial,sans-serif" font-size="20">Secure project handoff</text></svg>`;
 }
 
-export function unavailableSharePage(
-  title: string,
-  description: string,
-): string {
+export function unavailableSharePage(title: string, description: string): string {
   return pageShell({
     title,
     description,
@@ -580,9 +572,7 @@ export function landingPage(row: ShareRow, token: string): string {
   const linuxUrl = escapeHtml(config.CAIDE_DOWNLOAD_LINUX);
   const macosUrl = escapeHtml(config.CAIDE_DOWNLOAD_MACOS);
 
-  const title = isUnavailable
-    ? `${name} — CAIDE share unavailable`
-    : `${name} — Open in CAIDE`;
+  const title = isUnavailable ? `${name} — CAIDE share unavailable` : `${name} — Open in CAIDE`;
   const description = isUnavailable
     ? "This CAIDE project link is no longer available."
     : "Open this CAIDE project snapshot in the desktop app.";

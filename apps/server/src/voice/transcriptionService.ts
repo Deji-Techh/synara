@@ -9,7 +9,10 @@ import { Buffer } from "node:buffer";
 import * as path from "node:path";
 import * as fs from "node:fs";
 import * as os from "node:os";
-import type { ServerVoiceTranscriptionInput, ServerVoiceTranscriptionResult } from "@caide/contracts";
+import type {
+  ServerVoiceTranscriptionInput,
+  ServerVoiceTranscriptionResult,
+} from "@caide/contracts";
 import { sharedProviderSecrets } from "../dyad/providers/secrets.ts";
 
 // ---------------------------------------------------------------------------
@@ -319,10 +322,16 @@ async function transcribeWithGemini(
           if (isAuthFailure(response.status, errorText)) {
             throw new Error(`Gemini API key rejected (HTTP ${response.status}). Check the key.`);
           }
-          if (response.status === 400 && /thinking/i.test(errorText) && generationConfig !== configs[configs.length - 1]) {
+          if (
+            response.status === 400 &&
+            /thinking/i.test(errorText) &&
+            generationConfig !== configs[configs.length - 1]
+          ) {
             continue; // retry the same model without thinkingConfig
           }
-          throw new Error(`Gemini API (${model}) returned HTTP ${response.status}: ${errorText.slice(0, 300)}`);
+          throw new Error(
+            `Gemini API (${model}) returned HTTP ${response.status}: ${errorText.slice(0, 300)}`,
+          );
         }
 
         const data = (await response.json()) as any;
@@ -342,11 +351,15 @@ async function transcribeWithGemini(
             .map((p: any) => (typeof p.text === "string" ? p.text : ""))
             .join(" ")
             .trim()
-        ).replace(/^["'«"`]+|["'»"`]+$/g, "").trim();
+        )
+          .replace(/^["'«"`]+|["'»"`]+$/g, "")
+          .trim();
         return rawText;
       } catch (err) {
         if (err instanceof Error && /aborted|timeout/i.test(err.message)) {
-          throw new Error(`Gemini API (${model}) timed out after ${TRANSCRIPTION_TIMEOUT_MS / 1000}s.`);
+          throw new Error(
+            `Gemini API (${model}) timed out after ${TRANSCRIPTION_TIMEOUT_MS / 1000}s.`,
+          );
         }
         lastError = err instanceof Error ? err : new Error(String(err));
         if (/timed out/.test(lastError.message)) throw lastError;
@@ -386,7 +399,11 @@ async function transcribeWithWhisperCompat(
       method: "POST",
       // See Gemini path: identity encoding keeps compressed responses (and
       // the patched stream .pipe() they trigger) out of this call.
-      headers: { Authorization: `Bearer ${apiKey}`, "Accept-Encoding": "identity", ...extraHeaders },
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Accept-Encoding": "identity",
+        ...extraHeaders,
+      },
       body: formData,
       signal: timeout.signal,
     });

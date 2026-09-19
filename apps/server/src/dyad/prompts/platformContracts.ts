@@ -85,12 +85,14 @@ update it if the platform rules changed. Content: one-line target ("mobile" or
  * Blank projects get an orientation-only contract (F0): no UI mandates,
  * no tab bars, no spec-file ritual — there is nothing to design yet.
  */
-export function buildPlatformPrompt(appTarget?: AppTarget, caideFramework?: CaideFramework): string {
+export function buildPlatformPrompt(
+  appTarget?: AppTarget,
+  caideFramework?: CaideFramework,
+): string {
   if (caideFramework === "blank") {
     return BLANK_PLATFORM_CONTRACT;
   }
   const target: AppTarget = appTarget ?? "mobile";
-  const contract =
-    target === "web" ? WEB_PRODUCT_CONTRACT : MOBILE_PRODUCT_CONTRACT;
+  const contract = target === "web" ? WEB_PRODUCT_CONTRACT : MOBILE_PRODUCT_CONTRACT;
   return `${contract}\n${PLATFORM_SPEC_SYNC_RULE}`;
 }

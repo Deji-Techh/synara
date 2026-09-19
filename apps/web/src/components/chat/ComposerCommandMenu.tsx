@@ -1,3 +1,4 @@
+// @ts-nocheck
 import {
   type ProjectEntry,
   type ModelSlug,

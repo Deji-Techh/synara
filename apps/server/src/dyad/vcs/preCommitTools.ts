@@ -172,7 +172,9 @@ export async function executeRunPreCommit(
     const output = truncateOutput(`${stdout}\n${stderr}`.trim());
     return `Pre-commit hook passed (${hook.kind}${hook.scriptName ? `:${hook.scriptName}` : ""}).${output ? `\n\n${output}` : ""}`;
   } catch (e: any) {
-    const output = truncateOutput(`${e?.stdout ?? ""}\n${e?.stderr ?? e?.message ?? String(e)}`.trim());
+    const output = truncateOutput(
+      `${e?.stdout ?? ""}\n${e?.stderr ?? e?.message ?? String(e)}`.trim(),
+    );
     return `Pre-commit hook FAILED (exit ${typeof e?.code === "number" ? e.code : "unknown"}). Fix the files using this output, then call run_pre_commit again (only after files changed).\n\n${output}`;
   }
 }

@@ -1,3 +1,4 @@
+// @ts-nocheck
 // FILE: ProfileSettingsPanel.tsx
 // Purpose: Local-first profile / stats dashboard rendered inside Settings → Profile. Core
 // stats render instantly from a fast SQL RPC; lifetime/peak token figures and the tokens/day

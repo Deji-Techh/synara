@@ -81,9 +81,7 @@ export function sanitizeServerHeaders(
 }
 
 /** Subprotocols requested by the viewer's WebSocket upgrade, if any. */
-export function extractSubprotocols(
-  headers: Record<string, unknown> | undefined,
-): string[] {
+export function extractSubprotocols(headers: Record<string, unknown> | undefined): string[] {
   const raw = headers?.["sec-websocket-protocol"];
   if (typeof raw !== "string") return [];
   return raw
@@ -96,9 +94,7 @@ export function extractSubprotocols(
 export function toBase64Chunks(buffer: Buffer): string[] {
   const chunks: string[] = [];
   for (let offset = 0; offset < buffer.length; offset += WS_FRAME_CHUNK_BYTES) {
-    chunks.push(
-      buffer.subarray(offset, offset + WS_FRAME_CHUNK_BYTES).toString("base64"),
-    );
+    chunks.push(buffer.subarray(offset, offset + WS_FRAME_CHUNK_BYTES).toString("base64"));
   }
   return chunks;
 }

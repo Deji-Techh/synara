@@ -15,18 +15,14 @@ export const Scene03SettingsEngine: React.FC = () => {
   const scale = interpolate(frame, [0, 240], [0.94, 0.97]);
 
   // Cursor moves to OpenCode Zen gateway (X: 830, Y: 460) then to Neon PostgreSQL (X: 1040, Y: 620)
-  const cursorX = interpolate(
-    frame,
-    [10, 45, 70, 95, 120],
-    [500, 830, 830, 1040, 1040],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
-  );
-  const cursorY = interpolate(
-    frame,
-    [10, 45, 70, 95, 120],
-    [500, 460, 460, 620, 620],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
-  );
+  const cursorX = interpolate(frame, [10, 45, 70, 95, 120], [500, 830, 830, 1040, 1040], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const cursorY = interpolate(frame, [10, 45, 70, 95, 120], [500, 460, 460, 620, 620], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
 
   const isClick1 = frame >= 48 && frame <= 55;
   const isClick2 = frame >= 98 && frame <= 105;

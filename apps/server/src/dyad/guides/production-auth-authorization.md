@@ -118,4 +118,3 @@ conflicts, refresh rotation, session revocation, tenant isolation, role changes,
 anonymous access, deletion cleanup, and rate limits. Verify privileged keys and
 tokens never enter client bundles, generated source, logs, screenshots, or
 analytics.
-

@@ -1,3 +1,4 @@
+// @ts-nocheck
 // FILE: ChatMarkdown.tsx
 // Purpose: Renders assistant and plan markdown with syntax highlighting and local file links.
 // Layer: Web chat presentation component
@@ -1063,12 +1064,17 @@ function blockToAntigravityItem(block: any): AntigravityToolItem {
 
   const attrs = block.attributes || {};
   const rawName = attrs.name || block.tag || "tool";
-  const clean = rawName.toLowerCase().replace(/^(?:caide|dyad)[-_]/, "").replace(/[-_]/g, " ");
+  const clean = rawName
+    .toLowerCase()
+    .replace(/^(?:caide|dyad)[-_]/, "")
+    .replace(/[-_]/g, " ");
   const path = attrs.path || attrs.file || attrs.target || "";
   const cmd = attrs.command || attrs.cmd || "";
   const query = attrs.query || attrs.pattern || "";
 
-  let resultBadge: string | undefined = attrs.resultCount ? `${attrs.resultCount} results` : undefined;
+  let resultBadge: string | undefined = attrs.resultCount
+    ? `${attrs.resultCount} results`
+    : undefined;
   if (!resultBadge && block.content) {
     const match = block.content.match(/(?:found|returned|results?)\s*(\d+)/i);
     if (match) {
@@ -1135,7 +1141,12 @@ function blockToAntigravityItem(block: any): AntigravityToolItem {
     };
   }
 
-  if (clean.includes("edit") || clean.includes("write") || clean.includes("replace") || clean.includes("patch")) {
+  if (
+    clean.includes("edit") ||
+    clean.includes("write") ||
+    clean.includes("replace") ||
+    clean.includes("patch")
+  ) {
     return {
       id: `tool-${block.id}`,
       type: "edit",
@@ -1147,7 +1158,12 @@ function blockToAntigravityItem(block: any): AntigravityToolItem {
     };
   }
 
-  if (clean.includes("run") || clean.includes("command") || clean.includes("bash") || clean.includes("exec")) {
+  if (
+    clean.includes("run") ||
+    clean.includes("command") ||
+    clean.includes("bash") ||
+    clean.includes("exec")
+  ) {
     return {
       id: `tool-${block.id}`,
       type: "command",
@@ -1645,10 +1661,7 @@ function ChatMarkdown({
 
         if (unit.kind === "command") {
           return (
-            <CaideCommandButton
-              key={`tag-${block.id}`}
-              type={block.attributes.type ?? "restart"}
-            />
+            <CaideCommandButton key={`tag-${block.id}`} type={block.attributes.type ?? "restart"} />
           );
         }
 

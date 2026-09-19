@@ -5,7 +5,10 @@
 import { describe, expect, it } from "vitest";
 import { HarnessHub, type HarnessClientSender } from "./hub.ts";
 
-function sender(open = true, onSend?: (text: string) => void): HarnessClientSender & { sent: string[] } {
+function sender(
+  open = true,
+  onSend?: (text: string) => void,
+): HarnessClientSender & { sent: string[] } {
   const sent: string[] = [];
   return {
     sent,
@@ -84,10 +87,19 @@ describe("harness hub fan-out", () => {
       }),
     );
     expect(seen).toEqual([
-      { sessionId: "settings", serverId: "mcp-1", serverUrl: "https://mcp.example.com/mcp", scope: "tools", requestId: "r1" },
+      {
+        sessionId: "settings",
+        serverId: "mcp-1",
+        serverUrl: "https://mcp.example.com/mcp",
+        scope: "tools",
+        requestId: "r1",
+      },
     ]);
     // Missing serverUrl is ignored (no crash, no call).
-    hub.handleText(s, JSON.stringify({ type: "mcp_oauth_start", sessionId: "settings", serverId: "mcp-1" }));
+    hub.handleText(
+      s,
+      JSON.stringify({ type: "mcp_oauth_start", sessionId: "settings", serverId: "mcp-1" }),
+    );
     expect(seen).toHaveLength(1);
   });
 });

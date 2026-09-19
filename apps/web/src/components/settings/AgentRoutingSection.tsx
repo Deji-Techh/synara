@@ -6,9 +6,7 @@
 
 import { useMemo, useState } from "react";
 import { PROVIDER_DISPLAY_NAMES, type ProviderKind } from "@caide/contracts";
-import {
-  getBuiltInModelsForProvider,
-} from "@caide/shared/languageModelCatalog";
+import { getBuiltInModelsForProvider } from "@caide/shared/languageModelCatalog";
 import { SelectItem } from "~/components/ui/select";
 import { useDyadProviderSettings } from "~/hooks/useDyadProviderSettings";
 import { ProviderOptionLabel } from "~/components/ProviderIcon";
@@ -146,7 +144,9 @@ export function AgentRoutingSection() {
                     </SettingsSelectControl>
                     <SettingsSelectControl
                       value={pick.modelId || "__default"}
-                      onValueChange={(v) => setSlot(slot.id, { modelId: v === "__default" ? "" : v })}
+                      onValueChange={(v) =>
+                        setSlot(slot.id, { modelId: v === "__default" ? "" : v })
+                      }
                       ariaLabel={`${slot.label} model`}
                       valueContent={pick.modelId || "Thread default"}
                     >
@@ -190,7 +190,10 @@ export function AgentRoutingSection() {
               size="xs"
               variant="outline"
               onClick={() =>
-                persist({ ...routing, fallbacks: [...routing.fallbacks, { providerId: "", modelId: "" }] })
+                persist({
+                  ...routing,
+                  fallbacks: [...routing.fallbacks, { providerId: "", modelId: "" }],
+                })
               }
             >
               Add fallback
@@ -205,7 +208,9 @@ export function AgentRoutingSection() {
               const models = modelOptionsFor(fb.providerId);
               return (
                 <div key={i} className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                  <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">#{i + 1}</span>
+                  <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
+                    #{i + 1}
+                  </span>
                   <SettingsSelectControl
                     value={fb.providerId || "__default"}
                     onValueChange={(v) => {
@@ -243,7 +248,10 @@ export function AgentRoutingSection() {
                     )}
                     {configuredProviders.map((p) => (
                       <SelectItem key={p.id} value={p.id}>
-                        <ProviderOptionLabel provider={p.id as ProviderKind} label={providerLabel(p.id)} />
+                        <ProviderOptionLabel
+                          provider={p.id as ProviderKind}
+                          label={providerLabel(p.id)}
+                        />
                       </SelectItem>
                     ))}
                   </SettingsSelectControl>
@@ -277,7 +285,10 @@ export function AgentRoutingSection() {
                     variant="ghost"
                     aria-label={`Remove fallback ${i + 1}`}
                     onClick={() =>
-                      persist({ ...routing, fallbacks: routing.fallbacks.filter((_, j) => j !== i) })
+                      persist({
+                        ...routing,
+                        fallbacks: routing.fallbacks.filter((_, j) => j !== i),
+                      })
                     }
                   >
                     Remove

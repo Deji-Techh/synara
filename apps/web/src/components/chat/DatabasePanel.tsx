@@ -93,7 +93,8 @@ async function invokeDatabase<T>(
 }
 
 /** Human error mapping — raw transport/schema messages never reach users. */
-export function databaseErrorMessage(cause: unknown): string {  const raw = cause instanceof Error ? cause.message : String(cause);
+export function databaseErrorMessage(cause: unknown): string {
+  const raw = cause instanceof Error ? cause.message : String(cause);
   if (/harness offline|socket|ECONNREFUSED|connect|fetch failed|network/i.test(raw)) {
     return "Can't reach Caide's backend. Restart the app; if it persists, check Settings → Providers for connection status.";
   }
@@ -137,7 +138,12 @@ export function DatabasePanel(props: {
     setLoading(true);
     setResolveError(null);
     try {
-      const response = await invokeDatabase<{ apps?: EngineApp[] }>(props.threadId, "list-apps", undefined, props.workspaceRoot);
+      const response = await invokeDatabase<{ apps?: EngineApp[] }>(
+        props.threadId,
+        "list-apps",
+        undefined,
+        props.workspaceRoot,
+      );
       const apps = Array.isArray(response?.apps) ? response.apps : [];
       const root = props.workspaceRoot;
       const match = apps.find(
@@ -179,7 +185,12 @@ export function DatabasePanel(props: {
   const connectNeon = (projectId: string) =>
     run(async () => {
       if (!app) return;
-      await invokeDatabase(props.threadId, "neon:set-app-project", { appId: app.id, projectId }, props.workspaceRoot);
+      await invokeDatabase(
+        props.threadId,
+        "neon:set-app-project",
+        { appId: app.id, projectId },
+        props.workspaceRoot,
+      );
       await refreshApp();
       setShowNeonPicker(false);
       setNeonProjects(null);
@@ -188,7 +199,12 @@ export function DatabasePanel(props: {
   const disconnectNeon = () =>
     run(async () => {
       if (!app) return;
-      await invokeDatabase(props.threadId, "neon:unset-app-project", { appId: app.id }, props.workspaceRoot);
+      await invokeDatabase(
+        props.threadId,
+        "neon:unset-app-project",
+        { appId: app.id },
+        props.workspaceRoot,
+      );
       await refreshApp();
     });
 
@@ -211,7 +227,12 @@ export function DatabasePanel(props: {
   const disconnectSupabase = () =>
     run(async () => {
       if (!app) return;
-      await invokeDatabase(props.threadId, "supabase:unset-app-project", { appId: app.id }, props.workspaceRoot);
+      await invokeDatabase(
+        props.threadId,
+        "supabase:unset-app-project",
+        { appId: app.id },
+        props.workspaceRoot,
+      );
       await refreshApp();
     });
 
@@ -263,7 +284,12 @@ export function DatabasePanel(props: {
         const response = await invokeDatabase<{
           branches?: NeonBranch[];
           data?: { branches?: NeonBranch[] };
-        }>(props.threadId, "neon:get-project", { projectId: app.neonProjectId }, props.workspaceRoot);
+        }>(
+          props.threadId,
+          "neon:get-project",
+          { projectId: app.neonProjectId },
+          props.workspaceRoot,
+        );
         const list =
           (Array.isArray(response as unknown as NeonBranch[])
             ? (response as unknown as NeonBranch[])
@@ -275,7 +301,12 @@ export function DatabasePanel(props: {
   const setNeonBranch = (branchId: string) =>
     run(async () => {
       if (!app) return;
-      await invokeDatabase(props.threadId, "neon:set-active-branch", { appId: app.id, branchId }, props.workspaceRoot);
+      await invokeDatabase(
+        props.threadId,
+        "neon:set-active-branch",
+        { appId: app.id, branchId },
+        props.workspaceRoot,
+      );
       await refreshApp();
     });
 
@@ -466,7 +497,11 @@ export function DatabasePanel(props: {
                           disabled={busy}
                           onChange={(e) => setNewProjectName(e.target.value)}
                         />
-                        <Button size="xs" disabled={busy || !newProjectName.trim()} onClick={createNeonProject}>
+                        <Button
+                          size="xs"
+                          disabled={busy || !newProjectName.trim()}
+                          onClick={createNeonProject}
+                        >
                           Create
                         </Button>
                       </li>
@@ -587,7 +622,11 @@ export function DatabasePanel(props: {
                               disabled={busy}
                               onChange={(e) => setNewProjectName(e.target.value)}
                             />
-                            <Button size="xs" disabled={busy || !newProjectName.trim()} onClick={createSupabaseProject}>
+                            <Button
+                              size="xs"
+                              disabled={busy || !newProjectName.trim()}
+                              onClick={createSupabaseProject}
+                            >
                               Create
                             </Button>
                           </li>
@@ -628,7 +667,9 @@ function ProjectConnectionSection(props: { workspaceRoot?: string | null | undef
       loadConnections().map((c) =>
         c.id === id
           ? { ...c, scope: { type: "project" as const, workspaceRoot: normalizeScopeRoot(root) } }
-          : c.scope?.type === "project" && c.scope.workspaceRoot && normalizeScopeRoot(c.scope.workspaceRoot) === normalizeScopeRoot(root)
+          : c.scope?.type === "project" &&
+              c.scope.workspaceRoot &&
+              normalizeScopeRoot(c.scope.workspaceRoot) === normalizeScopeRoot(root)
             ? { ...c, scope: { type: "global" as const } }
             : c,
       ),

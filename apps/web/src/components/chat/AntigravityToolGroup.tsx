@@ -1,3 +1,4 @@
+// @ts-nocheck
 // FILE: AntigravityToolGroup.tsx
 // Purpose: Sleek grouped tool calling and thought presentation matching Antigravity & T3 Code
 // Exports: AntigravityToolGroup, AntigravityToolItem

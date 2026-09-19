@@ -11,7 +11,7 @@ export const CAIDE_THEME = {
     surface: "#141414",
     surfaceElevated: "#181818",
     surfaceHover: "rgba(255, 255, 255, 0.05)",
-    
+
     // Borders: crisp subtle hairlines
     border: "rgba(255, 255, 255, 0.08)",
     borderLight: "rgba(255, 255, 255, 0.04)",
@@ -34,7 +34,8 @@ export const CAIDE_THEME = {
     danger: "#f87171",
   },
   typography: {
-    fontFamily: "-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+    fontFamily:
+      "-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
     fontMono: "'JetBrains Mono', Menlo, Monaco, Consolas, monospace",
   },
   shadows: {

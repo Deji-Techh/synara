@@ -1354,8 +1354,7 @@ function SettingsRouteView() {
               {renderRouteOwnedPanel()}
               {/* These workflow owners stay mounted so drafts, request guards, and pending
                   mutations retain route lifetime while inactive panels render no DOM. */}
-              <div className="contents">
-              </div>
+              <div className="contents"></div>
             </div>
           </div>
         </div>

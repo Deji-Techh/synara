@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Sparkles, ArrowRight, Bot } from "lucide-react";
+import { ArrowRight, Bot } from "lucide-react";
 import { ScrollReveal } from "@/components/ScrollReveal";
 
 const PROMPTS = [
@@ -31,7 +31,7 @@ export default function AskAISection() {
       <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
         <ScrollReveal>
           <div className="flex items-center gap-2 font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--accent-link)]">
-            <Sparkles className="size-3.5" />
+            <Bot className="size-3.5" />
             <span>Quick Answers</span>
           </div>
           <h2 className="mt-3 text-[1.65rem] font-medium leading-[1.12] tracking-[-0.035em] text-[var(--text-primary)] sm:text-[2rem]">

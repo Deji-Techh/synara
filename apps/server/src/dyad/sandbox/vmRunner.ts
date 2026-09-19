@@ -44,7 +44,10 @@ export function createFsHosts(appPath: string): SandboxHost {
           const full = path.join(current, entry.name);
           if (entry.isDirectory()) {
             await walk(full);
-          } else if (entry.isFile() && /\.(ts|tsx|js|jsx|json|md|css|dart|py|go|rs)$/.test(entry.name)) {
+          } else if (
+            entry.isFile() &&
+            /\.(ts|tsx|js|jsx|json|md|css|dart|py|go|rs)$/.test(entry.name)
+          ) {
             try {
               const text = await fs.promises.readFile(full, "utf8");
               const lines = text.split("\n");
@@ -108,7 +111,7 @@ export async function runInVm(
 
 function safeStringify(value: unknown): string {
   try {
-    return typeof value === "string" ? value : JSON.stringify(value) ?? String(value);
+    return typeof value === "string" ? value : (JSON.stringify(value) ?? String(value));
   } catch {
     return String(value);
   }

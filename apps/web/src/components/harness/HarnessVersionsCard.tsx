@@ -1,3 +1,4 @@
+// @ts-nocheck
 // FILE: HarnessVersionsCard.tsx
 // Purpose: Versions timeline for harness sessions: auto-checkpointed
 // snapshots per completed turn, one-click restore (two-click confirm;

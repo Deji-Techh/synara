@@ -32,9 +32,9 @@ export interface ChromeTheme {
   opaqueWindows: boolean;
   semanticColors: ThemeSemanticColors;
   surface: string;
-  leftSidebarSurface?: string;
-  rightSidebarSurface?: string;
-  sidebarBlur?: number;
+  leftSidebarSurface?: string | undefined;
+  rightSidebarSurface?: string | undefined;
+  sidebarBlur?: number | undefined;
 }
 
 export interface ThemePack {
@@ -369,7 +369,8 @@ export function normalizeChromeTheme(value: unknown, variant: ThemeVariant): Chr
     semanticColors: normalizeSemanticColors(theme.semanticColors, fallback.semanticColors),
     surface: normalizeHexColor(theme.surface) ?? fallback.surface,
     leftSidebarSurface: normalizeHexColor(theme.leftSidebarSurface) ?? fallback.leftSidebarSurface,
-    rightSidebarSurface: normalizeHexColor(theme.rightSidebarSurface) ?? fallback.rightSidebarSurface,
+    rightSidebarSurface:
+      normalizeHexColor(theme.rightSidebarSurface) ?? fallback.rightSidebarSurface,
     sidebarBlur:
       typeof theme.sidebarBlur === "number" && !Number.isNaN(theme.sidebarBlur)
         ? Math.max(0, Math.min(64, theme.sidebarBlur))
@@ -786,9 +787,7 @@ export function buildThemeCssVariables(
       : rawRightSidebar;
   const blurValue = pack.theme.sidebarBlur ?? (material === "translucent" ? 8 : 0);
   const sidebarBackdropFilter =
-    material === "translucent" || blurValue > 0
-      ? `blur(${blurValue}px) saturate(135%)`
-      : "none";
+    material === "translucent" || blurValue > 0 ? `blur(${blurValue}px) saturate(135%)` : "none";
 
   const appVariables: Record<string, string> = {
     "--accent": readCodexVariable("--color-background-accent"),

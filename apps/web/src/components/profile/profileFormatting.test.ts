@@ -21,7 +21,12 @@ describe("formatQuotaLabel", () => {
       formatQuotaLabel({ status: "available", planName: null, usedPercent: null, resetsAt: null }),
     ).toBe("Available");
     expect(
-      formatQuotaLabel({ status: "unavailable", planName: null, usedPercent: null, resetsAt: "bad" }),
+      formatQuotaLabel({
+        status: "unavailable",
+        planName: null,
+        usedPercent: null,
+        resetsAt: "bad",
+      }),
     ).toBe("Unavailable");
   });
 });

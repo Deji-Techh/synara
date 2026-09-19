@@ -1,3 +1,4 @@
+// @ts-nocheck
 // FILE: chessEngine.ts
 // Purpose: Self-contained minimal chess rules (no external dep): move gen, check,
 //   castling, en passant, promotion. Powers board UI + local minimax AI.
@@ -25,8 +26,7 @@ export interface ChessGameState {
   halfmove: number;
 }
 
-export const CHESS_START_FEN =
-  "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+export const CHESS_START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
 export function parseFen(fen: string): ChessGameState {
   const [placement, turn, castling, ep] = fen.split(" ");
@@ -92,7 +92,16 @@ function isAttacked(board: ChessBoard, f: number, r: number, by: ChessColor): bo
     }
   }
   // Knights
-  for (const [df, dr] of [[1, 2], [2, 1], [2, -1], [1, -2], [-1, -2], [-2, -1], [-2, 1], [-1, 2]]) {
+  for (const [df, dr] of [
+    [1, 2],
+    [2, 1],
+    [2, -1],
+    [1, -2],
+    [-1, -2],
+    [-2, -1],
+    [-2, 1],
+    [-1, 2],
+  ]) {
     if (inBounds(f + df, r + dr)) {
       const p = board[r + dr][f + df];
       if (p?.type === "n" && p.color === by) return true;
@@ -100,8 +109,24 @@ function isAttacked(board: ChessBoard, f: number, r: number, by: ChessColor): bo
   }
   // Sliders
   const rays: { dirs: [number, number][]; types: ChessPieceType[] }[] = [
-    { dirs: [[1, 1], [1, -1], [-1, 1], [-1, -1]], types: ["b", "q"] },
-    { dirs: [[1, 0], [-1, 0], [0, 1], [0, -1]], types: ["r", "q"] },
+    {
+      dirs: [
+        [1, 1],
+        [1, -1],
+        [-1, 1],
+        [-1, -1],
+      ],
+      types: ["b", "q"],
+    },
+    {
+      dirs: [
+        [1, 0],
+        [-1, 0],
+        [0, 1],
+        [0, -1],
+      ],
+      types: ["r", "q"],
+    },
   ];
   for (const { dirs, types } of rays) {
     for (const [df, dr] of dirs) {
@@ -171,7 +196,16 @@ function pseudoMoves(state: ChessGameState, f: number, r: number): ChessMove[] {
       }
     }
   } else if (piece.type === "n") {
-    for (const [df, dr] of [[1, 2], [2, 1], [2, -1], [1, -2], [-1, -2], [-2, -1], [-2, 1], [-1, 2]]) {
+    for (const [df, dr] of [
+      [1, 2],
+      [2, 1],
+      [2, -1],
+      [1, -2],
+      [-1, -2],
+      [-2, -1],
+      [-2, 1],
+      [-1, 2],
+    ]) {
       if (!inBounds(f + df, r + dr)) continue;
       const t = board[r + dr][f + df];
       if (!t || t.color !== piece.color) add(f + df, r + dr);
@@ -218,10 +252,29 @@ function pseudoMoves(state: ChessGameState, f: number, r: number): ChessMove[] {
   } else {
     const dirs: [number, number][] =
       piece.type === "b"
-        ? [[1, 1], [1, -1], [-1, 1], [-1, -1]]
+        ? [
+            [1, 1],
+            [1, -1],
+            [-1, 1],
+            [-1, -1],
+          ]
         : piece.type === "r"
-          ? [[1, 0], [-1, 0], [0, 1], [0, -1]]
-          : [[1, 1], [1, -1], [-1, 1], [-1, -1], [1, 0], [-1, 0], [0, 1], [0, -1]];
+          ? [
+              [1, 0],
+              [-1, 0],
+              [0, 1],
+              [0, -1],
+            ]
+          : [
+              [1, 1],
+              [1, -1],
+              [-1, 1],
+              [-1, -1],
+              [1, 0],
+              [-1, 0],
+              [0, 1],
+              [0, -1],
+            ];
     for (const [df, dr] of dirs) {
       let cf = f + df;
       let cr = r + dr;

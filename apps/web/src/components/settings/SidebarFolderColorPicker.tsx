@@ -35,10 +35,7 @@ export function SidebarFolderColorPicker(props: {
             )}
             onClick={() => onValueChange(option.value)}
           >
-            <FolderIcon
-              aria-hidden="true"
-              className={cn("size-3.5 shrink-0", option.iconClass)}
-            />
+            <FolderIcon aria-hidden="true" className={cn("size-3.5 shrink-0", option.iconClass)} />
             <span>{option.label}</span>
           </button>
         );

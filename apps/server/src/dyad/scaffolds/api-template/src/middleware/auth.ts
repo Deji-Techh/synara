@@ -13,16 +13,11 @@ export function requireAuth(): MiddlewareHandler {
   return async (c, next) => {
     const requestId = c.get("requestId") ?? "unknown";
     const authHeader = c.req.header("Authorization");
-    const token = authHeader?.startsWith("Bearer ")
-      ? authHeader.slice(7)
-      : undefined;
+    const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : undefined;
 
     const session = await getSession(token);
     if (!session?.user) {
-      return c.json(
-        error("UNAUTHORIZED", "Authentication required", requestId),
-        401,
-      );
+      return c.json(error("UNAUTHORIZED", "Authentication required", requestId), 401);
     }
 
     c.set("user", session.user);
@@ -34,9 +29,7 @@ export function requireAuth(): MiddlewareHandler {
 export function optionalAuth(): MiddlewareHandler {
   return async (c, next) => {
     const authHeader = c.req.header("Authorization");
-    const token = authHeader?.startsWith("Bearer ")
-      ? authHeader.slice(7)
-      : undefined;
+    const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : undefined;
 
     const session = await getSession(token);
     if (session?.user) {

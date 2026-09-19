@@ -115,10 +115,17 @@ function encryptProviders(payload: Record<string, unknown>, key: Buffer): Encryp
   const cipher = crypto.createCipheriv("aes-256-gcm", key, iv);
   const plaintext = Buffer.from(JSON.stringify(payload), "utf-8");
   const data = Buffer.concat([cipher.update(plaintext), cipher.final()]);
-  return { iv: iv.toString("base64"), tag: cipher.getAuthTag().toString("base64"), data: data.toString("base64") };
+  return {
+    iv: iv.toString("base64"),
+    tag: cipher.getAuthTag().toString("base64"),
+    data: data.toString("base64"),
+  };
 }
 
-function decryptProviders(encrypted: EncryptedPayload, key: Buffer): Record<string, unknown> | null {
+function decryptProviders(
+  encrypted: EncryptedPayload,
+  key: Buffer,
+): Record<string, unknown> | null {
   try {
     const decipher = crypto.createDecipheriv(
       "aes-256-gcm",
@@ -156,7 +163,9 @@ export function defaultSecretsPath(): string {
 function readFile(filePath: string): ProviderSecretsFile {
   try {
     const raw = fs.readFileSync(filePath, "utf8");
-    const parsed = JSON.parse(raw) as Partial<ProviderSecretsFile> & { encrypted?: EncryptedPayload };
+    const parsed = JSON.parse(raw) as Partial<ProviderSecretsFile> & {
+      encrypted?: EncryptedPayload;
+    };
     if (parsed && typeof parsed === "object" && parsed.version === 2 && parsed.encrypted) {
       // Read-only key load: without the matching key the file reads as
       // empty — never mint a replacement key on the read path.
@@ -167,12 +176,18 @@ function readFile(filePath: string): ProviderSecretsFile {
         return {
           version: 1,
           providers: payload.providers as ProviderSecretsFile["providers"],
-          defaultProviderId: typeof payload.defaultProviderId === "string" ? payload.defaultProviderId : undefined,
-          defaultModelId: typeof payload.defaultModelId === "string" ? payload.defaultModelId : undefined,
+          defaultProviderId:
+            typeof payload.defaultProviderId === "string" ? payload.defaultProviderId : undefined,
+          defaultModelId:
+            typeof payload.defaultModelId === "string" ? payload.defaultModelId : undefined,
           defaultImageProviderId:
-            typeof payload.defaultImageProviderId === "string" ? payload.defaultImageProviderId : undefined,
+            typeof payload.defaultImageProviderId === "string"
+              ? payload.defaultImageProviderId
+              : undefined,
           defaultImageModelId:
-            typeof payload.defaultImageModelId === "string" ? payload.defaultImageModelId : undefined,
+            typeof payload.defaultImageModelId === "string"
+              ? payload.defaultImageModelId
+              : undefined,
         };
       }
       return { ...EMPTY, providers: {} };
@@ -265,7 +280,8 @@ export class ProviderSecretsStore {
       else delete current.defaultModelId;
     }
     if (defaultImageProviderId !== undefined) {
-      if (defaultImageProviderId.trim()) current.defaultImageProviderId = defaultImageProviderId.trim();
+      if (defaultImageProviderId.trim())
+        current.defaultImageProviderId = defaultImageProviderId.trim();
       else delete current.defaultImageProviderId;
     }
     if (defaultImageModelId !== undefined) {
@@ -338,7 +354,9 @@ export class ProviderSecretsStore {
       providers: rows,
       ...(file.defaultProviderId ? { defaultProviderId: file.defaultProviderId } : {}),
       ...(file.defaultModelId ? { defaultModelId: file.defaultModelId } : {}),
-      ...(file.defaultImageProviderId ? { defaultImageProviderId: file.defaultImageProviderId } : {}),
+      ...(file.defaultImageProviderId
+        ? { defaultImageProviderId: file.defaultImageProviderId }
+        : {}),
       ...(file.defaultImageModelId ? { defaultImageModelId: file.defaultImageModelId } : {}),
     };
   }
@@ -356,14 +374,18 @@ export class ProviderSecretsStore {
           providers: file.providers,
           ...(file.defaultProviderId ? { defaultProviderId: file.defaultProviderId } : {}),
           ...(file.defaultModelId ? { defaultModelId: file.defaultModelId } : {}),
-          ...(file.defaultImageProviderId ? { defaultImageProviderId: file.defaultImageProviderId } : {}),
+          ...(file.defaultImageProviderId
+            ? { defaultImageProviderId: file.defaultImageProviderId }
+            : {}),
           ...(file.defaultImageModelId ? { defaultImageModelId: file.defaultImageModelId } : {}),
         },
         key,
       );
       body = `${JSON.stringify({ version: 2, encrypted }, null, 2)}\n`;
     } catch (err) {
-      console.warn(`[providers] key storage unavailable, writing plaintext secrets: ${err instanceof Error ? err.message : String(err)}`);
+      console.warn(
+        `[providers] key storage unavailable, writing plaintext secrets: ${err instanceof Error ? err.message : String(err)}`,
+      );
       body = `${JSON.stringify(file, null, 2)}\n`;
     }
     fs.writeFileSync(this.filePath, body, { mode: 0o600 });

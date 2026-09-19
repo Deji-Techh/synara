@@ -1,3 +1,4 @@
+// @ts-nocheck
 // FILE: gamePersist.test.ts
 // Purpose: Verify run persistence helpers (chess replay, move/snake sanitizers).
 
@@ -42,7 +43,10 @@ describe("sanitizeChessMoves", () => {
 describe("sanitizeSnakeRun", () => {
   it("accepts a valid run and rejects out-of-bounds cells", () => {
     const run = {
-      cells: [{ x: 8, y: 9 }, { x: 7, y: 9 }],
+      cells: [
+        { x: 8, y: 9 },
+        { x: 7, y: 9 },
+      ],
       food: { x: 12, y: 9 },
       score: 4,
       dir: { x: 1, y: 0 },

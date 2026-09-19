@@ -49,9 +49,7 @@ export function formatQuotaLabel(quota: {
   if (quota.resetsAt) {
     const date = new Date(quota.resetsAt);
     if (!Number.isNaN(date.getTime())) {
-      bits.push(
-        `resets ${date.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`,
-      );
+      bits.push(`resets ${date.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`);
     }
   }
   return bits.length > 0 ? bits.join(" · ") : "Available";

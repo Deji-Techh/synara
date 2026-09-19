@@ -60,7 +60,10 @@ async function rpcCall(rpcUrl: string, body: unknown, signal?: AbortSignal): Pro
 }
 
 /** Donor testEvmRpc shape: eth_chainId + eth_blockNumber must both answer. */
-export async function testEvmRpc(rpcUrl: string, signal?: AbortSignal): Promise<{ chainId: string; block: string }> {
+export async function testEvmRpc(
+  rpcUrl: string,
+  signal?: AbortSignal,
+): Promise<{ chainId: string; block: string }> {
   const [chain, block] = await Promise.all([
     rpcCall(rpcUrl, { jsonrpc: "2.0", id: 1, method: "eth_chainId", params: [] }, signal),
     rpcCall(rpcUrl, { jsonrpc: "2.0", id: 2, method: "eth_blockNumber", params: [] }, signal),
@@ -74,7 +77,10 @@ export async function testEvmRpc(rpcUrl: string, signal?: AbortSignal): Promise<
 }
 
 /** Donor testSolanaRpc shape: getVersion + getBlockHeight must both answer. */
-export async function testSolanaRpc(rpcUrl: string, signal?: AbortSignal): Promise<{ version: string; height: number }> {
+export async function testSolanaRpc(
+  rpcUrl: string,
+  signal?: AbortSignal,
+): Promise<{ version: string; height: number }> {
   const [version, height] = await Promise.all([
     rpcCall(rpcUrl, { jsonrpc: "2.0", id: 1, method: "getVersion", params: [] }, signal),
     rpcCall(rpcUrl, { jsonrpc: "2.0", id: 2, method: "getBlockHeight", params: [] }, signal),
@@ -87,7 +93,10 @@ export async function testSolanaRpc(rpcUrl: string, signal?: AbortSignal): Promi
   return { version: v, height: h };
 }
 
-export async function testNetwork(network: BlockchainNetwork, signal?: AbortSignal): Promise<string> {
+export async function testNetwork(
+  network: BlockchainNetwork,
+  signal?: AbortSignal,
+): Promise<string> {
   try {
     if (network.chainKind === "evm") {
       const r = await testEvmRpc(network.rpcUrl, signal);
@@ -101,7 +110,10 @@ export async function testNetwork(network: BlockchainNetwork, signal?: AbortSign
 }
 
 const testRpcSchema = z.object({
-  networkId: z.string().optional().describe("Network id to test (omit to test all active networks)"),
+  networkId: z
+    .string()
+    .optional()
+    .describe("Network id to test (omit to test all active networks)"),
 });
 
 export const testRpcTool = defineTool({

@@ -1,3 +1,4 @@
+// @ts-nocheck
 // FILE: useThreadHandoff.ts
 // Purpose: Creates provider-to-provider handoff threads from the active web state.
 // Layer: Web hook

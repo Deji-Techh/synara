@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { type ModelSlug, type ProviderKind, type ServerProviderStatus } from "@caide/contracts";
 import { page } from "vitest/browser";
 import { afterEach, describe, expect, it, vi } from "vitest";

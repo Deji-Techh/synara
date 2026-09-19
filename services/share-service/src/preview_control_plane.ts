@@ -3,12 +3,7 @@ import type { Express, Request } from "express";
 import { z } from "zod";
 import { config } from "./config.js";
 import { pool } from "./db.js";
-import {
-  bearerToken,
-  createToken,
-  hashToken,
-  tokenMatches,
-} from "./security.js";
+import { bearerToken, createToken, hashToken, tokenMatches } from "./security.js";
 import {
   deleteObject,
   headObject,
@@ -18,13 +13,7 @@ import {
 } from "./storage.js";
 
 const TERMINAL_STATUSES = new Set(["failed", "stopped", "expired"]);
-const ACTIVE_STATUSES = [
-  "pending_upload",
-  "queued",
-  "starting",
-  "live",
-  "syncing",
-] as const;
+const ACTIVE_STATUSES = ["pending_upload", "queued", "starting", "live", "syncing"] as const;
 const DEVICE_TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/;
 const WORKER_REQUEST_TIMEOUT_MS = 20_000;
 const REGISTRATION_WINDOW_MS = 60 * 60_000;
@@ -74,10 +63,7 @@ type SessionRow = {
   stopped_at: Date | null;
 };
 
-const registrationWindows = new Map<
-  string,
-  { count: number; resetAt: number }
->();
+const registrationWindows = new Map<string, { count: number; resetAt: number }>();
 
 const DeviceRegistrationSchema = z.object({
   installationId: z.string().uuid(),
@@ -126,15 +112,9 @@ function httpError(status: number, message: string): StatusError {
   return Object.assign(new Error(message), { status });
 }
 
-function requiredSecret(
-  value: string | undefined,
-  variableName: string,
-): string {
+function requiredSecret(value: string | undefined, variableName: string): string {
   if (!value) {
-    throw httpError(
-      503,
-      `${variableName} is not configured on the CAIDE control plane`,
-    );
+    throw httpError(503, `${variableName} is not configured on the CAIDE control plane`);
   }
   return value;
 }
@@ -150,10 +130,7 @@ function requireBootstrapToken(req: Request): void {
   if (
     !constantTimeSecretMatch(
       token,
-      requiredSecret(
-        config.PREVIEW_WORKER_BOOTSTRAP_TOKEN,
-        "PREVIEW_WORKER_BOOTSTRAP_TOKEN",
-      ),
+      requiredSecret(config.PREVIEW_WORKER_BOOTSTRAP_TOKEN, "PREVIEW_WORKER_BOOTSTRAP_TOKEN"),
     )
   ) {
     throw httpError(401, "Worker bootstrap authentication required");
@@ -188,10 +165,7 @@ async function authenticateDevice(req: Request): Promise<Device> {
   );
   const row = result.rows[0];
   if (!row) throw httpError(401, "CAIDE device authentication expired");
-  await pool.query(
-    `UPDATE preview_devices SET last_seen_at=now() WHERE id=$1`,
-    [row.id],
-  );
+  await pool.query(`UPDATE preview_devices SET last_seen_at=now() WHERE id=$1`, [row.id]);
   return {
     id: row.id,
     plan: row.plan,
@@ -200,10 +174,7 @@ async function authenticateDevice(req: Request): Promise<Device> {
   };
 }
 
-async function ownedSession(
-  sessionId: string,
-  deviceId: string,
-): Promise<SessionRow> {
+async function ownedSession(sessionId: string, deviceId: string): Promise<SessionRow> {
   const result = await pool.query<SessionRow>(
     `SELECT * FROM preview_sessions WHERE id=$1 AND device_id=$2`,
     [sessionId, deviceId],
@@ -229,10 +200,7 @@ function signLease(input: {
   ).toString("base64url");
   const signature = createHmac(
     "sha256",
-    requiredSecret(
-      config.PREVIEW_LEASE_SIGNING_SECRET,
-      "PREVIEW_LEASE_SIGNING_SECRET",
-    ),
+    requiredSecret(config.PREVIEW_LEASE_SIGNING_SECRET, "PREVIEW_LEASE_SIGNING_SECRET"),
   )
     .update(payload)
     .digest("base64url");
@@ -247,38 +215,26 @@ async function workerRequest<T>(
   init: RequestInit = {},
 ): Promise<T> {
   const controller = new AbortController();
-  const timeout = setTimeout(
-    () => controller.abort(),
-    WORKER_REQUEST_TIMEOUT_MS,
-  );
+  const timeout = setTimeout(() => controller.abort(), WORKER_REQUEST_TIMEOUT_MS);
   try {
-    const response = await fetch(
-      `${worker.base_url.replace(/\/$/, "")}${pathname}`,
-      {
-        ...init,
-        signal: controller.signal,
-        headers: {
-          accept: "application/json",
-          authorization: `Bearer ${signLease({
-            workerId: worker.id,
-            sessionId,
-            action,
-          })}`,
-          ...(init.body ? { "content-type": "application/json" } : {}),
-          ...init.headers,
-        },
+    const response = await fetch(`${worker.base_url.replace(/\/$/, "")}${pathname}`, {
+      ...init,
+      signal: controller.signal,
+      headers: {
+        accept: "application/json",
+        authorization: `Bearer ${signLease({
+          workerId: worker.id,
+          sessionId,
+          action,
+        })}`,
+        ...(init.body ? { "content-type": "application/json" } : {}),
+        ...init.headers,
       },
-    );
-    const body = (await response.json().catch(() => null)) as
-      | T
-      | { error?: string }
-      | null;
+    });
+    const body = (await response.json().catch(() => null)) as T | { error?: string } | null;
     if (!response.ok) {
       const message =
-        body &&
-        typeof body === "object" &&
-        "error" in body &&
-        typeof body.error === "string"
+        body && typeof body === "object" && "error" in body && typeof body.error === "string"
           ? body.error
           : `Preview worker request failed (${response.status})`;
       throw httpError(response.status, message);
@@ -309,10 +265,7 @@ async function reserveWorker(): Promise<WorkerRow> {
     const worker = selected.rows[0];
     if (!worker) {
       await client.query("ROLLBACK");
-      throw httpError(
-        503,
-        "All CAIDE preview workers are busy. Try again shortly.",
-      );
+      throw httpError(503, "All CAIDE preview workers are busy. Try again shortly.");
     }
     await client.query(
       `UPDATE preview_workers
@@ -372,10 +325,7 @@ async function verifyUploadedBundle(input: {
   if (Number(head.ContentLength ?? -1) !== input.bundleSize) {
     throw httpError(409, "Uploaded preview bundle size does not match");
   }
-  if (
-    head.ContentType &&
-    head.ContentType !== "application/vnd.caide.preview+gzip"
-  ) {
+  if (head.ContentType && head.ContentType !== "application/vnd.caide.preview+gzip") {
     throw httpError(409, "Uploaded preview bundle type does not match");
   }
   const uploadedChecksum = await sha256Object(input.objectKey);
@@ -415,12 +365,7 @@ async function refreshRuntimeStatus(row: SessionRow): Promise<SessionRow> {
     const remote = await workerRequest<{
       state: "starting" | "running" | "failed" | "stopped";
       errorMessage: string | null;
-    }>(
-      worker,
-      row.id,
-      "status",
-      `/internal/sessions/${encodeURIComponent(row.id)}`,
-    );
+    }>(worker, row.id, "status", `/internal/sessions/${encodeURIComponent(row.id)}`);
     const nextStatus =
       remote.state === "running"
         ? "live"
@@ -443,8 +388,7 @@ async function refreshRuntimeStatus(row: SessionRow): Promise<SessionRow> {
     }
     return updated.rows[0] ?? row;
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Preview worker unavailable";
+    const message = error instanceof Error ? error.message : "Preview worker unavailable";
     const workerStatus = (error as Error & { status?: number }).status;
     const nextStatus = workerStatus === 404 ? "failed" : row.status;
     const updated = await pool.query<SessionRow>(
@@ -519,8 +463,7 @@ export function registerPreviewControlPlaneRoutes(app: Express): void {
       res.json({
         ok: true,
         configured: Boolean(
-          config.PREVIEW_WORKER_BOOTSTRAP_TOKEN &&
-          config.PREVIEW_LEASE_SIGNING_SECRET,
+          config.PREVIEW_WORKER_BOOTSTRAP_TOKEN && config.PREVIEW_LEASE_SIGNING_SECRET,
         ),
         activeWorkers: Number(row.active_workers),
       });
@@ -598,10 +541,7 @@ export function registerPreviewControlPlaneRoutes(app: Express): void {
         );
       }
       if (dailyCount >= device.dailySessionLimit) {
-        throw httpError(
-          429,
-          `Your ${device.plan} plan has reached today's preview-session limit.`,
-        );
+        throw httpError(429, `Your ${device.plan} plan has reached today's preview-session limit.`);
       }
 
       const sessionId = randomUUID();
@@ -703,8 +643,7 @@ export function registerPreviewControlPlaneRoutes(app: Express): void {
           [row.id, started.publicUrl],
         );
         const updatedSession = updated.rows[0] as SessionRow | undefined;
-        if (!updatedSession)
-          throw httpError(503, "Preview session update failed");
+        if (!updatedSession) throw httpError(503, "Preview session update failed");
         res.status(202).json(publicSession(updatedSession));
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
@@ -725,9 +664,7 @@ export function registerPreviewControlPlaneRoutes(app: Express): void {
   app.get("/v1/preview/sessions/:id", async (req, res, next) => {
     try {
       const device = await authenticateDevice(req);
-      const row = await refreshRuntimeStatus(
-        await ownedSession(req.params.id, device.id),
-      );
+      const row = await refreshRuntimeStatus(await ownedSession(req.params.id, device.id));
       res.json(publicSession(row));
     } catch (error) {
       next(error);
@@ -763,106 +700,94 @@ export function registerPreviewControlPlaneRoutes(app: Express): void {
     }
   });
 
-  app.post(
-    "/v1/preview/sessions/:id/revisions/:revisionId/complete",
-    async (req, res, next) => {
-      try {
-        const device = await authenticateDevice(req);
-        const input = CompleteRevisionSchema.parse(req.body);
-        const session = await ownedSession(req.params.id, device.id);
-        if (!session.worker_id) {
-          throw httpError(409, "Preview worker has not been assigned");
-        }
-        const revisionResult = await pool.query<{
-          id: string;
-          object_key: string;
-          bundle_size: string | number;
-          checksum: string;
-          status: string;
-        }>(
-          `SELECT * FROM preview_revisions
+  app.post("/v1/preview/sessions/:id/revisions/:revisionId/complete", async (req, res, next) => {
+    try {
+      const device = await authenticateDevice(req);
+      const input = CompleteRevisionSchema.parse(req.body);
+      const session = await ownedSession(req.params.id, device.id);
+      if (!session.worker_id) {
+        throw httpError(409, "Preview worker has not been assigned");
+      }
+      const revisionResult = await pool.query<{
+        id: string;
+        object_key: string;
+        bundle_size: string | number;
+        checksum: string;
+        status: string;
+      }>(
+        `SELECT * FROM preview_revisions
             WHERE id=$1 AND session_id=$2`,
-          [req.params.revisionId, session.id],
-        );
-        const revision = revisionResult.rows[0];
-        if (!revision) throw httpError(404, "Preview revision not found");
-        if (revision.status !== "pending_upload") {
-          throw httpError(
-            409,
-            `Preview revision is already ${revision.status}`,
-          );
-        }
-        if (input.checksum !== revision.checksum) {
-          throw httpError(409, "Revision checksum does not match");
-        }
-        await verifyUploadedBundle({
-          objectKey: revision.object_key,
-          bundleSize: Number(revision.bundle_size),
-          checksum: revision.checksum,
-        });
-        const worker = await currentWorker(session.worker_id);
-        await pool.query(
-          `UPDATE preview_sessions
+        [req.params.revisionId, session.id],
+      );
+      const revision = revisionResult.rows[0];
+      if (!revision) throw httpError(404, "Preview revision not found");
+      if (revision.status !== "pending_upload") {
+        throw httpError(409, `Preview revision is already ${revision.status}`);
+      }
+      if (input.checksum !== revision.checksum) {
+        throw httpError(409, "Revision checksum does not match");
+      }
+      await verifyUploadedBundle({
+        objectKey: revision.object_key,
+        bundleSize: Number(revision.bundle_size),
+        checksum: revision.checksum,
+      });
+      const worker = await currentWorker(session.worker_id);
+      await pool.query(
+        `UPDATE preview_sessions
               SET status='syncing', updated_at=now()
             WHERE id=$1`,
-          [session.id],
+        [session.id],
+      );
+      await pool.query(`UPDATE preview_revisions SET status='applying' WHERE id=$1`, [revision.id]);
+      try {
+        await workerRequest(
+          worker,
+          session.id,
+          "sync",
+          `/internal/sessions/${encodeURIComponent(session.id)}/bundle`,
+          {
+            method: "PUT",
+            body: JSON.stringify({
+              downloadUrl: await signedPreviewDownloadUrl(revision.object_key),
+              checksum: revision.checksum,
+              bundleSize: Number(revision.bundle_size),
+            }),
+          },
         );
         await pool.query(
-          `UPDATE preview_revisions SET status='applying' WHERE id=$1`,
-          [revision.id],
-        );
-        try {
-          await workerRequest(
-            worker,
-            session.id,
-            "sync",
-            `/internal/sessions/${encodeURIComponent(session.id)}/bundle`,
-            {
-              method: "PUT",
-              body: JSON.stringify({
-                downloadUrl: await signedPreviewDownloadUrl(
-                  revision.object_key,
-                ),
-                checksum: revision.checksum,
-                bundleSize: Number(revision.bundle_size),
-              }),
-            },
-          );
-          await pool.query(
-            `UPDATE preview_revisions
+          `UPDATE preview_revisions
                 SET status='active', completed_at=now()
               WHERE id=$1`,
-            [revision.id],
-          );
-          await pool.query(
-            `UPDATE preview_sessions
+          [revision.id],
+        );
+        await pool.query(
+          `UPDATE preview_sessions
                 SET status='starting', updated_at=now()
               WHERE id=$1`,
-            [session.id],
-          );
-          res.status(202).json({ ok: true });
-        } catch (error) {
-          const message =
-            error instanceof Error ? error.message : String(error);
-          await pool.query(
-            `UPDATE preview_revisions
+          [session.id],
+        );
+        res.status(202).json({ ok: true });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        await pool.query(
+          `UPDATE preview_revisions
                 SET status='failed', error_message=$2
               WHERE id=$1`,
-            [revision.id, message],
-          );
-          await pool.query(
-            `UPDATE preview_sessions
+          [revision.id, message],
+        );
+        await pool.query(
+          `UPDATE preview_sessions
                 SET status='failed', error_message=$2, updated_at=now()
               WHERE id=$1`,
-            [session.id, message],
-          );
-          throw error;
-        }
-      } catch (error) {
-        next(error);
+          [session.id, message],
+        );
+        throw error;
       }
-    },
-  );
+    } catch (error) {
+      next(error);
+    }
+  });
 
   app.delete("/v1/preview/sessions/:id", async (req, res, next) => {
     try {

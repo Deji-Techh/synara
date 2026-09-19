@@ -35,7 +35,10 @@ export function clearSymbolIndexes(): void {
   indexes.clear();
 }
 
-function indexDefinitions(root: string, file: string): { mtime: number; symbols: IndexedSymbol[]; lines: string[] } {
+function indexDefinitions(
+  root: string,
+  file: string,
+): { mtime: number; symbols: IndexedSymbol[]; lines: string[] } {
   const stat = fs.statSync(file);
   const symbols: IndexedSymbol[] = [];
   let lines: string[] = [];
@@ -83,7 +86,8 @@ export function buildWorkspaceIndex(
   }
   if (!stale && prev) return { rebuilt: false, symbols: prev.symbols.length };
   // Pass 1: definitions everywhere (global name table for cross-file refs).
-  const perFile: Array<{ file: string; mtime: number; symbols: IndexedSymbol[]; lines: string[] }> = [];
+  const perFile: Array<{ file: string; mtime: number; symbols: IndexedSymbol[]; lines: string[] }> =
+    [];
   const names = new Map<string, string>();
   const mtimes = new Map<string, number>();
   for (const file of files) {
@@ -124,8 +128,12 @@ export function queryIndex(root: string, symbol: string, limit: number): Indexed
   const entry = indexes.get(root);
   if (!entry) return [];
   const needle = symbol.toLowerCase();
-  const defs = entry.symbols.filter((s) => s.kind === "definition" && s.name.toLowerCase() === needle);
-  const refs = entry.symbols.filter((s) => s.kind === "reference" && s.name.toLowerCase() === needle);
+  const defs = entry.symbols.filter(
+    (s) => s.kind === "definition" && s.name.toLowerCase() === needle,
+  );
+  const refs = entry.symbols.filter(
+    (s) => s.kind === "reference" && s.name.toLowerCase() === needle,
+  );
   return [...defs, ...refs].slice(0, limit);
 }
 

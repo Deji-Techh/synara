@@ -6,13 +6,7 @@ import { useCallback, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { FolderIcon, GitBranchIcon, ChevronDownIcon } from "~/lib/icons";
 import { cn } from "~/lib/utils";
-import {
-  Menu,
-  MenuItem,
-  MenuTrigger,
-  MenuGroup,
-  MenuGroupLabel,
-} from "../ui/menu";
+import { Menu, MenuItem, MenuTrigger, MenuGroup, MenuGroupLabel } from "../ui/menu";
 import { ComposerPickerMenuPopup } from "./ComposerPickerMenuPopup";
 import { gitBranchesQueryOptions, gitQueryKeys } from "~/lib/gitReactQuery";
 import { readNativeApi } from "~/nativeApi";

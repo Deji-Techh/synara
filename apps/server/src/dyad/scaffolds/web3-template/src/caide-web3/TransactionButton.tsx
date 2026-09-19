@@ -1,12 +1,7 @@
 import { useAccount, useSendTransaction } from "wagmi";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useConnection } from "@solana/wallet-adapter-react";
-import {
-  PublicKey,
-  SystemProgram,
-  Transaction,
-  LAMPORTS_PER_SOL,
-} from "@solana/web3.js";
+import { PublicKey, SystemProgram, Transaction, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { useState, type ReactNode } from "react";
 import { parseEther } from "viem";
 import { LoaderCircle, Send } from "lucide-react";
@@ -31,9 +26,7 @@ export function TransactionButton({
   const { connection } = useConnection();
 
   const { sendTransactionAsync } = useSendTransaction();
-  const [status, setStatus] = useState<
-    "idle" | "pending" | "success" | "error"
-  >("idle");
+  const [status, setStatus] = useState<"idle" | "pending" | "success" | "error">("idle");
   const [txHash, setTxHash] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 

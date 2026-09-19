@@ -1,9 +1,6 @@
 import { useRef, useState } from "react";
 import { Button } from "~/components/ui/button";
-import {
-  processAndResizeBackdropImage,
-  useSidebarBackdropStore,
-} from "~/sidebarBackdropStore";
+import { processAndResizeBackdropImage, useSidebarBackdropStore } from "~/sidebarBackdropStore";
 import { NightlySkyArt } from "~/components/SidebarStageBackdrop";
 import { CaideLogo } from "~/components/CaideLogo";
 import { LuUpload, LuUndo2, LuCheck } from "react-icons/lu";
@@ -74,9 +71,7 @@ export function SidebarBackdropSettings() {
             ) : (
               <span>Default cosmic starry sky</span>
             )}
-            {statusMessage && (
-              <span className="ml-2 text-xs text-primary">{statusMessage}</span>
-            )}
+            {statusMessage && <span className="ml-2 text-xs text-primary">{statusMessage}</span>}
           </div>
 
           <div className="flex items-center gap-2">
@@ -116,7 +111,9 @@ export function SidebarBackdropSettings() {
       </div>
 
       <p className="text-xs text-muted-foreground/80 leading-relaxed">
-        Upload any image for the left sidebar header. The system automatically crops and resizes it to an optimized banner resolution, applying a gentle downward gradient mask that blends naturally into your sidebar.
+        Upload any image for the left sidebar header. The system automatically crops and resizes it
+        to an optimized banner resolution, applying a gentle downward gradient mask that blends
+        naturally into your sidebar.
       </p>
     </div>
   );

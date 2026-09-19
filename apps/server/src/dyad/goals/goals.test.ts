@@ -16,7 +16,6 @@ import {
 } from "./goalTools.ts";
 import { createGoal, readGoal } from "./goalCenter.ts";
 
-
 function mustTask(state: GoalState, index: number) {
   const task = state.tasks[index];
   if (!task) throw new Error(`fixture task ${index} missing`);

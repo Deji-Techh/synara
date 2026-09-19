@@ -56,13 +56,28 @@ describe("agent routing", () => {
     expect(classifyStepKind({ ...base, chatMode: "plan" })).toBe("planner");
     expect(classifyStepKind({ ...base, chatMode: "agent" })).toBe("scout");
     expect(
-      classifyStepKind({ chatMode: "agent", step: 3, lastStepAllReadOnly: false, hasMutatedThisTurn: true }),
+      classifyStepKind({
+        chatMode: "agent",
+        step: 3,
+        lastStepAllReadOnly: false,
+        hasMutatedThisTurn: true,
+      }),
     ).toBe("builder");
     expect(
-      classifyStepKind({ chatMode: "build", step: 5, lastStepAllReadOnly: true, hasMutatedThisTurn: true }),
+      classifyStepKind({
+        chatMode: "build",
+        step: 5,
+        lastStepAllReadOnly: true,
+        hasMutatedThisTurn: true,
+      }),
     ).toBe("scout");
     expect(
-      classifyStepKind({ chatMode: "ask", step: 2, lastStepAllReadOnly: true, hasMutatedThisTurn: false }),
+      classifyStepKind({
+        chatMode: "ask",
+        step: 2,
+        lastStepAllReadOnly: true,
+        hasMutatedThisTurn: false,
+      }),
     ).toBe("scout");
   });
 });

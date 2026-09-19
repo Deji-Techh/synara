@@ -1,12 +1,5 @@
 import { type Chain } from "viem";
-import {
-  mainnet,
-  sepolia,
-  polygon,
-  base,
-  arbitrum,
-  optimism,
-} from "viem/chains";
+import { mainnet, sepolia, polygon, base, arbitrum, optimism } from "viem/chains";
 
 export const EVM_CHAINS: [Chain, ...Chain[]] = [
   mainnet,

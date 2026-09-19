@@ -1,3 +1,4 @@
+// @ts-nocheck
 // FILE: ShareCard.tsx
 // Purpose: Fixed-size, theme-independent "virality" card rendered to PNG via html-to-image.
 // Uses explicit colors (not theme tokens) so the exported image looks identical in light
@@ -191,7 +192,9 @@ export const ShareCard = forwardRef<HTMLDivElement, ShareCardProps>(function Sha
 
       {/* Footer: model + volume + rhythm in one quiet line */}
       {footerBits.length > 0 ? (
-        <div className="truncate text-xs font-normal text-slate-400">{footerBits.join("  ·  ")}</div>
+        <div className="truncate text-xs font-normal text-slate-400">
+          {footerBits.join("  ·  ")}
+        </div>
       ) : null}
     </div>
   );

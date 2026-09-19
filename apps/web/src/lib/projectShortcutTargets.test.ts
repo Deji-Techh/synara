@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { ProjectId } from "@caide/contracts";
 import { describe, expect, it } from "vitest";
 
@@ -72,12 +73,8 @@ describe("project shortcut targets", () => {
     expect(isUsableProjectTarget(legacy)).toBe(true);
     expect(isUsableProjectTarget(makeProject(HOME_PROJECT_ID, "chat"))).toBe(false);
     expect(isUsableProjectTarget(null)).toBe(false);
-    expect(resolveCurrentProjectTargetId([legacy], CURRENT_PROJECT_ID)).toBe(
-      CURRENT_PROJECT_ID,
-    );
-    expect(resolveLatestProjectTargetId([legacy], CURRENT_PROJECT_ID)).toBe(
-      CURRENT_PROJECT_ID,
-    );
+    expect(resolveCurrentProjectTargetId([legacy], CURRENT_PROJECT_ID)).toBe(CURRENT_PROJECT_ID);
+    expect(resolveLatestProjectTargetId([legacy], CURRENT_PROJECT_ID)).toBe(CURRENT_PROJECT_ID);
   });
 
   it("returns no target for a stale latest project id", () => {

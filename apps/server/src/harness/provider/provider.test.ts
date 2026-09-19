@@ -311,20 +311,28 @@ describe("Milestone M11 — Provider Streaming, SIGTERM & Block Assembly", () =>
 describe("stream usage extraction (per dialect)", () => {
   it("reads Anthropic message_start/message_delta usage", () => {
     expect(
-      extractStreamUsage({ type: "message_start", message: { usage: { input_tokens: 120, output_tokens: 0 } } }),
+      extractStreamUsage({
+        type: "message_start",
+        message: { usage: { input_tokens: 120, output_tokens: 0 } },
+      }),
     ).toEqual({ inputTokens: 120, outputTokens: 0 });
-    expect(
-      extractStreamUsage({ type: "message_delta", usage: { output_tokens: 33 } }),
-    ).toEqual({ inputTokens: 0, outputTokens: 33 });
+    expect(extractStreamUsage({ type: "message_delta", usage: { output_tokens: 33 } })).toEqual({
+      inputTokens: 0,
+      outputTokens: 33,
+    });
   });
 
   it("reads OpenAI responses + chat/completions usage", () => {
     expect(
-      extractStreamUsage({ type: "response.completed", response: { usage: { input_tokens: 10, output_tokens: 20 } } }),
+      extractStreamUsage({
+        type: "response.completed",
+        response: { usage: { input_tokens: 10, output_tokens: 20 } },
+      }),
     ).toEqual({ inputTokens: 10, outputTokens: 20 });
-    expect(
-      extractStreamUsage({ usage: { prompt_tokens: 5, completion_tokens: 7 } }),
-    ).toEqual({ inputTokens: 5, outputTokens: 7 });
+    expect(extractStreamUsage({ usage: { prompt_tokens: 5, completion_tokens: 7 } })).toEqual({
+      inputTokens: 5,
+      outputTokens: 7,
+    });
   });
 
   it("reads Gemini usageMetadata and ignores the rest", () => {
@@ -335,5 +343,4 @@ describe("stream usage extraction (per dialect)", () => {
     expect(extractStreamUsage(null)).toBeNull();
     expect(extractStreamUsage({ usage: {} })).toBeNull();
   });
-
 });

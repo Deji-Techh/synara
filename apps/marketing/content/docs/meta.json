@@ -5,13 +5,22 @@
     "---Getting Started---",
     "getting-started/overview",
     "getting-started/installation",
+    "getting-started/quickstart",
+    "---Agent Architecture---",
+    "agent-architecture/modes-and-turns",
+    "agent-architecture/consent-and-safety",
     "---Frameworks---",
     "frameworks/react-native",
     "frameworks/flutter",
     "frameworks/website",
     "frameworks/blank",
+    "---Model Hub & BYOK---",
+    "models/providers-and-byok",
+    "models/local-ollama",
     "---Capabilities---",
     "preview-devicelab/overview",
-    "database/neon-branching"
+    "database/neon-branching",
+    "integrations/mcp",
+    "persistence/local-storage"
   ]
 }
