@@ -1,6 +1,10 @@
 import { SplitShowcase } from "@/components/SplitShowcase";
-import { ScreenshotPlaceholder } from "@/components/ScreenshotPlaceholder";
 import { ScrollReveal } from "@/components/ScrollReveal";
+import { BlueprintSurveyMockup } from "@/components/showcase/BlueprintSurveyMockup";
+import { DeviceLabMockup } from "@/components/showcase/DeviceLabMockup";
+import { DatabaseBranchingMockup } from "@/components/showcase/DatabaseBranchingMockup";
+import { ToolConsentMockup } from "@/components/showcase/ToolConsentMockup";
+import { PublishDeployMockup } from "@/components/showcase/PublishDeployMockup";
 
 const heading =
   "text-[1.65rem] font-medium leading-[1.12] tracking-[-0.035em] text-[var(--text-primary)] sm:text-[2rem]";
@@ -34,20 +38,7 @@ export default function Workflow() {
             reverse={false}
             prominentMedia
           >
-            <ScreenshotPlaceholder
-              badge="APP BLUEPRINT & SURVEY"
-              title="Interactive Architecture Blueprint & Survey Prompt"
-              description="Shows an active chat turn in Caide where the agent presents an interactive App Blueprint card with expandable route structure alongside a 3-question design survey."
-              checklist={[
-                "Expandable App Blueprint card with tabs",
-                "Interactive 3-question architecture survey",
-                "Streaming turn indicator with model badge",
-                "File tree impact projection before changes",
-              ]}
-              specs="3200 × 2000 • 2x Retina"
-              targetPath="/public/screenshots/blueprint-survey.png"
-              aspectRatio="aspect-[16/10]"
-            />
+            <BlueprintSurveyMockup />
           </SplitShowcase>
         </ScrollReveal>
 
@@ -60,20 +51,7 @@ export default function Workflow() {
             reverse
             prominentMedia
           >
-            <ScreenshotPlaceholder
-              badge="LIVELAB & DEVICELAB"
-              title="DeviceLab: iPhone 16 Frame & Live Console"
-              description="Shows Caide Right Dock running DeviceLab with an interactive iPhone frame displaying the React Native app, mobile QR code badge, live hot-reload console logs, and visual inspection mode."
-              checklist={[
-                "iPhone frame with realistic bezel & scaling",
-                "Active Metro dev server log stream on port 8081",
-                "Mobile QR code badge for physical device testing",
-                "Problems / diagnostics tab with zero syntax errors",
-              ]}
-              specs="3200 × 2000 • 2x Retina"
-              targetPath="/public/screenshots/devicelab-preview.png"
-              aspectRatio="aspect-[16/10]"
-            />
+            <DeviceLabMockup />
           </SplitShowcase>
         </ScrollReveal>
 
@@ -84,21 +62,9 @@ export default function Workflow() {
             title="Neon instant branching & Supabase lifecycle"
             description="Connect Supabase or Neon serverless Postgres. Caide automatically provisions an isolated, copy-on-write database branch for each feature thread, allowing the agent to test schema migrations safely without touching staging."
             reverse={false}
+            prominentMedia
           >
-            <ScreenshotPlaceholder
-              badge="DATABASE BRANCHING"
-              title="Neon Serverless Postgres: Feature Branching"
-              description="Shows Caide Database panel with an active Neon connection, schema migration diffs, and an isolated copy-on-write feature branch spun up for the current thread."
-              checklist={[
-                "Neon project connection with active branch name",
-                "Schema migration timeline with SQL previews",
-                "Copy-on-write branch indicator with 1-click restore",
-                "Supabase Auth and storage status indicators",
-              ]}
-              specs="3200 × 2000 • 2x Retina"
-              targetPath="/public/screenshots/database-branching.png"
-              aspectRatio="aspect-[16/10]"
-            />
+            <DatabaseBranchingMockup />
           </SplitShowcase>
         </ScrollReveal>
 
@@ -109,21 +75,9 @@ export default function Workflow() {
             title="Explicit approvals with protected shell execution"
             description="Never worry about unexpected terminal commands or file wipes. Caide features granular tool approvals, shell command blocklists, and immediate checkpoints so you can review and rollback any step."
             reverse
+            prominentMedia
           >
-            <ScreenshotPlaceholder
-              badge="TOOL CONSENT GATES"
-              title="Explicit Tool Approval Gate & Terminal Safety"
-              description="Shows the Caide approval card when the agent requests to run a shell command. Displays the exact bash command, safety risk audit, working directory, and Approve / Reject buttons."
-              checklist={[
-                "Pending tool approval card in chat stream",
-                "Highlighted command line with safety audit badge",
-                "File diff inspection preview before committing",
-                "Checkpoint rollback button in top navigation",
-              ]}
-              specs="3200 × 2000 • 2x Retina"
-              targetPath="/public/screenshots/tool-consent-safety.png"
-              aspectRatio="aspect-[16/10]"
-            />
+            <ToolConsentMockup />
           </SplitShowcase>
         </ScrollReveal>
 
@@ -136,20 +90,7 @@ export default function Workflow() {
             reverse={false}
             prominentMedia
           >
-            <ScreenshotPlaceholder
-              badge="PUBLISH & NATIVE BUILDS"
-              title="Publish Panel: 1-Click Vercel & Mobile Export"
-              description="Shows Caide Publish dialog with one-click Vercel deployment synced with Neon Postgres, GitHub repo push status, and native APK/AAB/IPA export action buttons."
-              checklist={[
-                "Vercel deployment status with live URL preview",
-                "Neon database branch synchronization toggle",
-                "GitHub commit and push history",
-                "Native mobile build options (APK / AAB / IPA)",
-              ]}
-              specs="3200 × 2000 • 2x Retina"
-              targetPath="/public/screenshots/publish-deploy.png"
-              aspectRatio="aspect-[16/10]"
-            />
+            <PublishDeployMockup />
           </SplitShowcase>
         </ScrollReveal>
       </div>

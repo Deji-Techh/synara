@@ -1,6 +1,6 @@
 import { SplitShowcase } from "@/components/SplitShowcase";
-import { ScreenshotPlaceholder } from "@/components/ScreenshotPlaceholder";
 import { ScrollReveal } from "@/components/ScrollReveal";
+import { ProviderCarousel } from "@/components/ProviderCarousel";
 import {
   ClaudeIcon,
   OpenAIIcon,
@@ -147,20 +147,32 @@ export default function Features() {
               title="Start with full native toolchain support"
               description="Create a new React Native Expo project, Flutter mobile app, or Next.js web application. Caide boots your local environment, installs exact dependencies, and spins up the live Metro or Vite watcher automatically."
               reverse
+              prominentMedia
             >
-              <ScreenshotPlaceholder
-                badge="FRAMEWORK CREATION"
-                title="Create Project: Stack Selection & Toolchain Health"
-                description="Shows Caide Create App dialog with the 4 immutable framework options, toolchain health check status (Node, Bun, Flutter SDK, Metro), and directory path configuration."
-                checklist={[
-                  "4 Immutable framework cards with badges",
-                  "Toolchain prerequisite health indicators",
-                  "Project directory and template selector",
-                  "Live dev server port configuration",
-                ]}
-                specs="3200 × 2000 • 2x Retina"
-                targetPath="/public/screenshots/framework-creation.png"
-              />
+              <div className="w-full overflow-hidden rounded-2xl border border-[var(--border-strong)] bg-[var(--card)] shadow-[0_20px_50px_-15px_rgba(15,23,42,0.18)]">
+                {/* Window Chrome Header */}
+                <div className="flex h-10 items-center justify-between border-b border-[var(--divide)] bg-[var(--mock-row)]/90 px-4 backdrop-blur-md">
+                  <div className="flex items-center gap-2">
+                    <span className="size-2.5 rounded-full bg-[#ff5f56] ring-1 ring-[#e0443e]/40" />
+                    <span className="size-2.5 rounded-full bg-[#ffbd2e] ring-1 ring-[#dea123]/40" />
+                    <span className="size-2.5 rounded-full bg-[#27c93f] ring-1 ring-[#1aab29]/40" />
+                  </div>
+                  <div className="inline-flex items-center gap-1.5 rounded-full border border-black/[0.06] dark:border-white/10 bg-black/[0.04] dark:bg-white/[0.05] px-3 py-0.5 font-mono text-[10.5px] font-medium text-[var(--text-secondary)]">
+                    <span>caide — framework-scaffolding</span>
+                  </div>
+                  <span className="text-[10.5px] font-mono text-emerald-600 dark:text-emerald-400 font-medium">
+                    Immutable Stacks
+                  </span>
+                </div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/screenshots/framework-creation.png"
+                  alt="Caide Framework Scaffolding: Blank, React Native Expo, Flutter, Next.js Website"
+                  className="w-full h-auto block object-cover"
+                  width={452}
+                  height={249}
+                />
+              </div>
             </SplitShowcase>
           </ScrollReveal>
         </div>
@@ -219,20 +231,9 @@ export default function Features() {
               title="Direct provider connections. Zero gateway limits."
               description="Configure your keys once in Caide secure storage. Switch between Claude 3.7 for deep refactoring, GPT-4o for complex JSON contracts, and local Ollama for offline rapid edits without ever being throttled."
               reverse={false}
+              prominentMedia
             >
-              <ScreenshotPlaceholder
-                badge="MODEL HUB & BYOK"
-                title="Model Settings: Provider Catalog & Custom Endpoints"
-                description="Shows Caide Model Settings dialog with active provider accounts, API key validation status, temperature/thinking controls, and custom local endpoint configuration."
-                checklist={[
-                  "Provider list with Anthropic, OpenAI, DeepSeek, Groq, Ollama",
-                  "Key verification badge and quota indicator",
-                  "Model picker with thinking levels and context limits",
-                  "Custom OpenAI-compatible base URL input",
-                ]}
-                specs="3200 × 2000 • 2x Retina"
-                targetPath="/public/screenshots/model-catalog.png"
-              />
+              <ProviderCarousel />
             </SplitShowcase>
           </ScrollReveal>
         </div>

@@ -11,7 +11,6 @@ import ClosingCTA from "@/components/ClosingCTA";
 import SiteFooter from "@/components/SiteFooter";
 import HomepageRail from "@/components/HomepageRail";
 import ProviderMarkRow from "@/components/ProviderMarkRow";
-import { ScreenshotPlaceholder } from "@/components/ScreenshotPlaceholder";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { SiX } from "react-icons/si";
 import { PRODUCT_HERO_DESCRIPTION, PRODUCT_HERO_TITLE } from "@/data/product";
@@ -91,28 +90,18 @@ export default function Home() {
               </div>
             </ScrollReveal>
 
-            {/* Hero Studio Preview Card Framed by the Greek Temple Backdrop */}
+            {/* Hero Studio Preview: Autonomous Turn Loop & Live DeviceLab Preview */}
             <ScrollReveal delay={120}>
               <div className="relative mt-10 sm:mt-14" data-hero-preview>
-                <div className="relative isolate flex flex-col items-center justify-center overflow-hidden rounded-2xl p-3 sm:p-6 lg:p-8 ring-1 ring-black/[0.08] shadow-[0_25px_70px_-15px_rgba(15,23,42,0.18)]">
-                  <div aria-hidden className="shot-card-bg absolute inset-0 -z-10" />
-                  <div className="w-full sm:w-[90%] lg:w-[84%]">
-                    <ScreenshotPlaceholder
-                      badge="HERO APP WORKSPACE"
-                      title="Caide Unified Studio: React Native Expo Project"
-                      description="Complete desktop workspace capture: Left sidebar with active Expo project threads; center turn stream with App Blueprint review card and survey gate; right dock with live Metro dev server rendering in an iPhone 16 Pro device frame."
-                      checklist={[
-                        "Left Sidebar with project threads & Expo badge",
-                        "Center chat with streaming turn and App Blueprint card",
-                        "Right Dock with DeviceLab iPhone preview rendering app UI live",
-                        "Bottom console status showing hot reload on port 8081",
-                      ]}
-                      specs="3200 × 2000 (16:10) • 2x Retina"
-                      targetPath="/public/screenshots/hero-app-workspace.png"
-                      aspectRatio="aspect-[16/10]"
-                      windowTitle="caide — expo-react-native-workspace"
-                    />
-                  </div>
+                <div className="relative isolate overflow-hidden rounded-2xl border border-white/20 bg-slate-950/80 shadow-[0_25px_80px_-15px_rgba(0,0,0,0.5)] ring-1 ring-white/10 backdrop-blur-xl">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="/screenshots/hero-app-workspace.png"
+                    alt="Caide Autonomous Studio: Real-time agent turn loop, prompt engineering, and live DeviceLab mobile preview"
+                    className="w-full h-auto block object-cover rounded-2xl"
+                    width={1024}
+                    height={559}
+                  />
                 </div>
               </div>
             </ScrollReveal>

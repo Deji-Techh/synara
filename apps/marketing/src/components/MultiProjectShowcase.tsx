@@ -1,4 +1,4 @@
-import { ScreenshotPlaceholder } from "@/components/ScreenshotPlaceholder";
+import { ProjectThreadsMockup } from "@/components/showcase/ProjectThreadsMockup";
 import { ScrollReveal } from "@/components/ScrollReveal";
 
 const sectionHeading =
@@ -28,24 +28,8 @@ export function MultiProjectShowcase() {
             </div>
 
             <div className="relative min-w-0">
-              <div className="relative isolate flex min-h-0 flex-1 flex-col items-center justify-center overflow-hidden rounded-2xl p-3 sm:p-5 ring-1 ring-black/[0.08] shadow-[0_20px_50px_-15px_rgba(15,23,42,0.12)]">
-                <div aria-hidden className="shot-card-bg absolute inset-0 -z-10" />
-                <div className="w-full sm:w-5/6 lg:w-[82%]">
-                  <ScreenshotPlaceholder
-                    badge="PROJECT THREADS"
-                    title="Persistent Project Threads & Branch Switcher"
-                    description="Shows Caide left navigation with multiple projects active (Expo App, Flutter Mobile, Next.js Web), collapsible thread trees, and active Neon database branch tags."
-                    checklist={[
-                      "Multi-project sidebar list with framework badges",
-                      "Thread history grouped by active feature branches",
-                      "One-click database branch state indicator",
-                      "Instant thread resume with full turn memory",
-                    ]}
-                    specs="3200 × 2000 • 2x Retina"
-                    targetPath="/public/screenshots/projects-threads.png"
-                    aspectRatio="aspect-[16/10]"
-                  />
-                </div>
+              <div className="w-full">
+                <ProjectThreadsMockup />
               </div>
             </div>
           </div>
