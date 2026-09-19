@@ -336,11 +336,10 @@ export function listGuideNames(): string[] {
   return [...GUIDE_NAMES];
 }
 
+
 const readGuideSchema = z.object({
   guide: z.string().describe(
-    `Guide name. Implementation guides: ${GUIDE_NAMES.join(", ")}. UI-skill docs (references/templates/companions, fetched on demand instead of living in every prompt): ${listUiSkillDocIds()
-      .map((id) => `skill:${id}`)
-      .join(", ")}`,
+    `Guide name. Implementation guides: ${GUIDE_NAMES.join(", ")}. UI-skill docs (references/templates/companions, fetched on demand instead of living in every prompt): see tool description for full list.`,
   ),
   framework: z
     .enum(["blank", "react-native", "flutter", "website"])
@@ -348,17 +347,45 @@ const readGuideSchema = z.object({
     .describe("Caide framework for framework-gated guide sections (defaults to unfiltered)"),
 });
 
-export const readGuideTool = defineTool({
-  name: "read_guide",
-  description: `Read a detailed implementation guide before building a matching feature. Implementation guides: ${GUIDE_NAMES.join(", ")}. UI-skill docs (design references, spec templates, companion skills — fetch the one you need instead of guessing): ${listUiSkillDocIds()
-    .map((id) => `skill:${id}`)
-    .join(", ")}.`,
-  schema: readGuideSchema,
-  readOnly: true,
-  modifiesState: false,
-  execute: async (args) => executeReadGuide(readGuideSchema.parse(args)),
-  presentCall: (args: any) => `Read guide: ${args.guide}`,
-});
+/**
+ * Build the readGuideTool lazily so that listUiSkillDocIds() — which
+ * references skillLoader.ts's UI_SKILL_DOCS const — is never called at
+ * module-parse time. The bundler can order chunks such that this module
+ * evaluates before UI_SKILL_DOCS is initialized (TDZ crash).
+ */
+let _readGuideTool: ToolDef<z.infer<typeof readGuideSchema>> | null = null;
+function getReadGuideTool(): ToolDef<z.infer<typeof readGuideSchema>> {
+  if (!_readGuideTool) {
+    const skillList = listUiSkillDocIds()
+      .map((id) => `skill:${id}`)
+      .join(", ");
+    _readGuideTool = defineTool({
+      name: "read_guide",
+      description: `Read a detailed implementation guide before building a matching feature. Implementation guides: ${GUIDE_NAMES.join(", ")}. UI-skill docs (design references, spec templates, companion skills — fetch the one you need instead of guessing): ${skillList}.`,
+      schema: readGuideSchema,
+      readOnly: true,
+      modifiesState: false,
+      execute: async (args) => executeReadGuide(readGuideSchema.parse(args)),
+      presentCall: (args: any) => `Read guide: ${args.guide}`,
+    });
+  }
+  return _readGuideTool;
+}
+
+/** @deprecated Use getReadGuideTool() for tool registration. */
+export const readGuideTool: ToolDef<z.infer<typeof readGuideSchema>> = new Proxy(
+  {} as ToolDef<z.infer<typeof readGuideSchema>>,
+  {
+    get(_target, prop) {
+      return getReadGuideTool()[prop as keyof ToolDef];
+    },
+    set(_target, prop, value) {
+      (getReadGuideTool() as any)[prop] = value;
+      return true;
+    },
+  },
+);
+
 
 export function executeReadGuide(input: z.infer<typeof readGuideSchema>): string {
   const parsed = readGuideSchema.parse(input);

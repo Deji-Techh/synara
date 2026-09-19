@@ -191,7 +191,9 @@ function SettingsRouteView() {
   const routeSearch = useSearch({ strict: false }) as Record<string, unknown>;
   const activeSection = normalizeSettingsSection(routeSearch.section);
   const settingsTarget = typeof routeSearch.target === "string" ? routeSearch.target : null;
-  const activeSectionItem = SETTINGS_NAV_ITEMS.find((item) => item.id === activeSection)!;
+  const activeSectionItem = SETTINGS_NAV_ITEMS.find((item) => item.id === activeSection)
+    ?? SETTINGS_NAV_ITEMS[0]!;
+
 
   const {
     applyPaletteTheme,
@@ -1284,10 +1286,35 @@ function SettingsRouteView() {
     switch (activeSection) {
       case "profile":
         return <ProfileSettingsPanel />;
+      case "general":
+        return renderGeneralPanel();
+      case "appearance":
+        return renderAppearancePanel();
+      case "behavior":
+        return renderBehaviorPanel();
+      case "providers":
+        return <ProvidersSettingsPanel />;
+      case "skills":
+        return <SkillsSettingsPanel />;
+      case "integrations":
+        return <McpServersSettingsPanel />;
+      case "database":
+        return <DatabaseSettingsPanel />;
+      case "notifications":
+        return <NotificationsSettingsPanel />;
+      case "shortcuts":
+        return <KeyboardShortcutsSettingsPanel />;
+      case "worktrees":
+        return <WorktreesSettingsPanel />;
+      case "archived":
+        return <ArchivedSettingsPanel />;
+      case "advanced":
+        return <AdvancedSettingsPanel />;
       default:
         return null;
     }
   };
+
 
   return (
     <div
