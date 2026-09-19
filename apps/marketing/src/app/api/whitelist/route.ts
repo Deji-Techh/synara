@@ -41,36 +41,40 @@ export async function POST(request: Request) {
       userAgent: request.headers.get("user-agent") ?? undefined,
     };
 
-    // Read existing submissions or initialize empty array
-    let submissions: WhitelistEntry[] = [];
-    try {
-      const fileData = await fs.readFile(DATA_FILE, "utf-8");
-      submissions = JSON.parse(fileData);
-      if (!Array.isArray(submissions)) submissions = [];
-    } catch {
-      submissions = [];
-    }
+    // Best-effort local file persistence — silently skipped on read-only
+    // serverless filesystems (e.g. Vercel). Webhook is the primary path there.
+    const persistLocally = async () => {
+      try {
+        let submissions: WhitelistEntry[] = [];
+        try {
+          const fileData = await fs.readFile(DATA_FILE, "utf-8");
+          const parsed = JSON.parse(fileData);
+          if (Array.isArray(parsed)) submissions = parsed;
+        } catch {
+          // File doesn't exist yet — start fresh.
+        }
+        const existingIndex = submissions.findIndex(
+          (s) => s.email.toLowerCase() === entry.email.toLowerCase(),
+        );
+        if (existingIndex >= 0) {
+          submissions[existingIndex] = {
+            ...submissions[existingIndex],
+            ...entry,
+            id: submissions[existingIndex].id,
+          };
+        } else {
+          submissions.push(entry);
+        }
+        await fs.mkdir(path.dirname(DATA_FILE), { recursive: true });
+        await fs.writeFile(DATA_FILE, JSON.stringify(submissions, null, 2), "utf-8");
+      } catch {
+        // EROFS or any other write error — not fatal, webhook handles delivery.
+      }
+    };
 
-    // Check if email already registered (update or keep existing)
-    const existingIndex = submissions.findIndex(
-      (s) => s.email.toLowerCase() === entry.email.toLowerCase(),
-    );
-    if (existingIndex >= 0) {
-      submissions[existingIndex] = {
-        ...submissions[existingIndex],
-        ...entry,
-        id: submissions[existingIndex].id,
-      };
-    } else {
-      submissions.push(entry);
-    }
-
-    await fs.mkdir(path.dirname(DATA_FILE), { recursive: true });
-    await fs.writeFile(DATA_FILE, JSON.stringify(submissions, null, 2), "utf-8");
-
-    // Optional webhook forwarding if configured in environment
-    const webhookUrl = process.env.WHITELIST_WEBHOOK_URL;
-    if (webhookUrl) {
+    const dispatchWebhook = async () => {
+      const webhookUrl = process.env.WHITELIST_WEBHOOK_URL;
+      if (!webhookUrl) return;
       try {
         await fetch(webhookUrl, {
           method: "POST",
@@ -79,10 +83,13 @@ export async function POST(request: Request) {
             content: `**New Caide Whitelist Submission**\n- **Name:** ${entry.name}\n- **Email:** ${entry.email}\n- **Framework:** ${entry.framework || "N/A"}\n- **Role:** ${entry.role || "N/A"}\n- **Model:** ${entry.preferredModel || "N/A"}\n- **Notes:** ${entry.notes || "None"}`,
           }),
         });
-      } catch (webhookErr) {
-        console.warn("Whitelist webhook dispatch notice:", webhookErr);
+      } catch (err) {
+        console.warn("Whitelist webhook dispatch notice:", err);
       }
-    }
+    };
+
+    // Run both in parallel — file write is best-effort.
+    await Promise.all([persistLocally(), dispatchWebhook()]);
 
     return NextResponse.json({
       success: true,
