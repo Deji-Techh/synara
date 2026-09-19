@@ -48,6 +48,8 @@ describe("desktop voice transcription", () => {
 
   it("transcribes via mock provider response", async () => {
     const originalFetch = globalThis.fetch;
+    const prevKey = process.env.GEMINI_API_KEY;
+    process.env.GEMINI_API_KEY = "test-gemini-key";
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
@@ -68,6 +70,11 @@ describe("desktop voice transcription", () => {
       expect(result.text).toBe("Hello from desktop voice");
     } finally {
       globalThis.fetch = originalFetch;
+      if (prevKey === undefined) {
+        delete process.env.GEMINI_API_KEY;
+      } else {
+        process.env.GEMINI_API_KEY = prevKey;
+      }
     }
   });
 });

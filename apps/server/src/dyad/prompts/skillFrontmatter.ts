@@ -27,10 +27,12 @@ export interface ParsedSkill {
   raw: string;
 }
 
-const FRONTMATTER_RE = /^---\n([\s\S]*?)\n---\n*/;
+function getFrontmatterRegex(): RegExp {
+  return /^---\n([\s\S]*?)\n---\n*/;
+}
 
 export function parseFrontmatter(raw: string): ParsedSkill {
-  const match = raw.match(FRONTMATTER_RE);
+  const match = raw.match(getFrontmatterRegex());
   if (!match) {
     return { frontmatter: {}, body: raw.trim(), raw };
   }
@@ -47,7 +49,7 @@ export function parseFrontmatter(raw: string): ParsedSkill {
 }
 
 export function stripFrontmatter(raw: string): string {
-  return raw.replace(FRONTMATTER_RE, "").trim();
+  return raw.replace(getFrontmatterRegex(), "").trim();
 }
 
 function parseYamlSimple(yaml: string): Record<string, unknown> {

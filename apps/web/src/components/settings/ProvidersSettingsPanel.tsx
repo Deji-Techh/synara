@@ -533,9 +533,12 @@ export function ProvidersSettingsPanel({
   const { providers, tests, connected, save, test, refresh } = useDyadProviderSettings();
   const [openCards, setOpenCards] = useState<Record<string, boolean>>({});
 
+  const hiddenProviders = settings?.hiddenProviders ?? [];
+  const providerOrder = settings?.providerOrder ?? [];
+
   const hiddenProviderSet = useMemo(
-    () => new Set<ProviderKind>(settings.hiddenProviders),
-    [settings.hiddenProviders],
+    () => new Set<ProviderKind>(hiddenProviders),
+    [hiddenProviders],
   );
   const hiddenProviderCount = hiddenProviderSet.size;
 
@@ -546,17 +549,17 @@ export function ProvidersSettingsPanel({
 
   const orderedProviderVisibilityOptions = useMemo(
     () =>
-      settings.providerOrder.flatMap((provider) => {
+      providerOrder.flatMap((provider) => {
         const option = providerVisibilityOptionsByProvider.get(provider);
         return option ? [option] : [];
       }),
-    [providerVisibilityOptionsByProvider, settings.providerOrder],
+    [providerVisibilityOptionsByProvider, providerOrder],
   );
 
   const providerVisibilitySensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
   );
-  const isProviderOrderDirty = !sameProviderOrder(settings.providerOrder, defaults.providerOrder);
+  const isProviderOrderDirty = !sameProviderOrder(providerOrder, defaults?.providerOrder ?? []);
 
   const queryClient = useQueryClient();
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -587,12 +590,13 @@ export function ProvidersSettingsPanel({
     (event: DragEndEvent) => {
       const { active, over } = event;
       if (!over || active.id === over.id) return;
-      const fromIndex = settings.providerOrder.indexOf(active.id as ProviderKind);
-      const toIndex = settings.providerOrder.indexOf(over.id as ProviderKind);
+      const currentOrder = settings?.providerOrder ?? [];
+      const fromIndex = currentOrder.indexOf(active.id as ProviderKind);
+      const toIndex = currentOrder.indexOf(over.id as ProviderKind);
       if (fromIndex < 0 || toIndex < 0) return;
-      updateSettings({ providerOrder: arrayMove([...settings.providerOrder], fromIndex, toIndex) });
+      updateSettings({ providerOrder: arrayMove([...currentOrder], fromIndex, toIndex) });
     },
-    [settings.providerOrder, updateSettings],
+    [settings?.providerOrder, updateSettings],
   );
 
   const configuredMap = useMemo(() => {
@@ -666,7 +670,7 @@ export function ProvidersSettingsPanel({
                     onHiddenChange={(hidden) =>
                       updateSettings({
                         hiddenProviders: setProviderHidden(
-                          settings.hiddenProviders,
+                          hiddenProviders,
                           option.provider,
                           hidden,
                         ),
