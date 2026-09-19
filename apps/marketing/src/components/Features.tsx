@@ -169,8 +169,8 @@ export default function Features() {
                   src="/screenshots/framework-creation.png"
                   alt="Caide Framework Scaffolding: Blank, React Native Expo, Flutter, Next.js Website"
                   className="w-full h-auto block object-cover"
-                  width={452}
-                  height={249}
+                  width={1356}
+                  height={747}
                 />
               </div>
             </SplitShowcase>

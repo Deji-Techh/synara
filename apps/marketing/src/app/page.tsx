@@ -99,8 +99,8 @@ export default function Home() {
                     src="/screenshots/hero-app-workspace.png"
                     alt="Caide Autonomous Studio: Real-time agent turn loop, prompt engineering, and live DeviceLab mobile preview"
                     className="w-full h-auto block object-cover rounded-2xl"
-                    width={1024}
-                    height={559}
+                    width={2560}
+                    height={1397}
                   />
                 </div>
               </div>
