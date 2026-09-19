@@ -24,18 +24,30 @@ export default function Home() {
         dangerouslySetInnerHTML={{ __html: jsonLdScript(FAQ_JSONLD) }}
       />
 
-      {/* TOP HEADER & HERO AREA WITH MODE-SPECIFIC IMAGERY (Light: Alpine Valley, Dark: Desert Sunset) */}
-      <div className="top-header-hero relative isolate">
-        <div aria-hidden="true" className="top-header-fade" />
-        <Navbar />
+      {/* Serene Ethereal Lake & Tree Backdrop at the top */}
+      <div
+        aria-hidden="true"
+        className="page-backdrop pointer-events-none absolute inset-x-0 top-0 -z-10 aspect-video min-h-[700px] overflow-hidden sm:min-h-[780px]"
+      >
+        <img
+          src="/hero-bg.jpg"
+          alt=""
+          className="h-full w-full object-cover object-[50%_35%]"
+        />
+        <div className="page-backdrop-fade absolute inset-0" />
+      </div>
 
+      <Navbar />
+
+      <main>
+        {/* HERO SECTION */}
         <section
           id="overview"
           aria-labelledby="homepage-title"
-          className="hero-section relative z-10 scroll-mt-20 pt-6 pb-16 sm:pt-10 sm:pb-28"
+          className="hero-section scroll-mt-20 pt-6 pb-14 sm:pt-10 sm:pb-24"
         >
           <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
-            {/* AI Model & Framework Badges Pill Row */}
+            {/* AI Model & Framework Badges Pill Row with subtle glassmorphic blur and gentle tilt */}
             <div className="mb-8 flex flex-wrap items-center gap-2 sm:mb-10">
               <ProviderMarkRow />
             </div>
@@ -43,14 +55,14 @@ export default function Home() {
             {/* Main Headline */}
             <h1
               id="homepage-title"
-              className="max-w-4xl text-[1.75rem] font-medium leading-[1.1] tracking-[-0.035em] text-stone-950 sm:text-[2.75rem] sm:leading-[1.06] dark:text-stone-100 drop-shadow-[0_1px_2px_rgba(255,255,255,0.9)] dark:drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)]"
+              className="max-w-4xl text-[1.75rem] font-medium leading-[1.1] tracking-[-0.035em] text-[var(--text-primary)] sm:text-[2.75rem] sm:leading-[1.06]"
             >
               {PRODUCT_HERO_TITLE}
             </h1>
 
-            {/* Subtitle with Calibrated Contrast */}
+            {/* Subtitle with Calibrated Blue-Slate Contrast */}
             <p
-              className="mt-5 max-w-2xl text-[14.5px] leading-[1.65] text-stone-800 sm:text-[16px] dark:text-stone-300 drop-shadow-[0_1px_1px_rgba(255,255,255,0.7)] dark:drop-shadow-[0_1px_5px_rgba(0,0,0,0.75)]"
+              className="mt-5 max-w-2xl text-[14.5px] leading-[1.65] text-[var(--text-secondary)] sm:text-[16px]"
             >
               {PRODUCT_HERO_DESCRIPTION}
             </p>
@@ -62,7 +74,7 @@ export default function Home() {
                 href={GITHUB_REPO_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-full border border-black/15 bg-white/80 px-5 py-2.5 text-[13px] font-medium text-stone-900 backdrop-blur-md transition-colors hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-link)] dark:border-white/15 dark:bg-black/60 dark:text-white dark:hover:bg-black"
+                className="inline-flex items-center gap-2 rounded-full border border-[var(--divide)] bg-white/70 px-5 py-2.5 text-[13px] font-medium text-[var(--text-primary)] backdrop-blur-md transition-all hover:bg-white hover:border-[var(--border-strong)] hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-link)]"
               >
                 <FaGithub className="size-4 shrink-0" aria-hidden="true" />
                 <span>Star on GitHub</span>
@@ -70,15 +82,16 @@ export default function Home() {
             </div>
 
             {/* Trust Pill */}
-            <div className="mt-4 flex items-center gap-2 text-[12px] font-medium text-stone-800 dark:text-stone-300 drop-shadow-sm">
-              <span className="inline-block size-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)]" />
+            <div className="mt-4 flex items-center gap-2 text-[12px] font-medium text-[var(--text-tertiary)]">
+              <span className="inline-block size-2 rounded-full bg-sky-500 shadow-[0_0_8px_rgba(14,165,233,0.7)]" />
               <span>100% Free & Open Source • Bring Your Own Keys • Local-First Architecture</span>
             </div>
 
-            {/* Hero Studio Preview Card Framed by the Hero Backdrop */}
+            {/* Hero Studio Preview Card Framed with Lake Backdrop */}
             <div className="relative mt-10 sm:mt-14" data-hero-preview>
-              <div className="relative isolate flex flex-col items-center justify-center overflow-hidden rounded-2xl p-2 sm:p-4 lg:p-6 bg-black/[0.04] dark:bg-white/[0.04] backdrop-blur-md ring-1 ring-black/10 dark:ring-white/15 shadow-[0_25px_70px_-15px_rgba(0,0,0,0.3)] dark:shadow-[0_30px_90px_-20px_rgba(0,0,0,0.8)]">
-                <div className="w-full sm:w-[92%] lg:w-[86%]">
+              <div className="relative isolate flex flex-col items-center justify-center overflow-hidden rounded-2xl p-3 sm:p-6 lg:p-8 ring-1 ring-black/[0.08] shadow-[0_25px_70px_-15px_rgba(15,23,42,0.18)]">
+                <div aria-hidden className="shot-card-bg absolute inset-0 -z-10" />
+                <div className="w-full sm:w-[90%] lg:w-[84%]">
                   <ScreenshotPlaceholder
                     badge="HERO APP WORKSPACE"
                     title="Caide Unified Studio: React Native Expo Project"
@@ -99,9 +112,7 @@ export default function Home() {
             </div>
           </div>
         </section>
-      </div>
 
-      <main>
         {/* 01: IMMUTABLE FRAMEWORKS & MODEL HUB */}
         <div id="frameworks" className="scroll-mt-20">
           <Features />

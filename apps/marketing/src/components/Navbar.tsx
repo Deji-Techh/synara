@@ -2,7 +2,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { FaGithub } from "react-icons/fa";
 import { GITHUB_REPO_URL } from "@/lib/seo";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import MobileNav from "@/components/MobileNav";
 
 export default function Navbar() {
@@ -12,53 +11,53 @@ export default function Navbar() {
         <Link
           href="/"
           aria-label="Caide home"
-          className="flex shrink-0 items-center gap-2.5 text-[14px] font-semibold tracking-[-0.02em] text-stone-900 dark:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-link)] drop-shadow-sm"
+          className="flex shrink-0 items-center gap-2.5 text-[14px] font-semibold tracking-[-0.02em] text-[var(--text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-link)]"
         >
           <Image
             src="/icon.png"
             alt="Caide"
             width={24}
             height={24}
-            className="rounded-[6px] border border-black/10 dark:border-white/15 shadow-sm"
+            className="rounded-[6px] border border-[var(--divide)] shadow-sm"
           />
           <span className="font-semibold tracking-tight">Caide</span>
         </Link>
 
         {/* Center Nav Links */}
-        <div className="hidden min-w-0 flex-1 items-center justify-center gap-3 text-[13px] font-medium text-stone-800 dark:text-stone-200 sm:flex sm:gap-6">
+        <div className="hidden min-w-0 flex-1 items-center justify-center gap-3 text-[13px] font-medium text-[var(--text-secondary)] sm:flex sm:gap-6">
           <a
             href="/#frameworks"
-            className="shrink-0 transition-colors hover:text-stone-950 dark:hover:text-white drop-shadow-sm"
+            className="shrink-0 transition-colors hover:text-[var(--text-primary)]"
           >
             Frameworks
           </a>
           <a
             href="/#providers"
-            className="shrink-0 transition-colors hover:text-stone-950 dark:hover:text-white drop-shadow-sm"
+            className="shrink-0 transition-colors hover:text-[var(--text-primary)]"
           >
             Models
           </a>
           <a
             href="/#workflow"
-            className="shrink-0 transition-colors hover:text-stone-950 dark:hover:text-white drop-shadow-sm"
+            className="shrink-0 transition-colors hover:text-[var(--text-primary)]"
           >
             Workflow
           </a>
           <Link
             href="/docs"
-            className="shrink-0 transition-colors hover:text-stone-950 dark:hover:text-white drop-shadow-sm"
+            className="shrink-0 transition-colors hover:text-[var(--text-primary)]"
           >
             Docs
           </Link>
           <Link
             href="/changelog"
-            className="shrink-0 transition-colors hover:text-stone-950 dark:hover:text-white drop-shadow-sm"
+            className="shrink-0 transition-colors hover:text-[var(--text-primary)]"
           >
             Changelog
           </Link>
           <Link
             href="/sponsor"
-            className="hidden shrink-0 transition-colors hover:text-stone-950 dark:hover:text-white drop-shadow-sm md:inline"
+            className="hidden shrink-0 transition-colors hover:text-[var(--text-primary)] md:inline"
           >
             Sponsor
           </Link>
@@ -66,20 +65,19 @@ export default function Navbar() {
 
         {/* Right CTA Actions */}
         <div className="hidden shrink-0 items-center gap-2 sm:flex sm:gap-3">
-          <ThemeToggle />
           <a
             href={GITHUB_REPO_URL}
             target="_blank"
             rel="noopener noreferrer"
             aria-label="GitHub Repository"
-            className="flex items-center gap-1.5 text-[12.5px] font-medium text-stone-800 dark:text-stone-200 transition-colors hover:text-stone-950 dark:hover:text-white drop-shadow-sm sm:gap-1.5 sm:text-[13px]"
+            className="flex items-center gap-1.5 rounded-full border border-[var(--divide)] bg-white/70 px-3.5 py-1 text-[12.5px] font-medium text-[var(--text-secondary)] backdrop-blur-md transition-all hover:bg-white hover:border-[var(--border-strong)] hover:text-[var(--text-primary)] hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-link)] sm:gap-1.5 sm:text-[13px]"
           >
-            <FaGithub className="size-4 text-stone-900 dark:text-white" />
+            <FaGithub className="size-4 text-[var(--text-primary)]" />
             <span>GitHub</span>
           </a>
           <Link
             href="/install"
-            className="rounded-full border border-black/15 bg-white/80 dark:border-white/20 dark:bg-black/60 backdrop-blur-md px-3.5 py-1 text-[12.5px] font-medium text-stone-900 dark:text-white shadow-sm transition-colors hover:bg-white dark:hover:bg-black sm:text-[13px]"
+            className="rounded-full bg-[var(--btn-primary-bg)] px-4 py-1 text-[12.5px] font-medium text-[var(--btn-primary-fg)] shadow-sm transition-all hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-link)] sm:text-[13px]"
           >
             Download
           </Link>

@@ -92,7 +92,7 @@ export default function ProviderMarkRow({
           key={name}
           title={name}
           role="listitem"
-          className={`inline-flex items-center justify-center rounded-xl border border-black/[0.08] bg-black/[0.02] backdrop-blur-md dark:border-white/10 dark:bg-white/[0.04] transition-transform hover:scale-105 ${
+          className={`inline-flex items-center justify-center rounded-xl border border-black/[0.08] bg-white/75 backdrop-blur-md shadow-sm transition-all duration-200 hover:scale-105 hover:border-sky-500/30 ${
             showLabels ? "gap-2 px-3 py-2" : "size-[38px]"
           } ${rotation}`}
         >

@@ -42,10 +42,10 @@ export function SplitShowcase({
         </p>
       </div>
       <div className={`relative flex min-h-0 min-w-0 flex-col ${mockOrderClass}`}>
-        <div className="relative isolate flex min-h-0 flex-1 flex-col items-center justify-center overflow-hidden rounded-2xl p-3 sm:p-5 lg:p-6 ring-1 ring-black/5 dark:ring-white/10 shadow-lg">
-          {/* Desert sunset painting backdrop */}
+        <div className="relative isolate flex min-h-0 flex-1 flex-col items-center justify-center overflow-hidden rounded-2xl p-3 sm:p-5 lg:p-6 ring-1 ring-black/[0.08] shadow-[0_20px_50px_-15px_rgba(15,23,42,0.12)]">
+          {/* Serene lake & tree backdrop */}
           <div aria-hidden className="shot-card-bg absolute inset-0 -z-10" />
-          {/* Mockup stays framed inside at 60-72% so the painting backdrop reads around it */}
+          {/* Mockup stays framed inside at 60-72% so the serene lake reads around it */}
           <div className={prominentMedia ? "w-full sm:w-5/6 lg:w-[72%]" : "w-full sm:w-3/4 lg:w-3/5"}>
             {children}
           </div>

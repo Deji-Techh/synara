@@ -26,7 +26,7 @@ export function MultiProjectShowcase() {
           </div>
 
           <div className="relative min-w-0">
-            <div className="relative isolate flex min-h-0 flex-1 flex-col items-center justify-center overflow-hidden rounded-2xl p-3 sm:p-5 ring-1 ring-black/5 dark:ring-white/10 shadow-lg">
+            <div className="relative isolate flex min-h-0 flex-1 flex-col items-center justify-center overflow-hidden rounded-2xl p-3 sm:p-5 ring-1 ring-black/[0.08] shadow-[0_20px_50px_-15px_rgba(15,23,42,0.12)]">
               <div aria-hidden className="shot-card-bg absolute inset-0 -z-10" />
               <div className="w-full sm:w-5/6 lg:w-[82%]">
                 <ScreenshotPlaceholder

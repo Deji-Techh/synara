@@ -57,21 +57,28 @@ export default function FAQ() {
                   </span>
                   <FiChevronDown
                     aria-hidden="true"
-                    className={`size-4 shrink-0 text-[var(--text-tertiary)] transition-transform duration-200 ${
-                      isOpen ? "rotate-180" : ""
+                    className={`size-5 shrink-0 text-[var(--text-tertiary)] transition-transform duration-200 motion-reduce:transition-none ${
+                      isOpen ? "rotate-180" : "rotate-0"
                     }`}
                   />
                 </button>
-                {isOpen && (
-                  <div
-                    id={panelId}
-                    role="region"
-                    aria-labelledby={labelId}
-                    className="pb-5 pr-6 text-[14px] leading-[1.7] text-[var(--text-secondary)] sm:text-[14.5px]"
-                  >
-                    {answer}
+
+                {/* Synara smooth single-row grid interpolation 0fr -> 1fr */}
+                <div
+                  id={panelId}
+                  role="region"
+                  aria-labelledby={labelId}
+                  inert={!isOpen}
+                  className={`grid overflow-hidden transition-[grid-template-rows,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${
+                    isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+                  }`}
+                >
+                  <div className="min-h-0">
+                    <p className="max-w-2xl pb-5 text-[14px] leading-[1.75] text-[var(--text-secondary)] sm:pb-6">
+                      {answer}
+                    </p>
                   </div>
-                )}
+                </div>
               </div>
             );
           })}

@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useId, useState } from "react";
 import { FiX } from "react-icons/fi";
-import { ThemeToggle } from "@/components/ThemeToggle";
 
 const links = [
   { href: "/#frameworks", label: "Frameworks" },
@@ -30,10 +29,9 @@ export default function MobileNav() {
 
   return (
     <div className="relative flex items-center gap-1.5 sm:hidden">
-      <ThemeToggle />
       <Link
         href="/install"
-        className="rounded-full border border-[var(--divide)] px-3 py-1.5 text-[12px] font-medium text-[var(--text-primary)] transition-colors hover:bg-[var(--mock-row)]"
+        className="rounded-full border border-[var(--divide)] bg-white/80 px-3 py-1.5 text-[12px] font-medium text-[var(--text-primary)] backdrop-blur-md transition-colors hover:bg-[var(--mock-row)]"
       >
         Download
       </Link>
