@@ -1,0 +1,113 @@
+import {
+  ClaudeIcon,
+  OpenAIIcon,
+  DeepSeekIcon,
+  GeminiIcon,
+  GroqIcon,
+  OllamaIcon,
+  OpencodeIcon,
+  ExpoIcon,
+  FlutterIcon,
+  NextjsIcon,
+} from "@/components/BrandIcons";
+
+const marks = [
+  {
+    name: "Claude 3.7",
+    Icon: ClaudeIcon,
+    className: "text-[#D97757]",
+    rotation: "-rotate-[6deg]",
+  },
+  {
+    name: "OpenAI GPT-4o",
+    Icon: OpenAIIcon,
+    className: "text-[var(--text-primary)]",
+    rotation: "rotate-[4deg]",
+  },
+  {
+    name: "DeepSeek R1",
+    Icon: DeepSeekIcon,
+    className: "text-blue-500",
+    rotation: "-rotate-[3deg]",
+  },
+  {
+    name: "Google Gemini",
+    Icon: GeminiIcon,
+    className: "text-amber-500",
+    rotation: "rotate-[3deg]",
+  },
+  {
+    name: "Groq",
+    Icon: GroqIcon,
+    className: "text-orange-500",
+    rotation: "-rotate-[4deg]",
+  },
+  {
+    name: "Ollama Local",
+    Icon: OllamaIcon,
+    className: "text-[var(--text-primary)]",
+    rotation: "rotate-[5deg]",
+  },
+  {
+    name: "OpenCode Zen",
+    Icon: OpencodeIcon,
+    className: "text-[var(--text-primary)]",
+    rotation: "-rotate-[2deg]",
+  },
+  {
+    name: "Expo (React Native)",
+    Icon: ExpoIcon,
+    className: "text-[var(--text-primary)]",
+    rotation: "rotate-[4deg]",
+  },
+  {
+    name: "Flutter",
+    Icon: FlutterIcon,
+    className: "text-[#02569B]",
+    rotation: "-rotate-[5deg]",
+  },
+  {
+    name: "Next.js",
+    Icon: NextjsIcon,
+    className: "text-[var(--text-primary)]",
+    rotation: "rotate-[3deg]",
+  },
+] as const;
+
+export default function ProviderMarkRow({
+  centered = false,
+  showLabels = false,
+}: {
+  centered?: boolean;
+  showLabels?: boolean;
+}) {
+  return (
+    <div
+      role="list"
+      className={`flex flex-wrap items-center gap-2 ${centered ? "justify-center" : ""}`}
+      aria-label="Supported AI models and frameworks"
+    >
+      {marks.map(({ name, Icon, className, rotation }) => (
+        <div
+          key={name}
+          title={name}
+          role="listitem"
+          className={`inline-flex items-center justify-center rounded-xl border border-black/[0.08] bg-black/[0.02] backdrop-blur-md dark:border-white/10 dark:bg-white/[0.04] transition-transform hover:scale-105 ${
+            showLabels ? "gap-2 px-3 py-2" : "size-[38px]"
+          } ${rotation}`}
+        >
+          <Icon className={`size-[18px] ${className}`} />
+          <span
+            className={
+              showLabels
+                ? "text-[11px] font-medium text-[var(--text-secondary)]"
+                : "sr-only"
+            }
+          >
+            {name}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}

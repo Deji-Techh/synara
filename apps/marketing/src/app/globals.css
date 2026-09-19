@@ -7,24 +7,24 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --page-bg: #f8f5ee;
-  --text-primary: #1f1914;
-  --text-secondary: #5e4f44;
-  --text-tertiary: #8c7a6c;
-  --sidebar-section-color: #4a3c31;
-  --block-elevated: #efe9de;
-  --mock-surface: #e5ded2;
+  --page-bg: #f7f9f6;
+  --text-primary: #141a15;
+  --text-secondary: #4a574e;
+  --text-tertiary: #758379;
+  --sidebar-section-color: #38453c;
+  --block-elevated: #eaf0e8;
+  --mock-surface: #dfe7dd;
   --mock-row: color-mix(in oklab, var(--text-primary) 6%, transparent);
   --mock-row-strong: color-mix(in oklab, var(--text-primary) 10%, transparent);
   --divide: color-mix(in oklab, var(--text-primary) 12%, transparent);
   --border-strong: color-mix(in oklab, var(--text-primary) 28%, transparent);
-  --accent-link: #c2410c;
-  --accent-link-hover: #9a3412;
-  --glow-a: color-mix(in oklab, #fc9700 20%, transparent);
-  --glow-b: color-mix(in oklab, #f14b00 14%, transparent);
-  --btn-primary-bg: #1f1914;
-  --btn-primary-fg: #f8f5ee;
-  --btn-primary-hover: #2e251e;
+  --accent-link: #0d785a;
+  --accent-link-hover: #095942;
+  --glow-a: color-mix(in oklab, #0284c7 18%, transparent);
+  --glow-b: color-mix(in oklab, #10b981 14%, transparent);
+  --btn-primary-bg: #141a15;
+  --btn-primary-fg: #f7f9f6;
+  --btn-primary-hover: #222b24;
   --surface-border: var(--divide);
   --surface-muted: var(--text-secondary);
   --chat-feed-bg: #f5efe4;
@@ -431,36 +431,64 @@ body {
   }
 }
 
-/* Showcase card backdrop with desert sunset */
+/*
+ * Showcase card backdrop:
+ * Light mode: Pristine alpine valley landscape with snowy peaks, lush meadows, and blue sky.
+ * Dark mode: Deep glowing desert sunset with warm obsidian twilight and amber sun.
+ */
 .shot-card-bg {
   background-image:
     linear-gradient(
-      color-mix(in oklab, var(--page-bg) 20%, transparent),
-      color-mix(in oklab, var(--page-bg) 20%, transparent)
+      color-mix(in oklab, var(--block-elevated) 10%, transparent),
+      color-mix(in oklab, var(--block-elevated) 10%, transparent)
     ),
-    url("/hero-bg.jpg");
+    url("/hero-bg-light.jpg");
   background-size: cover;
-  background-position: center;
+  background-position: center 42%;
 }
 .dark .shot-card-bg {
   background-image:
     linear-gradient(
-      color-mix(in oklab, var(--block-elevated) 45%, transparent),
-      color-mix(in oklab, var(--block-elevated) 45%, transparent)
+      color-mix(in oklab, var(--block-elevated) 48%, transparent),
+      color-mix(in oklab, var(--block-elevated) 48%, transparent)
     ),
-    url("/hero-bg.jpg");
+    url("/hero-bg-dark.jpg");
   background-size: cover;
-  background-position: center;
+  background-position: center 38%;
 }
 
-.page-backdrop-fade {
+/*
+ * Top header hero backdrop with mode-specific imagery:
+ * Light mode: Alpine mountain valley (hero-bg-light.jpg)
+ * Dark mode: Desert sunset (hero-bg-dark.jpg)
+ */
+.top-header-hero {
+  position: relative;
+  background-image: url("/hero-bg-light.jpg");
+  background-size: cover;
+  background-position: center 25%;
+  background-repeat: no-repeat;
+}
+.dark .top-header-hero {
+  background-image: url("/hero-bg-dark.jpg");
+  background-size: cover;
+  background-position: center 35%;
+  background-repeat: no-repeat;
+}
+
+.top-header-fade {
+  position: absolute;
+  inset-x: 0;
+  bottom: 0;
+  height: 220px;
   background: linear-gradient(
     to bottom,
     transparent 0%,
-    color-mix(in oklab, var(--page-bg) 20%, transparent) 40%,
-    color-mix(in oklab, var(--page-bg) 75%, transparent) 75%,
+    color-mix(in oklab, var(--page-bg) 35%, transparent) 35%,
+    color-mix(in oklab, var(--page-bg) 85%, transparent) 75%,
     var(--page-bg) 100%
   );
+  pointer-events: none;
 }
 
 @layer base {
