@@ -1,20 +1,15 @@
-import Image from "next/image";
 import Link from "next/link";
 import { SiX } from "react-icons/si";
+import { CaideIcon } from "@/components/BrandIcons";
 
 export default function SiteFooter() {
   return (
     <footer className="mt-auto border-t border-[var(--divide)] py-8">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 text-[12px] text-[var(--text-tertiary)] sm:flex-row sm:items-center sm:justify-between sm:gap-0 sm:px-6">
         <div className="flex items-center gap-2">
-          <Image
-            src="/icon.png"
-            alt="Caide"
-            width={18}
-            height={18}
-            className="rounded-[4px] border border-[var(--divide)]"
-          />
-          <span>Caide · Free & Open Source Local-First AI App Builder</span>
+          <CaideIcon className="h-4 w-auto text-[var(--text-primary)]" />
+          <span className="font-medium text-[var(--text-secondary)]">Caide</span>
+          <span>· Free & Open Source Local-First AI App Builder</span>
         </div>
         <div className="flex items-center gap-4 sm:gap-6">
           <Link

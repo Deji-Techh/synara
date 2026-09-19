@@ -1,20 +1,14 @@
 import Link from "next/link";
-import Image from "next/image";
 import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
 import { SiX, SiGithub } from "react-icons/si";
+import { CaideIcon } from "@/components/BrandIcons";
 
 export function docsLayoutOptions(): BaseLayoutProps {
   return {
     nav: {
       title: (
         <span className="flex items-center gap-2 text-[14px] font-semibold tracking-tight text-[var(--text-primary)]">
-          <Image
-            src="/icon.png"
-            alt="Caide"
-            width={22}
-            height={22}
-            className="rounded-[5px] border border-[var(--divide)] shadow-sm"
-          />
+          <CaideIcon className="h-[18px] w-auto shrink-0" />
           <span className="font-semibold tracking-tight">Caide</span>
         </span>
       ),

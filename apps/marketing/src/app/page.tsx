@@ -87,7 +87,6 @@ export default function Home() {
 
               {/* Trust Pill */}
               <div className="mt-4 flex items-center gap-2 text-[12px] font-medium text-blue-100/85">
-                <span className="inline-block size-2 rounded-full bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.9)]" />
                 <span>100% Free & Open Source • Bring Your Own Keys • Local-First Architecture</span>
               </div>
             </ScrollReveal>

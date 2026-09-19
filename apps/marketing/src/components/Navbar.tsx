@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SiX } from "react-icons/si";
+import { CaideIcon } from "@/components/BrandIcons";
 import MobileNav from "@/components/MobileNav";
 import { scrollToAnchor } from "@/lib/scrollToAnchor";
 import { WhitelistModal } from "@/components/WhitelistModal";
@@ -27,19 +28,11 @@ export default function Navbar() {
           <Link
             href="/"
             aria-label="Caide home"
-            className={`flex shrink-0 items-center gap-2.5 text-[14px] font-semibold tracking-[-0.02em] transition-colors ${
+            className={`flex shrink-0 items-center gap-2 text-[15px] font-semibold tracking-[-0.02em] transition-colors ${
               isHome ? "text-white" : "text-[var(--text-primary)]"
             } focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-link)]`}
           >
-            <Image
-              src="/icon.png"
-              alt="Caide"
-              width={24}
-              height={24}
-              className={`rounded-[6px] border shadow-sm ${
-                isHome ? "border-white/20" : "border-[var(--divide)]"
-              }`}
-            />
+            <CaideIcon className="h-5 w-auto shrink-0" />
             <span className="font-semibold tracking-tight">Caide</span>
           </Link>
 
