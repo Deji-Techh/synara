@@ -1,0 +1,17 @@
+{
+  "title": "Documentation",
+  "pages": [
+    "index",
+    "---Getting Started---",
+    "getting-started/overview",
+    "getting-started/installation",
+    "---Frameworks---",
+    "frameworks/react-native",
+    "frameworks/flutter",
+    "frameworks/website",
+    "frameworks/blank",
+    "---Capabilities---",
+    "preview-devicelab/overview",
+    "database/neon-branching"
+  ]
+}
