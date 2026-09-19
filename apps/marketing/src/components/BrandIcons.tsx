@@ -100,7 +100,9 @@ export function NeonIcon({ className }: IconProps) {
 
 export function CaideIcon({ className }: IconProps) {
   return (
-    <div className={`inline-flex items-center justify-center rounded-lg bg-orange-600 font-bold text-white shadow-sm ${className}`}>
+    <div
+      className={`inline-flex items-center justify-center rounded-lg bg-sky-600 font-bold text-white shadow-sm ${className}`}
+    >
       C
     </div>
   );

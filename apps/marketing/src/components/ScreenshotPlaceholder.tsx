@@ -24,7 +24,8 @@ export function ScreenshotPlaceholder({
   className = "",
   windowTitle,
 }: ScreenshotPlaceholderProps) {
-  const displayWindowTitle = windowTitle || `caide — ${badge.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+  const displayWindowTitle =
+    windowTitle || `caide — ${badge.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
 
   return (
     <div
@@ -55,7 +56,10 @@ export function ScreenshotPlaceholder({
       {/* Main Studio Canvas Area with Realistic IDE Wireframe Silhouette */}
       <div className="relative flex flex-1 items-center justify-center overflow-hidden p-3 sm:p-6 bg-[#f8fafc]/50">
         {/* Subtle Background Architectural IDE Silhouette */}
-        <div aria-hidden="true" className="pointer-events-none absolute inset-0 grid grid-cols-12 opacity-35 select-none">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 grid grid-cols-12 opacity-35 select-none"
+        >
           {/* Left Sidebar Pane (Cols 1-3) */}
           <div className="col-span-3 flex flex-col gap-2.5 border-r border-black/[0.06] bg-black/[0.015] p-3">
             <div className="h-3 w-16 rounded bg-slate-300" />

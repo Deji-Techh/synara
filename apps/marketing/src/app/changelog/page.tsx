@@ -17,7 +17,8 @@ export default function ChangelogPage() {
             Caide Changelog
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-[14px] leading-relaxed text-[var(--text-secondary)] sm:text-[15px]">
-            Explore new features, toolchain integrations, preview improvements, and performance upgrades.
+            Explore new features, toolchain integrations, preview improvements, and performance
+            upgrades.
           </p>
         </div>
 
@@ -29,9 +30,8 @@ export default function ChangelogPage() {
             >
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--divide)] pb-4">
                 <div className="flex items-center gap-3">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-500/10 px-3 py-1 font-mono text-[12px] font-bold text-orange-600 dark:text-orange-400">
-                    <Tag className="size-3.5" />
-                    v{entry.version}
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-500/20 bg-sky-500/10 px-3 py-1 font-mono text-[12px] font-bold text-sky-600">
+                    <Tag className="size-3.5" />v{entry.version}
                   </span>
                   <h2 className="text-lg font-semibold text-[var(--text-primary)]">
                     {entry.title}
@@ -53,7 +53,7 @@ export default function ChangelogPage() {
                 <ul className="mt-3 space-y-2 text-[13.5px] text-[var(--text-primary)]">
                   {entry.highlights.map((h, idx) => (
                     <li key={idx} className="flex items-start gap-2">
-                      <Check className="mt-0.5 size-4 shrink-0 text-orange-600 dark:text-orange-400" />
+                      <Check className="mt-0.5 size-4 shrink-0 text-sky-600" />
                       <span>{h}</span>
                     </li>
                   ))}

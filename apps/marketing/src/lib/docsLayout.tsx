@@ -7,7 +7,7 @@ export function docsLayoutOptions(): BaseLayoutProps {
     nav: {
       title: (
         <span className="flex items-center gap-2 text-[14px] font-semibold tracking-[-0.02em] text-[var(--text-primary)]">
-          <div className="flex size-[20px] items-center justify-center rounded bg-orange-600 font-bold text-white text-[10px]">
+          <div className="flex size-[20px] items-center justify-center rounded bg-sky-600 font-bold text-white text-[10px]">
             C
           </div>
           Caide

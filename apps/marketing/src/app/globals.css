@@ -6,36 +6,36 @@
 
 /* Light mode only — serene ethereal lake palette */
 :root {
-  --page-bg: #f6f9fb;
-  --text-primary: #101c24;
-  --text-secondary: #475569;
-  --text-tertiary: #64748b;
-  --sidebar-section-color: #334155;
-  --block-elevated: #ebf2f7;
-  --mock-surface: #dfeaf1;
+  --page-bg: #faf8f5;
+  --text-primary: #171412;
+  --text-secondary: #574f47;
+  --text-tertiary: #756c64;
+  --sidebar-section-color: #3d352e;
+  --block-elevated: #f1ece4;
+  --mock-surface: #e7e1d7;
   --mock-row: color-mix(in oklab, var(--text-primary) 5%, transparent);
   --mock-row-strong: color-mix(in oklab, var(--text-primary) 9%, transparent);
   --divide: color-mix(in oklab, var(--text-primary) 10%, transparent);
   --border-strong: color-mix(in oklab, var(--text-primary) 22%, transparent);
-  --accent-link: #0284c7;
-  --accent-link-hover: #0369a1;
-  --glow-a: color-mix(in oklab, #0284c7 20%, transparent);
-  --glow-b: color-mix(in oklab, #06b6d4 15%, transparent);
-  --btn-primary-bg: #101c24;
-  --btn-primary-fg: #f6f9fb;
-  --btn-primary-hover: #1e2e3b;
+  --accent-link: #d97706;
+  --accent-link-hover: #b45309;
+  --glow-a: color-mix(in oklab, #f59e0b 22%, transparent);
+  --glow-b: color-mix(in oklab, #d97706 16%, transparent);
+  --btn-primary-bg: #171412;
+  --btn-primary-fg: #faf8f5;
+  --btn-primary-hover: #26211d;
   --surface-border: var(--divide);
   --surface-muted: var(--text-secondary);
-  --chat-feed-bg: #f5efe4;
-  --chat-user-bubble: #e8dfd2;
-  --chat-input-surface: #ebe4d8;
-  --chat-file-card-bg: #faf7f0;
+  --chat-feed-bg: #f4ede3;
+  --chat-user-bubble: #e8ded1;
+  --chat-input-surface: #eae0d3;
+  --chat-file-card-bg: #f8f3eb;
 
   --background: var(--page-bg);
   --foreground: var(--text-primary);
-  --card: #fbf9f4;
+  --card: #ffffff;
   --card-foreground: var(--text-primary);
-  --popover: #fbf9f4;
+  --popover: #ffffff;
   --popover-foreground: var(--text-primary);
   --primary: var(--text-primary);
   --primary-foreground: var(--page-bg);
@@ -63,64 +63,6 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
-}
-
-.dark {
-  --page-bg: #110d0a;
-  --text-primary: #fbf6ee;
-  --text-secondary: #b8a898;
-  --text-tertiary: #8c7d6e;
-  --sidebar-section-color: #d1c2b4;
-  --block-elevated: #1c1612;
-  --mock-surface: #16120e;
-  --mock-row: color-mix(in oklab, var(--text-primary) 8%, transparent);
-  --mock-row-strong: color-mix(in oklab, var(--text-primary) 12%, transparent);
-  --divide: color-mix(in oklab, var(--text-primary) 12%, transparent);
-  --border-strong: color-mix(in oklab, var(--text-primary) 28%, transparent);
-  --accent-link: #fb7a12;
-  --accent-link-hover: #ff9e4a;
-  --glow-a: color-mix(in oklab, #fe7902 22%, transparent);
-  --glow-b: color-mix(in oklab, #f14b00 16%, transparent);
-  --btn-primary-bg: #fbf6ee;
-  --btn-primary-fg: #110d0a;
-  --btn-primary-hover: #eae3d8;
-  --background: var(--page-bg);
-  --foreground: var(--text-primary);
-  --surface-border: var(--divide);
-  --surface-muted: var(--text-secondary);
-  --chat-feed-bg: #15110e;
-  --chat-user-bubble: color-mix(in oklab, var(--text-primary) 10%, transparent);
-  --chat-input-surface: #1d1713;
-  --chat-file-card-bg: #221c17;
-  --card: #191410;
-  --card-foreground: var(--text-primary);
-  --popover: #191410;
-  --popover-foreground: var(--text-primary);
-  --primary: var(--text-primary);
-  --primary-foreground: var(--page-bg);
-  --secondary: var(--mock-row);
-  --secondary-foreground: var(--text-primary);
-  --muted: var(--mock-row);
-  --muted-foreground: var(--text-secondary);
-  --accent: var(--mock-row);
-  --accent-foreground: var(--text-primary);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: var(--divide);
-  --input: var(--divide);
-  --ring: var(--border-strong);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
 }
 
 /* Fumadocs Theme Overrides */
@@ -156,12 +98,6 @@
   #nd-docs-layout:has(#nd-toc) {
     --fd-toc-width: 13.75rem;
   }
-}
-
-.dark #nd-sidebar {
-  --color-fd-muted: var(--mock-row);
-  --color-fd-secondary: var(--mock-row);
-  --color-fd-muted-foreground: var(--text-secondary);
 }
 
 #nd-docs-layout {
@@ -431,30 +367,30 @@ body {
 }
 
 /*
- * Showcase card backdrop with serene lake image.
- * Framed inside each SplitShowcase and MultiProjectShowcase card.
+ * Showcase card backdrop with classical Greek temple colonnade.
+ * Framed inside each SplitShowcase, MultiProjectShowcase, and Hero card.
  */
 .shot-card-bg {
   background-image:
     linear-gradient(
-      color-mix(in oklab, var(--block-elevated) 10%, transparent),
-      color-mix(in oklab, var(--block-elevated) 10%, transparent)
+      color-mix(in oklab, var(--block-elevated) 8%, transparent),
+      color-mix(in oklab, var(--block-elevated) 8%, transparent)
     ),
     url("/hero-bg.jpg");
   background-size: cover;
-  background-position: center 48%;
+  background-position: center 35%;
 }
 
 /*
  * Page backdrop for the serene lake image at the top of the hero.
- * Sits behind the hero text and navbar, with a smooth bottom fade into --page-bg.
+ * Positioned cleanly above the page background (z-0) and beneath page content (z-10).
  */
 .page-backdrop {
   position: absolute;
   inset-inline: 0;
   top: 0;
-  z-index: -10;
-  height: 720px;
+  z-index: 0;
+  height: 680px;
   overflow: hidden;
   pointer-events: none;
 }
@@ -465,9 +401,9 @@ body {
   background: linear-gradient(
     to bottom,
     transparent 0%,
-    transparent 20%,
-    color-mix(in oklab, var(--page-bg) 20%, transparent) 45%,
-    color-mix(in oklab, var(--page-bg) 75%, transparent) 72%,
+    transparent 28%,
+    color-mix(in oklab, var(--page-bg) 18%, transparent) 50%,
+    color-mix(in oklab, var(--page-bg) 65%, transparent) 75%,
     var(--page-bg) 100%
   );
 }

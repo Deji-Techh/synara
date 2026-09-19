@@ -1,11 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import {
-  DocsBody,
-  DocsDescription,
-  DocsPage,
-  DocsTitle,
-} from "fumadocs-ui/layouts/docs/page";
+import { DocsBody, DocsDescription, DocsPage, DocsTitle } from "fumadocs-ui/layouts/docs/page";
 import { docsSource } from "@/lib/docs";
 
 type DocumentationPageProps = {
@@ -23,9 +18,7 @@ export default async function DocumentationPage({ params }: DocumentationPagePro
   return (
     <DocsPage toc={page.data.toc}>
       <DocsTitle>{page.data.title}</DocsTitle>
-      {page.data.description && (
-        <DocsDescription>{page.data.description}</DocsDescription>
-      )}
+      {page.data.description && <DocsDescription>{page.data.description}</DocsDescription>}
       <DocsBody>
         <Content />
       </DocsBody>

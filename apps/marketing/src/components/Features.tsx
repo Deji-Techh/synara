@@ -1,5 +1,6 @@
 import { SplitShowcase } from "@/components/SplitShowcase";
 import { ScreenshotPlaceholder } from "@/components/ScreenshotPlaceholder";
+import { ScrollReveal } from "@/components/ScrollReveal";
 import {
   ClaudeIcon,
   OpenAIIcon,
@@ -44,7 +45,8 @@ const activeProviders = [
   },
   {
     name: "Google Gemini",
-    tagline: "Gemini 2.5 Pro and 2.5 Flash with 1M+ token context and lightning multimodal inference.",
+    tagline:
+      "Gemini 2.5 Pro and 2.5 Flash with 1M+ token context and lightning multimodal inference.",
     Icon: GeminiIcon,
     accent: "text-amber-500",
     status: "Direct API Key",
@@ -82,9 +84,9 @@ const activeProviders = [
 export default function Features() {
   const frameworkIcons: Record<string, any> = {
     "react-native": ExpoIcon,
-    "flutter": FlutterIcon,
-    "website": NextjsIcon,
-    "blank": Box,
+    flutter: FlutterIcon,
+    website: NextjsIcon,
+    blank: Box,
   };
 
   return (
@@ -92,44 +94,48 @@ export default function Features() {
       {/* SECTION 1: IMMUTABLE FRAMEWORKS */}
       <section id="frameworks" className="border-t border-[var(--divide)] py-14 sm:py-20">
         <div className={container}>
-          <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--accent-link)]">
-            01 / Immutable Frameworks
-          </p>
-          <h2 className={`${heading} mt-3`}>One framework chosen at creation. Deep native toolchains.</h2>
-          <p className={body}>
-            Caide avoids generic spaghetti code by enforcing strict architectural boundaries. The framework
-            you select configures the system prompt, toolchain verifiers, live dev-servers, and native export
-            pipelines specifically for that stack.
-          </p>
+          <ScrollReveal>
+            <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--accent-link)]">
+              01 / Immutable Frameworks
+            </p>
+            <h2 className={`${heading} mt-3`}>
+              One framework chosen at creation. Deep native toolchains.
+            </h2>
+            <p className={body}>
+              Caide avoids generic spaghetti code by enforcing strict architectural boundaries. The
+              framework you select configures the system prompt, toolchain verifiers, live
+              dev-servers, and native export pipelines specifically for that stack.
+            </p>
 
-          <div className="mt-12 grid grid-cols-1 border-t border-[var(--divide)] sm:grid-cols-2">
-            {SUPPORTED_FRAMEWORKS.map((fw) => {
-              const IconComp = frameworkIcons[fw.id] || Box;
-              return (
-                <div
-                  key={fw.id}
-                  className="border-b border-[var(--divide)] p-6 transition-colors hover:bg-[var(--mock-row)] sm:p-7 sm:[&:nth-child(odd)]:border-r sm:[&:nth-child(odd)]:border-[var(--divide)]"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex min-w-0 items-center gap-3">
-                      <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--block-elevated)] text-[var(--text-primary)]">
-                        <IconComp className="size-[18px]" />
-                      </span>
-                      <span className="truncate text-[15px] font-medium text-[var(--text-primary)]">
-                        {fw.name}
+            <div className="mt-12 grid grid-cols-1 border-t border-[var(--divide)] sm:grid-cols-2">
+              {SUPPORTED_FRAMEWORKS.map((fw) => {
+                const IconComp = frameworkIcons[fw.id] || Box;
+                return (
+                  <div
+                    key={fw.id}
+                    className="border-b border-[var(--divide)] p-6 transition-colors hover:bg-[var(--mock-row)] sm:p-7 sm:[&:nth-child(odd)]:border-r sm:[&:nth-child(odd)]:border-[var(--divide)]"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--block-elevated)] text-[var(--text-primary)]">
+                          <IconComp className="size-[18px]" />
+                        </span>
+                        <span className="truncate text-[15px] font-medium text-[var(--text-primary)]">
+                          {fw.name}
+                        </span>
+                      </div>
+                      <span className="shrink-0 rounded-full border border-sky-500/20 bg-sky-500/5 px-2.5 py-0.5 text-[11px] font-medium text-sky-700">
+                        {fw.badge}
                       </span>
                     </div>
-                    <span className="shrink-0 rounded-full border border-[var(--divide)] px-2.5 py-0.5 text-[11px] font-medium text-[var(--text-secondary)]">
-                      {fw.badge}
-                    </span>
+                    <p className="mt-3 text-[13.5px] leading-relaxed text-[var(--text-secondary)]">
+                      {fw.description}
+                    </p>
                   </div>
-                  <p className="mt-3 text-[13.5px] leading-relaxed text-[var(--text-secondary)]">
-                    {fw.description}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          </ScrollReveal>
 
           <SplitShowcase
             kicker="Framework Scaffolding"
@@ -157,41 +163,45 @@ export default function Features() {
       {/* SECTION 2: BYOK MULTI-MODEL INTELLIGENCE */}
       <section id="providers" className="border-t border-[var(--divide)] py-14 sm:py-20">
         <div className={container}>
-          <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--accent-link)]">
-            Provider Portability & BYOK
-          </p>
-          <h2 className={`${heading} mt-3`}>Bring your own keys. Run any frontier or local model.</h2>
-          <p className={body}>
-            Caide operates zero cloud subscription tiers and zero token markups. Connect your direct API
-            keys or connect to local Ollama instances. Switch models instantly per thread or turn to balance
-            speed, cost, and reasoning depth.
-          </p>
+          <ScrollReveal>
+            <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--accent-link)]">
+              Provider Portability & BYOK
+            </p>
+            <h2 className={`${heading} mt-3`}>
+              Bring your own keys. Run any frontier or local model.
+            </h2>
+            <p className={body}>
+              Caide operates zero cloud subscription tiers and zero token markups. Connect your
+              direct API keys or connect to local Ollama instances. Switch models instantly per
+              thread or turn to balance speed, cost, and reasoning depth.
+            </p>
 
-          <div className="mt-12 grid grid-cols-1 border-t border-[var(--divide)] sm:grid-cols-2">
-            {activeProviders.map(({ name, tagline, Icon, accent, status }) => (
-              <div
-                key={name}
-                className="border-b border-[var(--divide)] p-6 transition-colors hover:bg-[var(--mock-row)] sm:p-7 sm:[&:nth-child(odd)]:border-r sm:[&:nth-child(odd)]:border-[var(--divide)]"
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--block-elevated)]">
-                      <Icon className={`size-[18px] ${accent}`} />
-                    </span>
-                    <span className="truncate text-[15px] font-medium text-[var(--text-primary)]">
-                      {name}
+            <div className="mt-12 grid grid-cols-1 border-t border-[var(--divide)] sm:grid-cols-2">
+              {activeProviders.map(({ name, tagline, Icon, accent, status }) => (
+                <div
+                  key={name}
+                  className="border-b border-[var(--divide)] p-6 transition-colors hover:bg-[var(--mock-row)] sm:p-7 sm:[&:nth-child(odd)]:border-r sm:[&:nth-child(odd)]:border-[var(--divide)]"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--block-elevated)]">
+                        <Icon className={`size-[18px] ${accent}`} />
+                      </span>
+                      <span className="truncate text-[15px] font-medium text-[var(--text-primary)]">
+                        {name}
+                      </span>
+                    </div>
+                    <span className="shrink-0 rounded-full border border-sky-500/20 bg-sky-500/5 px-2.5 py-0.5 text-[11px] font-medium text-sky-700">
+                      {status}
                     </span>
                   </div>
-                  <span className="shrink-0 text-[12px] font-medium tabular-nums text-[var(--text-secondary)]">
-                    {status}
-                  </span>
+                  <p className="mt-3 text-[13.5px] leading-relaxed text-[var(--text-secondary)]">
+                    {tagline}
+                  </p>
                 </div>
-                <p className="mt-3 text-[13.5px] leading-relaxed text-[var(--text-secondary)]">
-                  {tagline}
-                </p>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </ScrollReveal>
 
           <SplitShowcase
             kicker="BYOK Model Hub"

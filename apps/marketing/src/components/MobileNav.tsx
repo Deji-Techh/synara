@@ -3,18 +3,18 @@
 import Link from "next/link";
 import { useEffect, useId, useState } from "react";
 import { FiX } from "react-icons/fi";
+import { SiX } from "react-icons/si";
 
 const links = [
   { href: "/#frameworks", label: "Frameworks" },
-  { href: "/#features", label: "Features" },
-  { href: "/install", label: "Install" },
+  { href: "/#providers", label: "Models" },
+  { href: "/#workflow", label: "Workflow" },
   { href: "/docs", label: "Docs" },
   { href: "/changelog", label: "Changelog" },
-  { href: "/sponsor", label: "Sponsor" },
   { href: "/privacy", label: "Privacy" },
 ] as const;
 
-export default function MobileNav() {
+export default function MobileNav({ isHome = false }: { isHome?: boolean }) {
   const [open, setOpen] = useState(false);
   const menuId = useId();
 
@@ -29,9 +29,26 @@ export default function MobileNav() {
 
   return (
     <div className="relative flex items-center gap-1.5 sm:hidden">
+      <a
+        href="https://x.com/caideorg"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Follow on X"
+        className={`flex size-8 items-center justify-center rounded-full border shadow-sm ${
+          isHome
+            ? "border-white/20 bg-white/10 text-white backdrop-blur-md"
+            : "border-[var(--divide)] bg-white/80 text-[var(--text-secondary)]"
+        }`}
+      >
+        <SiX className="size-3" />
+      </a>
       <Link
         href="/install"
-        className="rounded-full border border-[var(--divide)] bg-white/80 px-3 py-1.5 text-[12px] font-medium text-[var(--text-primary)] backdrop-blur-md transition-colors hover:bg-[var(--mock-row)]"
+        className={`rounded-full border px-3 py-1.5 text-[12px] font-medium backdrop-blur-md transition-colors ${
+          isHome
+            ? "border-white/20 bg-white text-slate-900 hover:bg-slate-100"
+            : "border-[var(--divide)] bg-white/80 text-[var(--text-primary)] hover:bg-[var(--mock-row)]"
+        }`}
       >
         Download
       </Link>
@@ -41,7 +58,11 @@ export default function MobileNav() {
         aria-controls={menuId}
         aria-label={open ? "Close navigation" : "Open navigation"}
         onClick={() => setOpen((current) => !current)}
-        className="flex size-8 items-center justify-center rounded-md text-[var(--text-primary)] transition-colors hover:bg-[var(--mock-row)]"
+        className={`flex size-8 items-center justify-center rounded-md transition-colors ${
+          isHome
+            ? "text-white hover:bg-white/10"
+            : "text-[var(--text-primary)] hover:bg-[var(--mock-row)]"
+        }`}
       >
         <span className="relative grid size-[18px] place-items-center">
           <svg
@@ -81,6 +102,15 @@ export default function MobileNav() {
                 {link.label}
               </Link>
             ))}
+            <a
+              href="https://x.com/caideorg"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 rounded-lg px-3 py-2 text-[13px] font-medium text-[var(--accent-link)] transition-colors hover:bg-[var(--mock-row)]"
+            >
+              <SiX className="size-3" />
+              <span>Follow on X</span>
+            </a>
           </div>
         </div>
       )}

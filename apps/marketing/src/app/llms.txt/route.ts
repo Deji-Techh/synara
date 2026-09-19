@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
-import { PRODUCT_NAME, PRODUCT_DESCRIPTION, PRODUCT_PILLARS, SUPPORTED_FRAMEWORKS } from "@/data/product";
+import {
+  PRODUCT_NAME,
+  PRODUCT_DESCRIPTION,
+  PRODUCT_PILLARS,
+  SUPPORTED_FRAMEWORKS,
+} from "@/data/product";
 
 export async function GET() {
   const content = `# ${PRODUCT_NAME}

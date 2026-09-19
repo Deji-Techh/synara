@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { GITHUB_REPO_URL } from "@/lib/seo";
+import { SiX } from "react-icons/si";
 
 export default function SiteFooter() {
   return (
@@ -14,9 +14,7 @@ export default function SiteFooter() {
             height={18}
             className="rounded-[4px] border border-[var(--divide)]"
           />
-          <span>
-            Caide · Free & Open Source Local-First AI App Builder
-          </span>
+          <span>Caide · Free & Open Source Local-First AI App Builder</span>
         </div>
         <div className="flex items-center gap-4 sm:gap-6">
           <Link
@@ -31,19 +29,14 @@ export default function SiteFooter() {
           >
             Changelog
           </Link>
-          <Link
-            href="/sponsor"
-            className="transition-colors hover:text-[var(--text-primary)]"
-          >
-            Sponsor
-          </Link>
           <a
-            href={GITHUB_REPO_URL}
+            href="https://x.com/caideorg"
             target="_blank"
             rel="noopener noreferrer"
-            className="transition-colors hover:text-[var(--text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-link)]"
+            className="inline-flex items-center gap-1.5 transition-colors hover:text-[var(--text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-link)]"
           >
-            GitHub
+            <SiX className="size-3" />
+            <span>@caideorg</span>
           </a>
           <Link
             href="/privacy"

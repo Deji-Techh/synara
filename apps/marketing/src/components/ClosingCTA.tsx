@@ -1,32 +1,36 @@
 import DownloadButton from "@/components/DownloadButton";
 import ProviderMarkRow from "@/components/ProviderMarkRow";
+import { ScrollReveal } from "@/components/ScrollReveal";
 import { PRODUCT_CATEGORY, PRODUCT_HERO_TITLE } from "@/data/product";
 
 export default function ClosingCTA() {
   return (
     <section className="border-t border-[var(--divide)] bg-[var(--page-bg)] py-16 sm:py-24">
       <div className="mx-auto w-full max-w-6xl px-4 text-center sm:px-6">
-        <div className="mb-8 sm:mb-10">
-          <ProviderMarkRow centered />
-        </div>
+        <ScrollReveal>
+          <div className="mb-8 sm:mb-10">
+            <ProviderMarkRow centered />
+          </div>
 
-        <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--accent-link)]">
-          {PRODUCT_CATEGORY}
-        </p>
-        <h2 className="mx-auto mt-4 max-w-3xl text-[2rem] font-medium leading-[1.08] tracking-[-0.045em] text-[var(--text-primary)] sm:text-[3rem]">
-          {PRODUCT_HERO_TITLE}
-        </h2>
-        <p className="mx-auto mt-6 max-w-2xl text-[14px] leading-[1.7] text-[var(--text-secondary)] sm:text-[16px]">
-          Start with one project and your choice of framework. Create threads, align on blueprints,
-          stream turns with your frontier or local models, inspect live mobile previews, and ship to production.
-        </p>
-
-        <div className="mt-10 flex flex-col items-center gap-3">
-          <DownloadButton />
-          <p className="text-[11.5px] text-[var(--text-tertiary)]">
-            100% Free and Open Source • Bring Your Own Keys • Local-First
+          <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--accent-link)]">
+            {PRODUCT_CATEGORY}
           </p>
-        </div>
+          <h2 className="mx-auto mt-4 max-w-3xl text-[2rem] font-medium leading-[1.08] tracking-[-0.045em] text-[var(--text-primary)] sm:text-[3rem]">
+            {PRODUCT_HERO_TITLE}
+          </h2>
+          <p className="mx-auto mt-6 max-w-2xl text-[14px] leading-[1.7] text-[var(--text-secondary)] sm:text-[16px]">
+            Start with one project and your choice of framework. Create threads, align on
+            blueprints, stream turns with your frontier or local models, inspect live mobile
+            previews, and ship to production.
+          </p>
+
+          <div className="mt-10 flex flex-col items-center gap-3">
+            <DownloadButton />
+            <p className="text-[11.5px] text-[var(--text-tertiary)]">
+              100% Free and Open Source • Bring Your Own Keys • Local-First
+            </p>
+          </div>
+        </ScrollReveal>
       </div>
     </section>
   );

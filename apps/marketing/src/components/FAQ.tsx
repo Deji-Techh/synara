@@ -25,7 +25,8 @@ export default function FAQ() {
             Understand the boundary before you run the work.
           </h2>
           <p className="mt-4 max-w-xl text-[15px] leading-[1.7] text-[var(--text-secondary)] sm:text-[16px]">
-            How frameworks, BYOK models, local SQLite, previews, database branching, and deployments fit together.
+            How frameworks, BYOK models, local SQLite, previews, database branching, and deployments
+            fit together.
           </p>
         </div>
 

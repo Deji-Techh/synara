@@ -1,88 +1,113 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
-import { FaGithub } from "react-icons/fa";
-import { GITHUB_REPO_URL } from "@/lib/seo";
+import { usePathname } from "next/navigation";
+import { SiX } from "react-icons/si";
 import MobileNav from "@/components/MobileNav";
 
 export default function Navbar() {
+  const pathname = usePathname();
+  const isHome = pathname === "/";
+
   return (
     <nav aria-label="Primary navigation" className="relative z-40 w-full px-4 py-4 sm:px-6">
       <div className="mx-auto flex h-9 max-w-6xl items-center justify-between gap-2 sm:gap-6">
         <Link
           href="/"
           aria-label="Caide home"
-          className="flex shrink-0 items-center gap-2.5 text-[14px] font-semibold tracking-[-0.02em] text-[var(--text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-link)]"
+          className={`flex shrink-0 items-center gap-2.5 text-[14px] font-semibold tracking-[-0.02em] transition-colors ${
+            isHome ? "text-white" : "text-[var(--text-primary)]"
+          } focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-link)]`}
         >
           <Image
             src="/icon.png"
             alt="Caide"
             width={24}
             height={24}
-            className="rounded-[6px] border border-[var(--divide)] shadow-sm"
+            className={`rounded-[6px] border shadow-sm ${
+              isHome ? "border-white/20" : "border-[var(--divide)]"
+            }`}
           />
           <span className="font-semibold tracking-tight">Caide</span>
         </Link>
 
         {/* Center Nav Links */}
-        <div className="hidden min-w-0 flex-1 items-center justify-center gap-3 text-[13px] font-medium text-[var(--text-secondary)] sm:flex sm:gap-6">
+        <div
+          className={`hidden min-w-0 flex-1 items-center justify-center gap-4 text-[13px] font-medium sm:flex sm:gap-7 ${
+            isHome ? "text-white/80" : "text-[var(--text-secondary)]"
+          }`}
+        >
           <a
             href="/#frameworks"
-            className="shrink-0 transition-colors hover:text-[var(--text-primary)]"
+            className={`shrink-0 transition-colors ${
+              isHome ? "hover:text-white" : "hover:text-[var(--text-primary)]"
+            }`}
           >
             Frameworks
           </a>
           <a
             href="/#providers"
-            className="shrink-0 transition-colors hover:text-[var(--text-primary)]"
+            className={`shrink-0 transition-colors ${
+              isHome ? "hover:text-white" : "hover:text-[var(--text-primary)]"
+            }`}
           >
             Models
           </a>
           <a
             href="/#workflow"
-            className="shrink-0 transition-colors hover:text-[var(--text-primary)]"
+            className={`shrink-0 transition-colors ${
+              isHome ? "hover:text-white" : "hover:text-[var(--text-primary)]"
+            }`}
           >
             Workflow
           </a>
           <Link
             href="/docs"
-            className="shrink-0 transition-colors hover:text-[var(--text-primary)]"
+            className={`shrink-0 transition-colors ${
+              isHome ? "hover:text-white" : "hover:text-[var(--text-primary)]"
+            }`}
           >
             Docs
           </Link>
           <Link
             href="/changelog"
-            className="shrink-0 transition-colors hover:text-[var(--text-primary)]"
+            className={`shrink-0 transition-colors ${
+              isHome ? "hover:text-white" : "hover:text-[var(--text-primary)]"
+            }`}
           >
             Changelog
           </Link>
-          <Link
-            href="/sponsor"
-            className="hidden shrink-0 transition-colors hover:text-[var(--text-primary)] md:inline"
-          >
-            Sponsor
-          </Link>
         </div>
 
-        {/* Right CTA Actions */}
+        {/* Right CTA Actions: Follow on X + Download */}
         <div className="hidden shrink-0 items-center gap-2 sm:flex sm:gap-3">
           <a
-            href={GITHUB_REPO_URL}
+            href="https://x.com/caideorg"
             target="_blank"
             rel="noopener noreferrer"
-            aria-label="GitHub Repository"
-            className="flex items-center gap-1.5 rounded-full border border-[var(--divide)] bg-white/70 px-3.5 py-1 text-[12.5px] font-medium text-[var(--text-secondary)] backdrop-blur-md transition-all hover:bg-white hover:border-[var(--border-strong)] hover:text-[var(--text-primary)] hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-link)] sm:gap-1.5 sm:text-[13px]"
+            aria-label="Follow Caide on X"
+            className={`flex items-center gap-1.5 rounded-full border px-3.5 py-1 text-[12.5px] font-medium backdrop-blur-md transition-all sm:text-[13px] ${
+              isHome
+                ? "border-white/20 bg-white/10 text-white hover:bg-white/20 hover:border-white/40"
+                : "border-[var(--divide)] bg-white/70 text-[var(--text-secondary)] hover:bg-white hover:border-[var(--border-strong)] hover:text-[var(--text-primary)] hover:shadow-sm"
+            } focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-link)]`}
           >
-            <FaGithub className="size-4 text-[var(--text-primary)]" />
-            <span>GitHub</span>
+            <SiX className="size-3" />
+            <span>Follow on X</span>
           </a>
           <Link
             href="/install"
-            className="rounded-full bg-[var(--btn-primary-bg)] px-4 py-1 text-[12.5px] font-medium text-[var(--btn-primary-fg)] shadow-sm transition-all hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-link)] sm:text-[13px]"
+            className={`rounded-full px-4 py-1 text-[12.5px] font-medium shadow-sm transition-all sm:text-[13px] ${
+              isHome
+                ? "bg-white text-slate-900 hover:bg-slate-100"
+                : "bg-[var(--btn-primary-bg)] text-[var(--btn-primary-fg)] hover:opacity-90"
+            } focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-link)]`}
           >
             Download
           </Link>
         </div>
-        <MobileNav />
+        <MobileNav isHome={isHome} />
       </div>
     </nav>
   );

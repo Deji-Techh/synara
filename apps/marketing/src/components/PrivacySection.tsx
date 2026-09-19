@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { HardDrive, Plug, ShieldCheck, Lock, ArrowRight } from "lucide-react";
-import { GITHUB_REPO_URL } from "@/lib/seo";
+import { ScrollReveal } from "@/components/ScrollReveal";
 
 const heading =
   "text-[1.65rem] font-medium leading-[1.12] tracking-[-0.035em] text-[var(--text-primary)] sm:text-[2rem]";
@@ -38,52 +38,54 @@ export default function PrivacySection() {
   return (
     <section className="border-t border-[var(--divide)] py-14 sm:py-20">
       <div className={container}>
-        <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--accent-link)]">
-          Local-first boundary
-        </p>
-        <h2 className={`${heading} mt-3`}>Know where every part of the work goes.</h2>
-        <p className={body}>
-          Caide keeps your code, data, and keys completely under your control. The boundary is explicit:
-          local application state stays on your machine, while AI providers receive only the context
-          necessary to fulfill your prompt.
-        </p>
+        <ScrollReveal>
+          <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--accent-link)]">
+            Local-first boundary
+          </p>
+          <h2 className={`${heading} mt-3`}>Know where every part of the work goes.</h2>
+          <p className={body}>
+            Caide keeps your code, data, and keys completely under your control. The boundary is
+            explicit: local application state stays on your machine, while AI providers receive only
+            the context necessary to fulfill your prompt.
+          </p>
 
-        <div className="mt-12 grid grid-cols-1 border-t border-[var(--divide)] sm:grid-cols-2">
-          {pillars.map(({ Icon, title, description }) => (
-            <div
-              key={title}
-              className="border-b border-[var(--divide)] p-6 sm:p-7 sm:[&:nth-child(odd)]:border-r sm:[&:nth-child(odd)]:border-[var(--divide)]"
-            >
-              <div className="flex items-center gap-3">
-                <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--block-elevated)] text-[var(--text-primary)]">
-                  <Icon className="size-[18px]" />
-                </span>
-                <h3 className="text-[15px] font-medium text-[var(--text-primary)]">{title}</h3>
+          <div className="mt-12 grid grid-cols-1 border-t border-[var(--divide)] sm:grid-cols-2">
+            {pillars.map(({ Icon, title, description }) => (
+              <div
+                key={title}
+                className="border-b border-[var(--divide)] p-6 transition-colors hover:bg-[var(--mock-row)] sm:p-7 sm:[&:nth-child(odd)]:border-r sm:[&:nth-child(odd)]:border-[var(--divide)]"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--block-elevated)] text-[var(--text-primary)]">
+                    <Icon className="size-[18px]" />
+                  </span>
+                  <h3 className="text-[15px] font-medium text-[var(--text-primary)]">{title}</h3>
+                </div>
+                <p className="mt-3 text-[13.5px] leading-relaxed text-[var(--text-secondary)]">
+                  {description}
+                </p>
               </div>
-              <p className="mt-3 text-[13.5px] leading-relaxed text-[var(--text-secondary)]">
-                {description}
-              </p>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
 
-        <div className="mt-8 flex items-center justify-between gap-4 text-[13px]">
-          <Link
-            href="/privacy"
-            className="inline-flex items-center gap-1.5 font-medium text-[var(--accent-link)] hover:underline"
-          >
-            <span>Read full Privacy & Security documentation</span>
-            <ArrowRight className="size-3.5" />
-          </Link>
-          <a
-            href={GITHUB_REPO_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
-          >
-            Audit the open source code on GitHub →
-          </a>
-        </div>
+          <div className="mt-8 flex flex-wrap items-center justify-between gap-4 text-[13px]">
+            <Link
+              href="/privacy"
+              className="inline-flex items-center gap-1.5 font-medium text-[var(--accent-link)] hover:underline"
+            >
+              <span>Read full Privacy & Security documentation</span>
+              <ArrowRight className="size-3.5" />
+            </Link>
+            <a
+              href="https://x.com/caideorg"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[var(--text-tertiary)] transition-colors hover:text-[var(--text-primary)]"
+            >
+              Follow project updates on X (@caideorg) →
+            </a>
+          </div>
+        </ScrollReveal>
       </div>
     </section>
   );

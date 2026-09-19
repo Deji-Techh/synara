@@ -17,25 +17,29 @@ export const SUPPORTED_FRAMEWORKS = [
   {
     id: "react-native",
     name: "React Native (Expo)",
-    description: "Expo Metro dev-server, mobile simulator, browser preview for web, native iOS and Android build targets.",
+    description:
+      "Expo Metro dev-server, mobile simulator, browser preview for web, native iOS and Android build targets.",
     badge: "Mobile & Web",
   },
   {
     id: "flutter",
     name: "Flutter",
-    description: "Dart toolchain, flutter analyze/test, DeviceLab preview, and native APK, AAB, and IPA packaging.",
+    description:
+      "Dart toolchain, flutter analyze/test, DeviceLab preview, and native APK, AAB, and IPA packaging.",
     badge: "Cross-Platform",
   },
   {
     id: "website",
     name: "Website (Next.js / Vite)",
-    description: "Modern SSR or SPA web apps with live hot-reloading preview, Vercel one-click deploy, and tarball builds.",
+    description:
+      "Modern SSR or SPA web apps with live hot-reloading preview, Vercel one-click deploy, and tarball builds.",
     badge: "Full-Stack Web",
   },
   {
     id: "blank",
     name: "Blank Managed",
-    description: "Clean managed directory where the agent designs and scaffolds custom architectures from scratch.",
+    description:
+      "Clean managed directory where the agent designs and scaffolds custom architectures from scratch.",
     badge: "Custom Architecture",
   },
 ] as const;

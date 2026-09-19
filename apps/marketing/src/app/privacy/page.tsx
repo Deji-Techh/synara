@@ -17,32 +17,38 @@ export default function PrivacyPage() {
             Your Code. Your Keys. Your Machine.
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-[14px] leading-relaxed text-[var(--text-secondary)] sm:text-[15px]">
-            Caide is engineered from the ground up as a private, local-first application. We do not operate intermediary servers that read your prompts or store your source code.
+            Caide is engineered from the ground up as a private, local-first application. We do not
+            operate intermediary servers that read your prompts or store your source code.
           </p>
         </div>
 
         <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-3">
           <div className="rounded-2xl border border-[var(--divide)] bg-[var(--card)] p-6">
-            <HardDrive className="size-6 text-orange-600 mb-3" />
+            <HardDrive className="size-6 text-sky-600 mb-3" />
             <h3 className="text-base font-semibold text-[var(--text-primary)]">Local Storage</h3>
             <p className="mt-2 text-[13px] leading-relaxed text-[var(--text-secondary)]">
-              All project files, SQLite state stores, and chat threads remain on your hard drive. Nothing is uploaded to a Caide cloud.
+              All project files, SQLite state stores, and chat threads remain on your hard drive.
+              Nothing is uploaded to a Caide cloud.
             </p>
           </div>
 
           <div className="rounded-2xl border border-[var(--divide)] bg-[var(--card)] p-6">
-            <Key className="size-6 text-orange-600 mb-3" />
-            <h3 className="text-base font-semibold text-[var(--text-primary)]">Direct Provider Calls</h3>
+            <Key className="size-6 text-sky-600 mb-3" />
+            <h3 className="text-base font-semibold text-[var(--text-primary)]">
+              Direct Provider Calls
+            </h3>
             <p className="mt-2 text-[13px] leading-relaxed text-[var(--text-secondary)]">
-              Caide calls Anthropic, OpenAI, DeepSeek, Google, and Groq endpoints directly from your local process over secure HTTPS.
+              Caide calls Anthropic, OpenAI, DeepSeek, Google, and Groq endpoints directly from your
+              local process over secure HTTPS.
             </p>
           </div>
 
           <div className="rounded-2xl border border-[var(--divide)] bg-[var(--card)] p-6">
-            <Lock className="size-6 text-orange-600 mb-3" />
+            <Lock className="size-6 text-sky-600 mb-3" />
             <h3 className="text-base font-semibold text-[var(--text-primary)]">Zero Telemetry</h3>
             <p className="mt-2 text-[13px] leading-relaxed text-[var(--text-secondary)]">
-              No tracking pixels, no event telemetry, and no usage profiling. You can run Caide completely offline with Ollama.
+              No tracking pixels, no event telemetry, and no usage profiling. You can run Caide
+              completely offline with Ollama.
             </p>
           </div>
         </div>
