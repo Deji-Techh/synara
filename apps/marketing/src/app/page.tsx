@@ -75,7 +75,7 @@ export default function Home() {
               <div className="mt-8 flex flex-wrap items-center gap-3">
                 <DownloadButton className="bg-white text-slate-900 hover:bg-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.25)]" />
                 <a
-                  href="https://x.com/caideorg"
+                  href="https://x.com/orgcaide"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-5 py-2.5 text-[13px] font-medium text-white backdrop-blur-md transition-all hover:bg-white/20 hover:border-white/40 shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-link)]"

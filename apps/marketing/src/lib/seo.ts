@@ -14,7 +14,7 @@ export const CREATOR_URL = "https://caide.dev";
 export const GITHUB_REPO_URL = "https://github.com/Deji-Techh/synara";
 export const GITHUB_RELEASES_URL = `${GITHUB_REPO_URL}/releases`;
 export const GITHUB_SPONSORS_URL = `${GITHUB_REPO_URL}/sponsors`;
-export const X_PROFILE_URL = "https://x.com/caide_dev";
+export const X_PROFILE_URL = "https://x.com/orgcaide";
 
 export const SITE_TITLE = `${SITE_NAME} — Local-First AI App Builder for React Native, Flutter & Web`;
 export const SITE_DESCRIPTION = PRODUCT_META_DESCRIPTION;

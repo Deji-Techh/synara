@@ -44,7 +44,7 @@ export default function MobileNav({
   return (
     <div className="relative flex items-center gap-1.5 sm:hidden">
       <a
-        href="https://x.com/caideorg"
+        href="https://x.com/orgcaide"
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Follow on X"
@@ -121,7 +121,7 @@ export default function MobileNav({
               </a>
             ))}
             <a
-              href="https://x.com/caideorg"
+              href="https://x.com/orgcaide"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 rounded-lg px-3 py-2 text-[13px] font-medium text-[var(--accent-link)] transition-colors hover:bg-[var(--mock-row)]"

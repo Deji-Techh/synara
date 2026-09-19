@@ -22,7 +22,7 @@ export function docsLayoutOptions(): BaseLayoutProps {
         text: "Follow on X",
         label: "Follow on X",
         icon: <SiX className="size-3.5" />,
-        url: "https://x.com/caideorg",
+        url: "https://x.com/orgcaide",
       },
       {
         type: "icon",

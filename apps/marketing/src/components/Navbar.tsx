@@ -90,7 +90,7 @@ export default function Navbar() {
           {/* Right CTA Actions: Follow on X + Join Whitelist */}
           <div className="hidden shrink-0 items-center gap-2 sm:flex sm:gap-3">
             <a
-              href="https://x.com/caideorg"
+              href="https://x.com/orgcaide"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Follow Caide on X"

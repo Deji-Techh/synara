@@ -25,13 +25,13 @@ export default function SiteFooter() {
             Changelog
           </Link>
           <a
-            href="https://x.com/caideorg"
+            href="https://x.com/orgcaide"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 transition-colors hover:text-[var(--text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-link)]"
           >
             <SiX className="size-3" />
-            <span>@caideorg</span>
+            <span>@orgcaide</span>
           </a>
           <Link
             href="/privacy"

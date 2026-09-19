@@ -78,12 +78,12 @@ export default function PrivacySection() {
               <ArrowRight className="size-3.5" />
             </Link>
             <a
-              href="https://x.com/caideorg"
+              href="https://x.com/orgcaide"
               target="_blank"
               rel="noopener noreferrer"
               className="text-[var(--text-tertiary)] transition-colors hover:text-[var(--text-primary)]"
             >
-              Follow project updates on X (@caideorg) →
+              Follow project updates on X (@orgcaide) →
             </a>
           </div>
         </ScrollReveal>

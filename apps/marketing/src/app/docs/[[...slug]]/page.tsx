@@ -79,7 +79,7 @@ export default async function DocumentationPage({ params }: DocumentationPagePro
                 <span>Join Whitelist</span>
               </Link>
               <a
-                href="https://x.com/caideorg"
+                href="https://x.com/orgcaide"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Follow on X"
