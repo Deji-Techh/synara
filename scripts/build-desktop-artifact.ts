@@ -675,28 +675,20 @@ const installFrozenStageDependencies = Effect.fn("installFrozenStageDependencies
   yield* Effect.log(
     "[desktop-artifact] Installing staged production dependencies from the repository lockfile...",
   );
-  if (platform === "win") {
-    // Bun 1.3.12 needs a platform-only lockfile rewrite while resolving this
-    // copied workspace on Windows even though the repository-level frozen
-    // install already passed. Its --production flag also forces frozen mode,
-    // so use the equivalent dependency omission and allow only the temporary
-    // staging copy to update; the verified source lockfile remains untouched.
-    yield* runCommand(
-      ChildProcess.make({
-        cwd: stageAppDir,
-        ...commandOutputOptions(verbose),
-        // Windows needs shell mode to resolve .cmd shims (e.g. bun.cmd).
-        shell: process.platform === "win32",
-      })`bun install --omit=dev --ignore-scripts --linker hoisted`,
-    );
-  } else {
-    yield* runCommand(
-      ChildProcess.make({
-        cwd: stageAppDir,
-        ...commandOutputOptions(verbose),
-      })`bun install --frozen-lockfile --ignore-scripts --linker hoisted`,
-    );
-  }
+  // The stage is a Manifest SUBSET (apps/video etc. excluded), so its
+  // resolution legitimately differs from the repository lockfile whenever an
+  // excluded workspace shifts shared/hoisted versions. Frozen mode then fails
+  // spuriously ("lockfile had changes"). Like Windows below, allow only the
+  // temporary staging copy to update; the verified source lockfile is copied
+  // in but never written back to the repo.
+  yield* runCommand(
+    ChildProcess.make({
+      cwd: stageAppDir,
+      ...commandOutputOptions(verbose),
+      // Windows needs shell mode to resolve .cmd shims (e.g. bun.cmd).
+      shell: process.platform === "win32",
+    })`bun install --omit=dev --ignore-scripts --linker hoisted`,
+  );
 
   if (platform === "linux") {
     // node-pty's npm package does not ship Linux prebuilds. Use the repo's
@@ -999,7 +991,7 @@ const buildDesktopArtifact = Effect.fn("buildDesktopArtifact")(function* (
       });
     }
   }
-  const localTmpDir = path.join(repoRoot, ".tmp");
+  const localTmpDir = process.env.CAIDE_DESKTOP_TMPDIR?.trim() || path.join(repoRoot, ".tmp");
   yield* fs.makeDirectory(localTmpDir, { recursive: true });
   const mkdir = options.keepStage ? fs.makeTempDirectory : fs.makeTempDirectoryScoped;
   const stageRoot = yield* mkdir({
