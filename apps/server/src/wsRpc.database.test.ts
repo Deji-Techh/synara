@@ -22,9 +22,11 @@ const handlers = makeWsDatabaseHandlers({}, {}) as Record<
 >;
 
 async function invoke(threadId: string, channel: string, payload: unknown = {}) {
-  return Effect.runPromise(
-    handlers["database.invoke"]({ threadId, channel, payload }) as Effect.Effect<unknown>,
-  );
+  const result = (await Effect.runPromise(
+    handlers["database.invoke"]({ threadId, channel, payload }) as Effect.Effect<{ value: unknown }>,
+  )) as { value: unknown };
+  expect(result).toHaveProperty("value");
+  return result.value;
 }
 
 async function invokeError(

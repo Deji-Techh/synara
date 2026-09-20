@@ -16,6 +16,7 @@ import { cn } from "~/lib/utils";
 import {
   CheckCircle2Icon,
   CircleAlertIcon,
+  DatabaseIcon,
   ExternalLinkIcon,
   LoaderCircleIcon,
   PlusIcon,
@@ -355,9 +356,17 @@ export function DatabasePanel(props: {
           {loading && <PanelStateMessage>Loading database configuration...</PanelStateMessage>}
 
           {!loading && resolveError && (
-            <div className="flex items-start gap-2 rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
-              <CircleAlertIcon className="mt-0.5 size-4 shrink-0" />
-              <span>{resolveError}</span>
+            <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-border bg-muted/20 p-6 text-center text-xs text-muted-foreground my-6">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted/60 text-muted-foreground">
+                <DatabaseIcon className="size-5" />
+              </div>
+              <div className="flex flex-col gap-1 max-w-xs">
+                <span className="font-medium text-foreground text-sm">Database Unavailable</span>
+                <span className="text-muted-foreground leading-relaxed">{resolveError}</span>
+              </div>
+              <Button size="xs" variant="outline" onClick={() => refreshApp()} className="gap-1.5 mt-2">
+                <RefreshCwIcon className="size-3" /> Retry
+              </Button>
             </div>
           )}
 

@@ -613,7 +613,8 @@ export function makeWsDatabaseHandlers(_providerAdapterRegistry: any, _options: 
             await import("./dyad/db/connections.ts");
           const { getVoiceApiKey } = await import("./voice/transcriptionService.ts");
           const str = (v: unknown) => (typeof v === "string" ? v : "");
-          switch (channel) {
+          const dispatch = async () => {
+            switch (channel) {
             case "list-apps": {
               let workspaceRoot: string | undefined;
               try {
@@ -798,8 +799,11 @@ export function makeWsDatabaseHandlers(_providerAdapterRegistry: any, _options: 
             default:
               throw new Error(`Unknown database channel: ${channel || "(missing)"}`);
           }
-        })(),
-      ),
+        };
+        const value = await dispatch();
+        return { value };
+      })(),
+    ),
   };
 }
 
