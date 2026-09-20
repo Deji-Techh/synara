@@ -3,7 +3,6 @@ import * as Pipeable from "effect/Pipeable";
 const pipeFn = Pipeable.Prototype.pipe;
 
 for (const target of [
-  typeof Object !== "undefined" ? Object.prototype : null,
   typeof Error !== "undefined" ? Error.prototype : null,
   typeof Function !== "undefined" ? Function.prototype : null,
   typeof Array !== "undefined" ? Array.prototype : null,
