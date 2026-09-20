@@ -163,38 +163,36 @@ function sqlMetadataForConsent(toolName: string, args: unknown): SqlConsentMetad
   }
 }
 
-const UNIFIED_DEFS: ToolDef[] = [
-  ...ALL_CORE_TOOLS,
-  ...ALL_PREVIEW_TOOLS,
-  ...ALL_DB_PANEL_TOOLS,
-  ...ALL_FILE_EDIT_TOOLS,
-  ...ALL_GIT_TOOLS,
-  ...ALL_GIT_HISTORY_TOOLS,
-  ...ALL_PRE_COMMIT_TOOLS,
-  ...ALL_CHAT_HISTORY_TOOLS,
-  ...ALL_PLAN_TOOLS,
-  ...ALL_BLUEPRINT_TOOLS,
-  ...ALL_MCP_TOOLS,
-  ...ALL_MISC_TOOLS,
-  ...ALL_GOAL_TOOLS,
-  ...ALL_GITHUB_TOOLS,
-  ...ALL_VERCEL_TOOLS,
-  ...ALL_COOLIFY_TOOLS,
-  ...ALL_SHARE_TOOLS,
-  ...ALL_VERIFY_TOOLS,
-  ...ALL_TYPECHECK_TOOLS,
-  ...ALL_HELP_TOOLS,
-  ...ALL_SANDBOX_TOOLS,
-  ...ALL_WEB_FETCH_TOOLS,
-  ...ALL_WEB_SEARCH_TOOLS,
-  ...ALL_IMAGE_TOOLS,
-  ...ALL_CODE_TOOLS,
-  ...ALL_WEB3_TOOLS,
-  ...ALL_DB_TOOLS,
-];
-
 export function allUnifiedToolDefs(): ToolDef[] {
-  return [...UNIFIED_DEFS];
+  return [
+    ...ALL_CORE_TOOLS,
+    ...ALL_PREVIEW_TOOLS,
+    ...ALL_DB_PANEL_TOOLS,
+    ...ALL_FILE_EDIT_TOOLS,
+    ...ALL_GIT_TOOLS,
+    ...ALL_GIT_HISTORY_TOOLS,
+    ...ALL_PRE_COMMIT_TOOLS,
+    ...ALL_CHAT_HISTORY_TOOLS,
+    ...ALL_PLAN_TOOLS,
+    ...ALL_BLUEPRINT_TOOLS,
+    ...ALL_MCP_TOOLS,
+    ...ALL_MISC_TOOLS,
+    ...ALL_GOAL_TOOLS,
+    ...ALL_GITHUB_TOOLS,
+    ...ALL_VERCEL_TOOLS,
+    ...ALL_COOLIFY_TOOLS,
+    ...ALL_SHARE_TOOLS,
+    ...ALL_VERIFY_TOOLS,
+    ...ALL_TYPECHECK_TOOLS,
+    ...ALL_HELP_TOOLS,
+    ...ALL_SANDBOX_TOOLS,
+    ...ALL_WEB_FETCH_TOOLS,
+    ...ALL_WEB_SEARCH_TOOLS,
+    ...ALL_IMAGE_TOOLS,
+    ...ALL_CODE_TOOLS,
+    ...ALL_WEB3_TOOLS,
+    ...ALL_DB_TOOLS,
+  ];
 }
 
 export function createTurnContext(input: TurnContextInput): TurnContext {
@@ -238,7 +236,7 @@ export function createTurnContext(input: TurnContextInput): TurnContext {
   setContextSummarizer(async ({ system, prompt }) => synthesize(system, prompt));
   setCodeExplorerRunner(async ({ system, prompt }) => synthesize(system, prompt));
   setSkillRunner(async ({ system, prompt }) => synthesize(system, prompt));
-  setSubagentToolSource(() => UNIFIED_DEFS);
+  setSubagentToolSource(() => allUnifiedToolDefs());
   // Keyed web providers resolve from server env (Tavily > Brave > DDG;
   // OpenAI Images > Pollinations). Env-global so idempotent across turns.
   setWebSearchProvider(autoWebSearchProvider());
@@ -282,7 +280,7 @@ export function createTurnContext(input: TurnContextInput): TurnContext {
       : turnDbLink?.provider === "neon"
         ? turnDbLink.projectId != null && turnDbLink.branchId != null
         : false;
-  const included = UNIFIED_DEFS.filter((def) =>
+  const included = allUnifiedToolDefs().filter((def) =>
     shouldIncludeTool(
       def.name,
       {
