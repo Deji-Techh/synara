@@ -68,6 +68,9 @@
     "canary:rollback": "node scripts/canary.ts rollback",
     "clean": "rm -rf node_modules apps/*/node_modules packages/*/node_modules scripts/node_modules apps/*/dist apps/*/dist-electron packages/*/dist .turbo apps/*/.turbo packages/*/.turbo"
   },
+  "dependencies": {
+    "stacktrace-js": "^2.0.2"
+  },
   "devDependencies": {
     "@types/bun": "^1.3.14",
     "@types/node": "catalog:",

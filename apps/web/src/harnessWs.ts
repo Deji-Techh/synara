@@ -494,7 +494,7 @@ export function syncHarnessSettings(
     settings: {
       toolConsents,
       safeSql,
-      mcpAutoApproveSafe: mcpPrefs.autoApproveSafe !== false,
+      mcpAutoApproveSafe: Boolean(mcpPrefs.autoApproveSafe),
       dbLinks,
       mcpServers: syncedMcpServers,
       blockchainNetworks,

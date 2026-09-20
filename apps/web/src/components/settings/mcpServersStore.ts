@@ -73,7 +73,7 @@ function ensureBuiltinServers(servers: McpServerConfig[]): McpServerConfig[] {
 }
 
 export function defaultPrefs(): McpPrefs {
-  return { autoApproveSafe: true };
+  return { autoApproveSafe: false };
 }
 
 export function loadServers(): McpServerConfig[] {
@@ -97,7 +97,7 @@ export function loadPrefs(): McpPrefs {
     const raw = localStorage.getItem(PREFS_KEY);
     if (!raw) return defaultPrefs();
     const parsed = JSON.parse(raw) as Partial<McpPrefs>;
-    return { autoApproveSafe: parsed.autoApproveSafe !== false };
+    return { autoApproveSafe: Boolean(parsed.autoApproveSafe) };
   } catch {
     return defaultPrefs();
   }

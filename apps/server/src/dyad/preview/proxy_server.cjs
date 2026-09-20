@@ -43,14 +43,19 @@ let dyadVisualEditorClientContent = null;
 let dyadLogsContent = null;
 
 try {
-  const htmlToImagePath = path.join(
-    __dirname,
-    "..",
-    "node_modules",
-    "html-to-image",
-    "dist",
-    "html-to-image.js",
-  );
+  let htmlToImagePath;
+  try {
+    htmlToImagePath = require.resolve("html-to-image/dist/html-to-image.js");
+  } catch {
+    htmlToImagePath = path.join(
+      __dirname,
+      "..",
+      "node_modules",
+      "html-to-image",
+      "dist",
+      "html-to-image.js",
+    );
+  }
   htmlToImageContent = fs.readFileSync(htmlToImagePath, "utf-8");
   parentPort?.postMessage(`[proxy-worker] html-to-image.js loaded from: ${htmlToImagePath}`);
 } catch (error) {
@@ -58,14 +63,19 @@ try {
 }
 
 try {
-  const stackTraceLibPath = path.join(
-    __dirname,
-    "..",
-    "node_modules",
-    "stacktrace-js",
-    "dist",
-    "stacktrace.min.js",
-  );
+  let stackTraceLibPath;
+  try {
+    stackTraceLibPath = require.resolve("stacktrace-js/dist/stacktrace.min.js");
+  } catch {
+    stackTraceLibPath = path.join(
+      __dirname,
+      "..",
+      "node_modules",
+      "stacktrace-js",
+      "dist",
+      "stacktrace.min.js",
+    );
+  }
   stacktraceJsContent = fs.readFileSync(stackTraceLibPath, "utf-8");
   parentPort?.postMessage("[proxy-worker] stacktrace.js loaded.");
 } catch (error) {

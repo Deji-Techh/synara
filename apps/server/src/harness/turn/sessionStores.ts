@@ -129,7 +129,7 @@ export function getOrCreateSessionStores(sessionId: string): SessionStores {
       consent: new MemoryConsentStore(),
       mcp: new MemoryMcpConsentStore(),
       safeSql: true,
-      mcpAutoApproveSafe: true,
+      mcpAutoApproveSafe: false,
       compactionThresholdTokens: DEFAULT_COMPACTION_THRESHOLD_TOKENS,
       compactionEnabled: true,
       maxToolCallSteps: DEFAULT_MAX_TOOL_CALL_STEPS,

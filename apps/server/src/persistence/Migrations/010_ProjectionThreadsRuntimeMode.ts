@@ -6,12 +6,12 @@ export default Effect.gen(function* () {
 
   yield* sql`
     ALTER TABLE projection_threads
-    ADD COLUMN runtime_mode TEXT NOT NULL DEFAULT 'full-access'
+    ADD COLUMN runtime_mode TEXT NOT NULL DEFAULT 'approval-required'
   `;
 
   yield* sql`
     UPDATE projection_threads
-    SET runtime_mode = 'full-access'
+    SET runtime_mode = 'approval-required'
     WHERE runtime_mode IS NULL
   `;
 });

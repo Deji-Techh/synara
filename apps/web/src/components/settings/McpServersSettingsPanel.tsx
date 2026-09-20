@@ -166,7 +166,7 @@ export function McpServersSettingsPanel(props: { active: boolean }) {
       const problems = parsed.servers.flatMap((s) => validateServer(s, []));
       if (problems.length > 0) throw new Error(problems[0]);
       persist(parsed.servers);
-      if (parsed.prefs) persistPrefs({ autoApproveSafe: parsed.prefs.autoApproveSafe !== false });
+      if (parsed.prefs) persistPrefs({ autoApproveSafe: Boolean(parsed.prefs.autoApproveSafe) });
       toastManager.add({
         type: "success",
         title: `${parsed.servers.length} MCP server(s) imported`,

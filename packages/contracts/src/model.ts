@@ -1065,7 +1065,10 @@ export const DEFAULT_GIT_TEXT_GENERATION_REASONING_EFFORT = "high" as const;
 export const MODEL_SLUG_ALIASES_BY_PROVIDER: Record<ProviderKind, Record<string, ModelSlug>> = {
   engine: {},
   openai: {},
-  anthropic: {},
+  anthropic: {
+    sonnet: "claude-sonnet-5",
+    "claude-sonnet": "claude-sonnet-5",
+  },
   google: {},
   openrouter: {},
   ollama: {},
