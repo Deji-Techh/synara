@@ -74,13 +74,34 @@ function QuestionnaireCard(props: { sessionId: string; entry: UiPromptEntry; sen
         }>;
       }
     )?.questions ?? [];
-  const [answers, setAnswers] = useState<Record<string, string | string[]>>(
-    () =>
-      harnessStore.getState().sessions[props.sessionId]?.answerDrafts[props.entry.requestId] ?? {},
-  );
+  const [answers, setAnswers] = useState<Record<string, string | string[]>>(() => {
+    const drafts =
+      harnessStore.getState().sessions[props.sessionId]?.answerDrafts[props.entry.requestId] ?? {};
+    const initial: Record<string, string | string[]> = { ...drafts };
+    for (let i = 0; i < questions.length; i++) {
+      const q = questions[i];
+      const id = q.id ?? `q${i}`;
+      if (q.type === "radio" && q.options && q.options.length > 0 && initial[id] === undefined) {
+        initial[id] = q.options[0];
+      }
+    }
+    return initial;
+  });
   const [done, setDone] = useState(false);
   // Double-submit guard: rapid clicks must not dispatch duplicate answers.
   const answered = useRef(false);
+
+  // Auto-dismiss after 5 minutes to match backend timeout and prevent hung turns (V1 parity)
+  useEffect(() => {
+    const timer = setTimeout(
+      () => {
+        dismiss();
+      },
+      5 * 60 * 1000,
+    );
+    return () => clearTimeout(timer);
+  }, []);
+
   if (done) return null;
 
   const setOne = (id: string, value: string | string[]) =>

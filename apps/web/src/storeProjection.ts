@@ -1322,7 +1322,7 @@ function syncServerThreadDetailWithOptions(
       ),
       thread.id,
       {
-        updateSidebarSummary: false,
+        updateSidebarSummary: options?.updateSidebarSummary ?? true,
       },
     ),
     thread.id,
@@ -1337,7 +1337,9 @@ export function syncServerThreadDetail(state: AppState, thread: ReadModelThread)
   ) {
     return removeThreadState(state, thread.id);
   }
-  return syncServerThreadDetailWithOptions(state, thread);
+  return syncServerThreadDetailWithOptions(state, thread, {
+    updateSidebarSummary: true,
+  });
 }
 
 export function syncServerThreadDetailHotPath(state: AppState, thread: ReadModelThread): AppState {
@@ -1347,7 +1349,9 @@ export function syncServerThreadDetailHotPath(state: AppState, thread: ReadModel
   ) {
     return removeThreadState(state, thread.id);
   }
-  return syncServerThreadDetailWithOptions(state, thread, { updateSidebarSummary: false });
+  return syncServerThreadDetailWithOptions(state, thread, {
+    updateSidebarSummary: true,
+  });
 }
 
 export function applyShellEvent(state: AppState, event: OrchestrationShellStreamEvent): AppState {
