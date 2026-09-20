@@ -396,7 +396,8 @@
 
 /* V1 Glowing Orbs Wave Animation */
 @keyframes orb-bounce {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0);
   }
   30% {
@@ -411,7 +412,8 @@
 }
 
 @keyframes halo-glow {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
     opacity: 0.15;
   }
@@ -423,24 +425,59 @@
 
 /* V1 Organic Equalizer Bar Animations */
 @keyframes bar-oscillate-1 {
-  0%, 100% { height: 5px; opacity: 0.45; }
-  50% { height: 16px; opacity: 1; }
+  0%,
+  100% {
+    height: 5px;
+    opacity: 0.45;
+  }
+  50% {
+    height: 16px;
+    opacity: 1;
+  }
 }
 @keyframes bar-oscillate-2 {
-  0%, 100% { height: 7px; opacity: 0.55; }
-  50% { height: 20px; opacity: 1; }
+  0%,
+  100% {
+    height: 7px;
+    opacity: 0.55;
+  }
+  50% {
+    height: 20px;
+    opacity: 1;
+  }
 }
 @keyframes bar-oscillate-3 {
-  0%, 100% { height: 4px; opacity: 0.4; }
-  50% { height: 13px; opacity: 0.9; }
+  0%,
+  100% {
+    height: 4px;
+    opacity: 0.4;
+  }
+  50% {
+    height: 13px;
+    opacity: 0.9;
+  }
 }
 @keyframes bar-oscillate-4 {
-  0%, 100% { height: 8px; opacity: 0.6; }
-  50% { height: 18px; opacity: 1; }
+  0%,
+  100% {
+    height: 8px;
+    opacity: 0.6;
+  }
+  50% {
+    height: 18px;
+    opacity: 1;
+  }
 }
 @keyframes bar-oscillate-5 {
-  0%, 100% { height: 5px; opacity: 0.45; }
-  50% { height: 12px; opacity: 0.85; }
+  0%,
+  100% {
+    height: 5px;
+    opacity: 0.45;
+  }
+  50% {
+    height: 12px;
+    opacity: 0.85;
+  }
 }
 
 /* Timeline rows: isolate layout/paint to prevent text/tool overlay during fast scroll

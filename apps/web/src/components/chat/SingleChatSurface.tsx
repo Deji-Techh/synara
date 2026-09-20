@@ -155,6 +155,11 @@ const LazyProjectPanel = lazy(() =>
     default: module.ProjectPanel,
   })),
 );
+const LazyReferenceDockPane = lazy(() =>
+  import("./ReferenceDockPane").then((module) => ({
+    default: module.ReferenceDockPane,
+  })),
+);
 
 const DIFF_INLINE_DEFAULT_WIDTH = "max(28rem, calc(50vw - 8rem))";
 const SINGLE_PANEL_MIN_WIDTH = 26 * 16;
@@ -892,6 +897,16 @@ export function SingleChatSurface(props: {
             <LazyProjectPanel
               threadId={props.threadId}
               projectId={props.projectId}
+              workspaceRoot={activeProject?.cwd ?? workspaceRoot}
+              onClose={() => closePane(props.threadId, pane.id)}
+            />
+          </Suspense>
+        );
+      case "reference":
+        return (
+          <Suspense fallback={<PanelStateMessage>Loading references...</PanelStateMessage>}>
+            <LazyReferenceDockPane
+              threadId={props.threadId}
               workspaceRoot={activeProject?.cwd ?? workspaceRoot}
               onClose={() => closePane(props.threadId, pane.id)}
             />

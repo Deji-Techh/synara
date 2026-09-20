@@ -32,6 +32,7 @@ describe("RIGHT_DOCK_PANE_KINDS (single source of truth)", () => {
       "database",
       "publish",
       "project",
+      "reference",
     ]);
   });
 

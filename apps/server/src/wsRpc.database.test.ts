@@ -23,7 +23,9 @@ const handlers = makeWsDatabaseHandlers({}, {}) as Record<
 
 async function invoke(threadId: string, channel: string, payload: unknown = {}) {
   const result = (await Effect.runPromise(
-    handlers["database.invoke"]({ threadId, channel, payload }) as Effect.Effect<{ value: unknown }>,
+    handlers["database.invoke"]({ threadId, channel, payload }) as Effect.Effect<{
+      value: unknown;
+    }>,
   )) as { value: unknown };
   expect(result).toHaveProperty("value");
   return result.value;

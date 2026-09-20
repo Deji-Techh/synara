@@ -2,7 +2,8 @@ import { HarnessPrompts } from "~/components/harness/HarnessPrompts";
 import { useHarnessStore } from "~/harnessStore";
 import { useStore } from "~/store";
 import { useScrambleText } from "./StreamingLoadingAnimation";
-import { ClipboardList, Sparkles } from "lucide-react";
+import { IconClipboardList as ClipboardList, IconSparkles as Sparkles } from "@tabler/icons-react";
+import type { ThreadId } from "@caide/contracts";
 
 type SendFn = (message: Record<string, unknown>) => void;
 
@@ -45,7 +46,7 @@ export function ChatHarnessConsentStrip(props: { threadId: string | null; send: 
   const promptCount = session?.prompts.length ?? 0;
   const isLiveTurn = session?.liveTurnId !== undefined;
   const interactionMode = useStore((state) =>
-    props.threadId ? state.threadSessionById?.[props.threadId]?.interactionMode : null,
+    props.threadId ? state.threadShellById?.[props.threadId as ThreadId]?.interactionMode : null,
   );
 
   const showSkeleton = interactionMode === "plan" && isLiveTurn && promptCount === 0;

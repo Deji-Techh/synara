@@ -4,7 +4,7 @@
 // and answer over the harness socket. Caide settings primitives + themed
 // tool-card language.
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { answerConsent, answerUiPrompt } from "~/harnessWs";
@@ -80,9 +80,11 @@ function QuestionnaireCard(props: { sessionId: string; entry: UiPromptEntry; sen
     const initial: Record<string, string | string[]> = { ...drafts };
     for (let i = 0; i < questions.length; i++) {
       const q = questions[i];
+      if (!q) continue;
       const id = q.id ?? `q${i}`;
-      if (q.type === "radio" && q.options && q.options.length > 0 && initial[id] === undefined) {
-        initial[id] = q.options[0];
+      const firstOption = q.options?.[0];
+      if (q.type === "radio" && firstOption !== undefined && initial[id] === undefined) {
+        initial[id] = firstOption;
       }
     }
     return initial;

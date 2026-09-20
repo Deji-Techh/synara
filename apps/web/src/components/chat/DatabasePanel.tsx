@@ -364,7 +364,12 @@ export function DatabasePanel(props: {
                 <span className="font-medium text-foreground text-sm">Database Unavailable</span>
                 <span className="text-muted-foreground leading-relaxed">{resolveError}</span>
               </div>
-              <Button size="xs" variant="outline" onClick={() => refreshApp()} className="gap-1.5 mt-2">
+              <Button
+                size="xs"
+                variant="outline"
+                onClick={() => refreshApp()}
+                className="gap-1.5 mt-2"
+              >
                 <RefreshCwIcon className="size-3" /> Retry
               </Button>
             </div>

@@ -20,6 +20,7 @@ import {
   InfoIcon,
   MessageCircleIcon,
   PublishIcon,
+  SparklesIcon,
   TerminalIcon,
 } from "~/lib/icons";
 import {
@@ -56,6 +57,7 @@ export const RIGHT_DOCK_PANE_META: Record<RightDockPaneKind, RightDockPaneMeta> 
   database: { label: "Database", Icon: DatabaseIcon },
   publish: { label: "Publish", Icon: PublishIcon },
   project: { label: "Project", Icon: FolderIcon },
+  reference: { label: "Reference", Icon: SparklesIcon },
 };
 
 // Neutral fallback for any pane kind we no longer recognize (e.g. stale
@@ -91,6 +93,7 @@ const RIGHT_DOCK_LAUNCHER_ORDER: readonly RightDockPaneKind[] = [
   "browser",
   "explorer",
   "sidechat",
+  "reference",
   "device",
   "database",
   "publish",

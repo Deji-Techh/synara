@@ -57,6 +57,7 @@ import {
   IconRocket,
   IconRotate2,
   IconSelector,
+  IconSparkles,
   IconStar,
   IconStarFilled,
   IconSun,
@@ -269,6 +270,7 @@ export const SearchIcon: LucideIcon = centralIconWrapper("magnifying-glass");
 export const SettingsIcon: LucideIcon = centralIconWrapper("settings-gear-4");
 export const StarIcon = adaptIcon(IconStar);
 export const StarFilledIcon = adaptIcon(IconStarFilled);
+export const SparklesIcon = adaptIcon(IconSparkles);
 export const SunIcon = adaptIcon(IconSun);
 export const MoonIcon = adaptIcon(IconMoon);
 export const DeviceLaptopIcon = adaptIcon(IconDeviceLaptop);

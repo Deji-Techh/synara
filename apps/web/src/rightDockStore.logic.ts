@@ -23,6 +23,7 @@ export const RIGHT_DOCK_PANE_KINDS = [
   "database",
   "publish",
   "project",
+  "reference",
 ] as const;
 
 export type RightDockPaneKind = (typeof RIGHT_DOCK_PANE_KINDS)[number];

@@ -47,6 +47,7 @@ describe("resolveRightDockLauncherItems", () => {
       ["browser", "Browser"],
       ["explorer", "Files"],
       ["sidechat", "Side chats"],
+      ["reference", "Reference"],
       ["database", "Database"],
       ["publish", "Publish"],
       ["project", "Project"],
@@ -66,6 +67,7 @@ describe("resolveRightDockLauncherItems", () => {
       "browser",
       "explorer",
       "sidechat",
+      "reference",
       "database",
       "publish",
       "project",
@@ -80,7 +82,7 @@ describe("resolveRightDockLauncherItems", () => {
         hasGitRepository: false,
         hasReview: false,
       }).map(({ kind }) => kind),
-    ).toEqual(["terminal", "browser", "sidechat", "database", "publish", "project"]);
+    ).toEqual(["terminal", "browser", "sidechat", "reference", "database", "publish", "project"]);
   });
 
   it("hides review for a clean Git repository", () => {
@@ -95,6 +97,7 @@ describe("resolveRightDockLauncherItems", () => {
       "browser",
       "explorer",
       "sidechat",
+      "reference",
       "database",
       "publish",
       "project",
@@ -117,6 +120,7 @@ describe("resolveRightDockLauncherItems", () => {
       "browser",
       "explorer",
       "sidechat",
+      "reference",
       "device",
       "database",
       "publish",
