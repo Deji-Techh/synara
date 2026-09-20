@@ -23,6 +23,7 @@ import {
 } from "@tabler/icons-react";
 import { DisclosureChevron } from "~/components/ui/DisclosureChevron";
 import { DisclosureRegion } from "~/components/ui/DisclosureRegion";
+import { cn } from "~/lib/utils";
 import {
   CaideCard,
   CaideCardHeader,
@@ -251,9 +252,22 @@ export const CaideClaudeToolCard: React.FC<CaideClaudeToolCardProps> = ({
         onClick={() => setIsExpanded(!isExpanded)}
         className="group inline-flex items-center gap-1.5 py-0.5 px-1 rounded hover:bg-muted/30 transition-colors duration-150 cursor-pointer text-left text-[12px]"
       >
-        <span className="text-muted-foreground/80 font-normal">{meta.verb}</span>
+        <span
+          className={cn(
+            "text-muted-foreground/80 font-normal",
+            cardState === "pending" &&
+              "bg-gradient-to-r from-foreground via-muted-foreground to-foreground bg-[length:200%_100%] animate-[shimmer_2s_ease-in-out_infinite] bg-clip-text text-transparent font-medium",
+          )}
+        >
+          {meta.verb}
+        </span>
         {meta.target && (
-          <code className="font-mono text-[11px] text-foreground/90 group-hover:text-foreground">
+          <code
+            className={cn(
+              "font-mono text-[11px] text-foreground/90 group-hover:text-foreground",
+              cardState === "pending" && "opacity-90",
+            )}
+          >
             {meta.target}
           </code>
         )}

@@ -1668,14 +1668,22 @@ function ChatMarkdown({
         return null;
       })}
 
-      {isStreaming &&
-        (smoothedText.length > 0 ? (
-          <StreamingCaret containerRef={containerRef} revision={smoothedText.length} />
-        ) : (
-          <div className="pt-1">
-            <StreamingLoadingAnimation variant="streaming" />
-          </div>
-        ))}
+      {isStreaming && (
+        <div className="pt-1.5 flex flex-col gap-1.5">
+          {smoothedText.length > 0 ? (
+            <>
+              <StreamingCaret containerRef={containerRef} revision={smoothedText.length} />
+              <div className="pt-1">
+                <StreamingLoadingAnimation variant="streaming" />
+              </div>
+            </>
+          ) : (
+            <div className="pt-1">
+              <StreamingLoadingAnimation variant="initial" />
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

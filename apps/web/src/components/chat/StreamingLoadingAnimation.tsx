@@ -109,34 +109,86 @@ export function StreamingLoadingAnimation({
   variant = "streaming",
 }: StreamingLoadingAnimationProps) {
   const verb = useRotatingVerb(variant === "initial" ? INITIAL_VERBS : STREAMING_VERBS);
-  // Parked on user input (questionnaire/consent waiting for answers): say so
-  // instead of rotating busy verbs — the old copy made a parked turn read as
-  // doing work for minutes ("styling layout…" while awaiting taps).
   const store = useHarnessStore();
   const activeId = store.activeSessionId;
   const waitingOnUser = activeId != null && (store.sessions[activeId]?.prompts.length ?? 0) > 0;
 
-  return (
-    <div className="inline-flex items-center gap-2 py-1 select-none animate-in fade-in duration-300">
-      <div className="flex items-center gap-1">
-        <span className="relative flex h-2.5 w-2.5">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary/40 opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary"></span>
-        </span>
-        <div className="flex items-end gap-0.5 h-3.5 px-0.5">
-          <span
-            className="w-1 bg-primary/70 rounded-full animate-pulse h-2"
-            style={{ animationDelay: "0ms" }}
-          />
-          <span
-            className="w-1 bg-primary/90 rounded-full animate-pulse h-3.5"
-            style={{ animationDelay: "150ms" }}
-          />
-          <span
-            className="w-1 bg-primary rounded-full animate-pulse h-2.5"
-            style={{ animationDelay: "300ms" }}
-          />
+  if (variant === "initial") {
+    const orbs = [0, 1, 2, 3, 4];
+    return (
+      <div className="flex items-center gap-3 py-1.5 select-none animate-in fade-in duration-300">
+        <div className="relative flex h-6 items-center justify-start gap-1.5">
+          {orbs.map((index) => (
+            <div
+              key={index}
+              className="relative flex items-center justify-center"
+              style={{
+                animation: `orb-bounce 1.1s cubic-bezier(0.22, 1.2, 0.36, 1) infinite`,
+                animationDelay: `${index * 70}ms`,
+              }}
+            >
+              {/* Soft halo glow */}
+              <div
+                className="absolute -inset-1 rounded-full blur-xs pointer-events-none"
+                style={{
+                  background:
+                    "radial-gradient(circle, color-mix(in srgb, var(--primary) 40%, transparent), transparent 70%)",
+                  animation: `halo-glow 1.1s ease-out infinite`,
+                  animationDelay: `${index * 70}ms`,
+                }}
+              />
+              {/* Core orb */}
+              <div
+                className="h-2 w-2 rounded-full bg-primary"
+                style={{
+                  boxShadow: "0 0 6px color-mix(in srgb, var(--primary) 30%, transparent)",
+                }}
+              />
+            </div>
+          ))}
         </div>
+        {waitingOnUser ? (
+          <span className="inline-block text-xs font-medium text-muted-foreground/80 tracking-wide select-none">
+            Waiting for your answers…
+          </span>
+        ) : (
+          <ScrambleVerb verb={verb} />
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2.5 py-1 select-none animate-in fade-in duration-300">
+      <div className="flex h-5 items-end gap-[3px]">
+        <div
+          className="w-[3px] rounded-full bg-primary"
+          style={{ animation: "bar-oscillate-1 1.0s cubic-bezier(0.22, 1.2, 0.36, 1) infinite" }}
+        />
+        <div
+          className="w-[3px] rounded-full bg-primary"
+          style={{
+            animation: "bar-oscillate-2 1.2s cubic-bezier(0.22, 1.2, 0.36, 1) infinite 120ms",
+          }}
+        />
+        <div
+          className="w-[3px] rounded-full bg-primary"
+          style={{
+            animation: "bar-oscillate-3 1.1s cubic-bezier(0.22, 1.2, 0.36, 1) infinite 250ms",
+          }}
+        />
+        <div
+          className="w-[3px] rounded-full bg-primary"
+          style={{
+            animation: "bar-oscillate-4 1.05s cubic-bezier(0.22, 1.2, 0.36, 1) infinite 80ms",
+          }}
+        />
+        <div
+          className="w-[3px] rounded-full bg-primary"
+          style={{
+            animation: "bar-oscillate-5 1.3s cubic-bezier(0.22, 1.2, 0.36, 1) infinite 300ms",
+          }}
+        />
       </div>
       {waitingOnUser ? (
         <span className="inline-block text-xs font-medium text-muted-foreground/80 tracking-wide select-none">
