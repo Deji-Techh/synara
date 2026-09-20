@@ -164,4 +164,88 @@ describe("database.invoke bridge (pane backend)", () => {
     })) as { project: { id: string } };
     expect(sb.project.id).toBe("r2");
   });
+
+  it("handles OAuth returns and status for neon and supabase", async () => {
+    // initially neon and supabase not connected
+    const neonStatus1 = (await invoke("s-1", "neon:status")) as { connected: boolean };
+    const sbStatus1 = (await invoke("s-1", "supabase:status")) as { connected: boolean };
+    expect(neonStatus1.connected).toBe(false);
+    expect(sbStatus1.connected).toBe(false);
+
+    // return oauth tokens
+    await invoke("s-1", "neon:oauth-return", { token: "neon-test-token" });
+    await invoke("s-1", "supabase:oauth-return", { token: "sb-test-token" });
+
+    const neonStatus2 = (await invoke("s-1", "neon:status")) as { connected: boolean };
+    const sbStatus2 = (await invoke("s-1", "supabase:status")) as { connected: boolean };
+    expect(neonStatus2.connected).toBe(true);
+    expect(sbStatus2.connected).toBe(true);
+
+    // disconnect
+    await invoke("s-1", "neon:disconnect");
+    await invoke("s-1", "supabase:disconnect");
+    expect(((await invoke("s-1", "neon:status")) as { connected: boolean }).connected).toBe(false);
+    expect(((await invoke("s-1", "supabase:status")) as { connected: boolean }).connected).toBe(false);
+  });
+
+  it("handles GitHub device flow and auth status", async () => {
+    const stub = vi.fn(async (url: unknown) => {
+      const u = String(url);
+      const json = (body: unknown) =>
+        ({ ok: true, status: 200, json: async () => body }) as Response;
+      if (u.includes("/login/device/code")) {
+        return json({
+          device_code: "dev123",
+          user_code: "ABCD-1234",
+          verification_uri: "https://github.com/login/device",
+          expires_in: 900,
+          interval: 1,
+        });
+      }
+      if (u.includes("/login/oauth/access_token")) {
+        return json({ access_token: "gh-oauth-token-123" });
+      }
+      if (u.includes("api.github.com/user")) {
+        return json({
+          login: "octocat",
+          name: "Mona Lisa Octocat",
+          avatar_url: "https://github.com/images/error/octocat_happy.gif",
+          html_url: "https://github.com/octocat",
+        });
+      }
+      throw new Error(`unexpected fetch to ${u}`);
+    });
+    vi.stubGlobal("fetch", stub);
+
+    // request device code
+    const req = (await invoke("s-1", "github:device-code-request")) as {
+      deviceCode: string;
+      userCode: string;
+      verificationUri: string;
+    };
+    expect(req.deviceCode).toBe("dev123");
+    expect(req.userCode).toBe("ABCD-1234");
+
+    // poll token
+    const poll = (await invoke("s-1", "github:device-code-poll", {
+      deviceCode: "dev123",
+      interval: 1,
+      expiresIn: 5,
+    })) as { ok: boolean; accessToken: string };
+    expect(poll.ok).toBe(true);
+    expect(poll.accessToken).toBe("gh-oauth-token-123");
+
+    // check auth status
+    const status = (await invoke("s-1", "github:auth-status")) as {
+      connected: boolean;
+      user: { login: string; name: string };
+    };
+    expect(status.connected).toBe(true);
+    expect(status.user.login).toBe("octocat");
+
+    // disconnect
+    await invoke("s-1", "github:disconnect");
+    const disconnected = (await invoke("s-1", "github:auth-status")) as { connected: boolean };
+    expect(disconnected.connected).toBe(false);
+  });
 });

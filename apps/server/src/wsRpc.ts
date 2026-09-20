@@ -798,6 +798,87 @@ export function makeWsDatabaseHandlers(_providerAdapterRegistry: any, _options: 
                 });
                 return { project: created };
               }
+              case "neon:oauth-return": {
+                const token = str(payload.token);
+                if (!token) throw new Error("OAuth return payload missing token.");
+                sharedProviderSecrets().setProvider("neon", { apiKey: token });
+                return { ok: true };
+              }
+              case "neon:status": {
+                const token = getVoiceApiKey("neon") || "";
+                return { connected: Boolean(token) };
+              }
+              case "neon:disconnect": {
+                sharedProviderSecrets().setProvider("neon", { apiKey: "" });
+                return { ok: true };
+              }
+              case "supabase:oauth-return": {
+                const token = str(payload.token);
+                if (!token) throw new Error("OAuth return payload missing token.");
+                sharedProviderSecrets().setProvider("supabase", { apiKey: token });
+                return { ok: true };
+              }
+              case "supabase:status": {
+                const token = getVoiceApiKey("supabase") || "";
+                return { connected: Boolean(token) };
+              }
+              case "supabase:disconnect": {
+                sharedProviderSecrets().setProvider("supabase", { apiKey: "" });
+                return { ok: true };
+              }
+              case "github:device-code-request": {
+                const { requestGithubDeviceCode } = await import("./dyad/publish/githubOAuth.ts");
+                return await requestGithubDeviceCode();
+              }
+              case "github:device-code-poll": {
+                const { pollGithubAccessToken, saveGithubOAuthToken } =
+                  await import("./dyad/publish/githubOAuth.ts");
+                const deviceCode = str(payload.deviceCode);
+                if (!deviceCode) throw new Error("deviceCode is required.");
+                const res = await pollGithubAccessToken(deviceCode, {
+                  interval: typeof payload.interval === "number" ? payload.interval : undefined,
+                  expiresIn: typeof payload.expiresIn === "number" ? payload.expiresIn : undefined,
+                });
+                saveGithubOAuthToken(res.accessToken);
+                return { ok: true, accessToken: res.accessToken };
+              }
+              case "github:auth-status": {
+                const { getGithubToken } = await import("./dyad/publish/githubTools.ts");
+                const token = getGithubToken();
+                if (!token) return { connected: false, user: null };
+                try {
+                  const res = await fetch("https://api.github.com/user", {
+                    headers: {
+                      Authorization: `Bearer ${token}`,
+                      Accept: "application/vnd.github.v3+json",
+                      "User-Agent": "Caide-App",
+                    },
+                  });
+                  if (!res.ok) return { connected: false, user: null };
+                  const u = (await res.json()) as {
+                    login?: string;
+                    name?: string;
+                    avatar_url?: string;
+                    html_url?: string;
+                  };
+                  return {
+                    connected: true,
+                    user: {
+                      login: u.login ?? "",
+                      name: u.name ?? u.login ?? "",
+                      avatarUrl: u.avatar_url ?? "",
+                      htmlUrl: u.html_url ?? "",
+                    },
+                  };
+                } catch {
+                  return { connected: true, user: null };
+                }
+              }
+              case "github:disconnect": {
+                const { disconnectGithubOAuth } = await import("./dyad/publish/githubOAuth.ts");
+                disconnectGithubOAuth();
+                return { ok: true };
+              }
               default:
                 throw new Error(`Unknown database channel: ${channel || "(missing)"}`);
             }

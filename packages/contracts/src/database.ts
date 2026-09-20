@@ -27,7 +27,7 @@ const DATABASE_CHANNEL_MAX_LENGTH = 128;
  */
 export const DatabaseChannel = TrimmedNonEmptyString.check(
   Schema.isMaxLength(DATABASE_CHANNEL_MAX_LENGTH),
-).check(Schema.isPattern(/^(?:(?:neon|supabase):[a-z0-9:-]+|list-apps|get-app)$/));
+).check(Schema.isPattern(/^(?:(?:neon|supabase|github):[a-z0-9:-]+|list-apps|get-app)$/));
 
 export const DatabaseInvokeInput = Schema.Struct({
   threadId: ThreadId,
