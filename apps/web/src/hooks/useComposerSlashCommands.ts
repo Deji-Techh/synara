@@ -383,6 +383,9 @@ export function useComposerSlashCommands(input: {
               });
             },
             syncServerShellSnapshot,
+            syncServerThreadDetailHotPath: (thread) => {
+              useStore.getState().syncServerThreadDetailHotPath(thread);
+            },
             markDetailSyncFailed: (sidechatThreadId) => {
               try {
                 useStore.getState().markThreadDetailSyncFailed(sidechatThreadId);

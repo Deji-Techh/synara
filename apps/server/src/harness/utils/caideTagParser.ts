@@ -128,6 +128,13 @@ export function getCaideDeleteTags(fullResponse: string): string[] {
 export function stripCaideTags(text: string): string {
   return stripFunctionTagCalls(
     text
+      .replace(
+        /```(?:json)?\s*\[?\s*\{[\s\S]*?"(?:tool_use|function|write_file|list_dir|read_file)"[\s\S]*?\}?\s*\]?\s*```/gi,
+        "",
+      )
+      .replace(/\[\s*\{\s*"type"\s*:\s*"tool_use"[\s\S]*?\}\s*\]/gi, "")
+      .replace(/\[\s*\{\s*"name"\s*:\s*"[^"]+"[\s\S]*?"(?:arguments|input)"[\s\S]*?\}\s*\]/gi, "")
+      .replace(/\{\s*"type"\s*:\s*"tool_use"[\s\S]*?\}/gi, "")
       .replace(/<(?:caide|dyad)-write[^>]*>[\s\S]*?<\/(?:caide|dyad)-write>/gi, "")
       .replace(/<(?:caide|dyad)-rename[^>]*>[\s\S]*?<\/(?:caide|dyad)-rename>/gi, "")
       .replace(/<(?:caide|dyad)-delete[^>]*\/?>/gi, "")

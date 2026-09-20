@@ -257,6 +257,7 @@ export async function createSidechatThread(input: {
   syncServerShellSnapshot: (snapshot: OrchestrationShellSnapshot) => void;
   /** Marks the new thread's detail failed so hydration shows retry, not a spinner. */
   markDetailSyncFailed?: (threadId: ThreadId) => void;
+  syncServerThreadDetailHotPath?: (thread: any) => void;
 }): Promise<SidechatCreationResult> {
   const nextThreadId = newThreadId();
   const createdAt = new Date().toISOString();
@@ -265,6 +266,8 @@ export async function createSidechatThread(input: {
     initialPrompt.length > 0
       ? buildPromptThreadTitleFallback(initialPrompt)
       : input.sourceThread.title;
+
+  const importedMessages = [...buildThreadHandoffImportedMessages(input.sourceThread)];
 
   await input.api.orchestration.dispatchCommand({
     type: "thread.fork.create",
@@ -284,9 +287,78 @@ export async function createSidechatThread(input: {
     associatedWorktreePath: input.sourceThread.associatedWorktreePath ?? null,
     associatedWorktreeBranch: input.sourceThread.associatedWorktreeBranch ?? null,
     associatedWorktreeRef: input.sourceThread.associatedWorktreeRef ?? null,
-    importedMessages: [...buildThreadHandoffImportedMessages(input.sourceThread)],
+    importedMessages,
     createdAt,
   });
+
+  // Seed the client-side thread detail hot-path so the sidechat pane hydrates
+  // immediately without an unbounded "Loading conversation" spinner.
+  if (input.syncServerThreadDetailHotPath) {
+    input.syncServerThreadDetailHotPath({
+      id: nextThreadId,
+      projectId: input.project.id,
+      title: `Sidechat: ${titleSeed}`,
+      modelSelection: input.selectedModelSelection,
+      runtimeMode: "approval-required",
+      interactionMode: "default",
+      envMode:
+        input.sourceThread.envMode ?? (input.sourceThread.worktreePath ? "worktree" : "local"),
+      branch: input.sourceThread.branch ?? null,
+      worktreePath: input.sourceThread.worktreePath ?? null,
+      workingDirectory: input.sourceThread.workingDirectory ?? null,
+      associatedWorktreePath: input.sourceThread.associatedWorktreePath ?? null,
+      associatedWorktreeBranch: input.sourceThread.associatedWorktreeBranch ?? null,
+      associatedWorktreeRef: input.sourceThread.associatedWorktreeRef ?? null,
+      createBranchFlowCompleted: false,
+      isPinned: false,
+      parentThreadId: null,
+      creationSource: null,
+      sourceThreadId: input.sourceThread.id,
+      sourceTurnId: null,
+      gatewayOperationId: null,
+      gatewayOperationIndex: null,
+      subagentAgentId: null,
+      subagentNickname: null,
+      subagentRole: null,
+      forkSourceThreadId: input.sourceThread.id,
+      sidechatSourceThreadId: input.sourceThread.id,
+      lastKnownPr: null,
+      latestTurn: null,
+      latestUserMessageAt: null,
+      hasPendingApprovals: false,
+      hasPendingUserInput: false,
+      hasActionableProposedPlan: false,
+      createdAt,
+      updatedAt: createdAt,
+      lastVisitedAt: createdAt,
+      archivedAt: null,
+      settledAt: null,
+      deletedAt: null,
+      handoff: null,
+      session: null,
+      goal: null,
+      goalPausedAt: null,
+      pinnedMessages: [],
+      turns: [],
+      messages: importedMessages.map((m) => ({
+        id: m.messageId,
+        role: m.role,
+        text: m.text,
+        turnId: null,
+        streaming: false,
+        source: "fork-import",
+        createdAt: m.createdAt,
+        updatedAt: m.updatedAt,
+        attachments: m.attachments ?? [],
+        skills: [],
+        mentions: [],
+      })),
+      activities: [],
+      proposedPlans: [],
+      turnDiffSummaries: [],
+      checkpoints: [],
+    });
+  }
 
   // The fork now exists. Expose it immediately so a slow snapshot refresh cannot
   // leave a successful creation invisible and tempt the user into creating duplicates.

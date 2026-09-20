@@ -19,6 +19,7 @@ vi.mock("./utils", () => ({
   newCommandId: () => "command-1",
   newMessageId: () => "message-1",
   newThreadId: () => "sidechat-thread",
+  randomUUID: () => "msg-uuid-1",
 }));
 
 const sourceThread = {
@@ -85,6 +86,49 @@ describe("createSidechatThread", () => {
       snapshotError: null,
     });
     expect(syncServerShellSnapshot).toHaveBeenCalledOnce();
+  });
+
+  it("seeds the thread detail hot-path before opening the sidechat pane so hydration is immediate", async () => {
+    const callOrder: string[] = [];
+    const syncServerThreadDetailHotPath = vi.fn().mockImplementation(() => {
+      callOrder.push("detailHotPath");
+    });
+    const openSidechat = vi.fn().mockImplementation(() => {
+      callOrder.push("openSidechat");
+    });
+    const sourceWithMessages = {
+      ...sourceThread,
+      messages: [
+        {
+          id: "m1",
+          role: "user" as const,
+          text: "Hello",
+          streaming: false,
+          source: "native" as const,
+          createdAt: "2026-09-20T00:00:00.000Z",
+        },
+      ],
+    } as unknown as Thread;
+
+    await createSidechatThread({
+      api: makeApi(),
+      project,
+      sourceThread: sourceWithMessages,
+      selectedModelSelection,
+      openSidechat,
+      syncServerShellSnapshot: vi.fn(),
+      syncServerThreadDetailHotPath,
+    });
+
+    expect(syncServerThreadDetailHotPath).toHaveBeenCalledOnce();
+    const seeded = syncServerThreadDetailHotPath.mock.calls[0]?.[0];
+    expect(seeded).toBeDefined();
+    expect(seeded?.id).toBe(ThreadId.makeUnsafe("sidechat-thread"));
+    expect(seeded?.sidechatSourceThreadId).toBe(sourceThread.id);
+    expect(seeded?.forkSourceThreadId).toBe(sourceThread.id);
+    expect(seeded?.messages).toHaveLength(1);
+    expect(seeded?.messages[0].source).toBe("fork-import");
+    expect(callOrder).toEqual(["detailHotPath", "openSidechat"]);
   });
 
   it("starts snapshot synchronization before dispatching the optional prompt", async () => {

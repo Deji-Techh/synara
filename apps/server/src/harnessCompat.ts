@@ -21,6 +21,7 @@ import {
 } from "./harness/provider/chatMessageImages.ts";
 import { sharedProviderSecrets } from "./dyad/providers/secrets.ts";
 import { readHeadCommitSync } from "./dyad/vcs/gitTools.ts";
+import { stripCaideTags } from "./harness/utils/caideTagParser.ts";
 
 export class AutomationService extends ServiceMap.Service<AutomationService, any>()(
   "caide/AutomationService",
@@ -871,17 +872,17 @@ const emptyReadModel = () => ({
     associatedWorktreeRef: t.associatedWorktreeRef || null,
     createBranchFlowCompleted: false,
     isPinned: false,
-    parentThreadId: null,
-    creationSource: null,
-    sourceThreadId: null,
-    sourceTurnId: null,
-    gatewayOperationId: null,
-    gatewayOperationIndex: null,
-    subagentAgentId: null,
-    subagentNickname: null,
-    subagentRole: null,
-    forkSourceThreadId: null,
-    sidechatSourceThreadId: null,
+    parentThreadId: t.parentThreadId ?? null,
+    creationSource: t.creationSource ?? null,
+    sourceThreadId: t.sourceThreadId ?? null,
+    sourceTurnId: t.sourceTurnId ?? null,
+    gatewayOperationId: t.gatewayOperationId ?? null,
+    gatewayOperationIndex: t.gatewayOperationIndex ?? null,
+    subagentAgentId: t.subagentAgentId ?? null,
+    subagentNickname: t.subagentNickname ?? null,
+    subagentRole: t.subagentRole ?? null,
+    forkSourceThreadId: t.forkSourceThreadId ?? null,
+    sidechatSourceThreadId: t.sidechatSourceThreadId ?? null,
     lastKnownPr: null,
     latestTurn: sanitizeLatestTurn(t.latestTurn),
     latestUserMessageAt: t.latestUserMessageAt || null,
@@ -901,7 +902,7 @@ const emptyReadModel = () => ({
     pinnedMessages: t.pinnedMessages || [],
     turns: t.turns || [],
     messages: (t.messages || []).map((m: any) => ({
-      id: m.id || m.message_id,
+      id: m.id || m.messageId || m.message_id || nodeRandomUUID(),
       role: m.role || "user",
       text: m.text || "",
       turnId: m.turnId ?? m.turn_id ?? null,
@@ -959,17 +960,17 @@ const emptyShellSnapshot = () => ({
     associatedWorktreeRef: t.associatedWorktreeRef || null,
     createBranchFlowCompleted: false,
     isPinned: false,
-    parentThreadId: null,
-    creationSource: null,
-    sourceThreadId: null,
-    sourceTurnId: null,
-    gatewayOperationId: null,
-    gatewayOperationIndex: null,
-    subagentAgentId: null,
-    subagentNickname: null,
-    subagentRole: null,
-    forkSourceThreadId: null,
-    sidechatSourceThreadId: null,
+    parentThreadId: t.parentThreadId ?? null,
+    creationSource: t.creationSource ?? null,
+    sourceThreadId: t.sourceThreadId ?? null,
+    sourceTurnId: t.sourceTurnId ?? null,
+    gatewayOperationId: t.gatewayOperationId ?? null,
+    gatewayOperationIndex: t.gatewayOperationIndex ?? null,
+    subagentAgentId: t.subagentAgentId ?? null,
+    subagentNickname: t.subagentNickname ?? null,
+    subagentRole: t.subagentRole ?? null,
+    forkSourceThreadId: t.forkSourceThreadId ?? null,
+    sidechatSourceThreadId: t.sidechatSourceThreadId ?? null,
     lastKnownPr: null,
     latestTurn: sanitizeLatestTurn(t.latestTurn),
     latestUserMessageAt: t.latestUserMessageAt || null,
@@ -1070,17 +1071,17 @@ const emptyThreadDetailSnapshot = (threadId: string) => {
       associatedWorktreeRef: existing.associatedWorktreeRef ?? null,
       createBranchFlowCompleted: false,
       isPinned: false,
-      parentThreadId: null,
-      creationSource: null,
-      sourceThreadId: null,
-      sourceTurnId: null,
-      gatewayOperationId: null,
-      gatewayOperationIndex: null,
-      subagentAgentId: null,
-      subagentNickname: null,
-      subagentRole: null,
-      forkSourceThreadId: null,
-      sidechatSourceThreadId: null,
+      parentThreadId: existing.parentThreadId ?? null,
+      creationSource: existing.creationSource ?? null,
+      sourceThreadId: existing.sourceThreadId ?? null,
+      sourceTurnId: existing.sourceTurnId ?? null,
+      gatewayOperationId: existing.gatewayOperationId ?? null,
+      gatewayOperationIndex: existing.gatewayOperationIndex ?? null,
+      subagentAgentId: existing.subagentAgentId ?? null,
+      subagentNickname: existing.subagentNickname ?? null,
+      subagentRole: existing.subagentRole ?? null,
+      forkSourceThreadId: existing.forkSourceThreadId ?? null,
+      sidechatSourceThreadId: existing.sidechatSourceThreadId ?? null,
       lastKnownPr: null,
       latestTurn: sanitizeLatestTurn(existing.latestTurn),
       latestUserMessageAt: existing.latestUserMessageAt ?? null,
@@ -1100,7 +1101,7 @@ const emptyThreadDetailSnapshot = (threadId: string) => {
       pinnedMessages: existing.pinnedMessages ?? [],
       turns: existing.turns ?? [],
       messages: (existing.messages ?? []).map((m: any) => ({
-        id: m.id || m.message_id,
+        id: m.id || m.messageId || m.message_id || nodeRandomUUID(),
         role: m.role || "user",
         text: m.text || "",
         turnId: m.turnId ?? m.turn_id ?? null,
@@ -1680,14 +1681,29 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                   Array.isArray(command.importedMessages) &&
                   command.importedMessages.length > 0
                 ) {
-                  return [...command.importedMessages];
+                  return command.importedMessages.map((m: any) => ({
+                    id: m.messageId ?? m.id ?? nodeRandomUUID(),
+                    role: m.role,
+                    text: m.text ?? "",
+                    turnId: null,
+                    streaming: false,
+                    source: m.source ?? "fork-import",
+                    createdAt: m.createdAt ?? now,
+                    updatedAt: m.updatedAt ?? now,
+                    attachments: m.attachments ?? [],
+                    skills: m.skills ?? [],
+                    mentions: m.mentions ?? [],
+                  }));
                 }
                 if (
                   command.type === "thread.fork.create" &&
                   Array.isArray(sourceThread?.messages) &&
                   sourceThread.messages.length > 0
                 ) {
-                  return sourceThread.messages.map((m: any) => ({ ...m }));
+                  return sourceThread.messages.map((m: any) => ({
+                    ...m,
+                    source: "fork-import",
+                  }));
                 }
                 return [];
               })(),
@@ -2756,6 +2772,9 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                       if (trimmedReasoning) {
                         completedStepTexts.push(trimmedReasoning);
                       }
+                      if (assistantMsg.text) {
+                        assistantMsg.text = stripCaideTags(assistantMsg.text);
+                      }
                       const lastMsg = conversation[conversation.length - 1];
                       const newCall = {
                         id: event.id,
@@ -2818,6 +2837,7 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               for await (const _loopEvent of loop) {
                 // onEvent handles all publishing
               }
+              assistantMsg.text = stripCaideTags(assistantMsg.text);
               flushAssistantMessageImmediate(assistantMsg);
 
               // If turn was aborted by user stop control, conclude immediately as interrupted
