@@ -246,6 +246,20 @@ describe("Milestone M11 — Provider Streaming, SIGTERM & Block Assembly", () =>
     );
   });
 
+  it("routes all Groq models to chat/completions regardless of model-name prefix", () => {
+    const groqBase = "https://api.groq.com/openai/v1";
+    // openai/* prefix on groq base — must not accidentally hit responses endpoint
+    expect(endpointForModel("openai/gpt-oss-120b", groqBase)).toBe("chat/completions");
+    expect(endpointForModel("openai/gpt-oss-20b", groqBase)).toBe("chat/completions");
+    // qwen/* prefix on groq base — must not accidentally hit messages endpoint
+    expect(endpointForModel("qwen/qwen3.8-27b", groqBase)).toBe("chat/completions");
+    // groq/* compound models
+    expect(endpointForModel("groq/compound", groqBase)).toBe("chat/completions");
+    expect(endpointForModel("groq/compound-mini", groqBase)).toBe("chat/completions");
+    // URL constructed correctly
+    expect(buildProviderUrl(groqBase, "qwen/qwen3.8-27b")).toBe(`${groqBase}/chat/completions`);
+  });
+
   it("strips Gemini-rejected schema keys from function_declarations in the request body", async () => {
     let body: any = null;
     server.on("request", (req, res) => {

@@ -750,28 +750,28 @@ export const MODEL_OPTIONS_BY_PROVIDER = {
   ],
   groq: [
     {
-      slug: "llama-3.3-70b-versatile",
-      name: "Llama 3.3 70B Versatile",
+      slug: "openai/gpt-oss-120b",
+      name: "GPT OSS 120B",
       capabilities: API_MODEL_CAPABILITIES,
     },
     {
-      slug: "llama-3.1-8b-instant",
-      name: "Llama 3.1 8B Instant",
+      slug: "openai/gpt-oss-20b",
+      name: "GPT OSS 20B",
       capabilities: API_MODEL_CAPABILITIES,
     },
     {
-      slug: "mixtral-8x7b-32768",
-      name: "Mixtral 8x7B",
+      slug: "qwen/qwen3.8-27b",
+      name: "Qwen 3.8 27B",
       capabilities: API_MODEL_CAPABILITIES,
     },
     {
-      slug: "deepseek-r1-distill-llama-70b",
-      name: "DeepSeek R1 Distill Llama 70B",
+      slug: "groq/compound",
+      name: "Groq Compound",
       capabilities: API_MODEL_CAPABILITIES,
     },
     {
-      slug: "qwen-2.5-coder-32b",
-      name: "Qwen 2.5 Coder 32B",
+      slug: "groq/compound-mini",
+      name: "Groq Compound Mini",
       capabilities: API_MODEL_CAPABILITIES,
     },
   ],

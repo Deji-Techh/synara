@@ -18,12 +18,36 @@ export class ProviderApiError extends Error {
 
 export function endpointForModel(modelId: string, baseUrl?: string): ApiEndpoint {
   const lower = modelId.toLowerCase();
-  if (baseUrl && baseUrl.includes("openrouter.ai")) return "chat/completions";
-  if (
-    lower.startsWith("gemini-") ||
-    (baseUrl && baseUrl.includes("generativelanguage.googleapis.com"))
-  )
+  const cleanBase = (baseUrl ?? "").toLowerCase();
+
+  // Explicit OpenAI-compatible and third-party endpoints always use chat/completions
+  if (cleanBase) {
+    if (
+      cleanBase.includes("groq.com") ||
+      cleanBase.includes("openrouter.ai") ||
+      cleanBase.includes("api.deepseek.com") ||
+      cleanBase.includes("api.mistral.ai") ||
+      cleanBase.includes("together.xyz") ||
+      cleanBase.includes("api.x.ai") ||
+      cleanBase.includes("fireworks.ai") ||
+      cleanBase.includes("/openai/v1")
+    ) {
+      return "chat/completions";
+    }
+
+    if (cleanBase.includes("anthropic.com")) {
+      return "messages";
+    }
+
+    if (cleanBase.includes("generativelanguage.googleapis.com")) {
+      return "gemini";
+    }
+  }
+
+  if (lower.startsWith("gemini-")) {
     return "gemini";
+  }
+
   // Per user-provided endpoint tables (2026-09-02): responses for gpt/grok/muse-spark across both Zen and Go
   if (
     lower.startsWith("gpt-") ||
@@ -39,7 +63,7 @@ export function endpointForModel(modelId: string, baseUrl?: string): ApiEndpoint
   }
   // minimax is /messages on Go (and default), /chat/completions on Zen v1
   if (lower.startsWith("minimax")) {
-    return baseUrl && baseUrl.includes("/zen/v1") && !baseUrl.includes("/go/")
+    return cleanBase.includes("/zen/v1") && !cleanBase.includes("/go/")
       ? "chat/completions"
       : "messages";
   }
