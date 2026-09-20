@@ -4,11 +4,15 @@
 // and answer over the harness socket. Caide settings primitives + themed
 // tool-card language.
 
+import type { ThreadId } from "@caide/contracts";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
+import { Badge } from "~/components/ui/badge";
 import { answerConsent, answerUiPrompt } from "~/harnessWs";
 import { harnessStore, useHarnessStore, type UiPromptEntry } from "~/harnessStore";
+import { useRightDockStore } from "~/rightDockStore";
+import { DatabaseIcon } from "~/lib/icons";
 import { cn } from "~/lib/utils";
 import {
   CaideBadge,
@@ -283,27 +287,22 @@ function IntegrationCard(props: { sessionId: string; entry: UiPromptEntry; send:
   const [provider, setProvider] = useState<"supabase" | "neon">(
     suggested === "neon" ? "neon" : "supabase",
   );
-  const [databaseUrl, setDatabaseUrl] = useState("");
-  const [projectId, setProjectId] = useState("");
-  const [managementToken, setManagementToken] = useState("");
+  const [inPanelMode, setInPanelMode] = useState(false);
   const [done, setDone] = useState(false);
   const answered = useRef(false);
   if (done) return null;
 
-  const hasUrl = databaseUrl.trim().length > 0;
-
-  const submit = () => {
-    if (answered.current || !hasUrl) return;
+  const submit = (chosenProvider?: "supabase" | "neon") => {
+    if (answered.current) return;
     answered.current = true;
+    const p = chosenProvider || provider;
     answerUiPrompt(props.send, props.entry.requestId, {
-      provider,
-      databaseUrl,
-      projectId,
-      managementToken,
+      provider: p,
     });
     harnessStore.resolvePrompt(props.sessionId, props.entry.requestId);
     setDone(true);
   };
+
   const dismiss = () => {
     if (answered.current) return;
     answered.current = true;
@@ -312,55 +311,94 @@ function IntegrationCard(props: { sessionId: string; entry: UiPromptEntry; send:
     setDone(true);
   };
 
+  const openDatabasePanel = () => {
+    useRightDockStore.getState().openPane(props.sessionId as ThreadId, { kind: "database" });
+    setInPanelMode(true);
+  };
+
   return (
-    <Shell badge="Database" accent="info" title="Connect a database provider">
-      <div className="flex flex-col gap-2.5">
-        <div className="flex gap-1.5">
-          {(["supabase", "neon"] as const).map((p) => (
-            <button
-              key={p}
-              type="button"
-              onClick={() => setProvider(p)}
-              className={cn(
-                "flex-1 rounded-lg border px-2.5 py-1.5 text-xs font-medium capitalize transition-colors",
-                provider === p
-                  ? "border-foreground/40 bg-muted"
-                  : "border-border/70 text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {p}
-            </button>
-          ))}
-        </div>
-        <Input
-          placeholder="DATABASE_URL (postgres://…)"
-          value={databaseUrl}
-          onChange={(e) => setDatabaseUrl(e.target.value)}
-        />
-        <Input
-          placeholder="Project ID (optional)"
-          value={projectId}
-          onChange={(e) => setProjectId(e.target.value)}
-        />
-        <Input
-          type="password"
-          placeholder="API token (optional — enables project listing)"
-          value={managementToken}
-          onChange={(e) => setManagementToken(e.target.value)}
-        />
-        <div className="flex justify-end gap-2">
-          <Button size="xs" variant="ghost" onClick={dismiss}>
-            Not now
-          </Button>
-          <Button
-            size="xs"
-            onClick={submit}
-            disabled={!hasUrl}
-            title={!hasUrl ? "Enter a DATABASE_URL first (or Not now)" : undefined}
-          >
-            Connect
-          </Button>
-        </div>
+    <Shell badge="Database" accent="info" title="Choose a database provider">
+      <div className="flex flex-col gap-3">
+        {inPanelMode ? (
+          <div className="space-y-3">
+            <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-xs">
+              <div className="flex items-center gap-2 font-medium text-foreground">
+                <DatabaseIcon className="size-4 text-primary" />
+                <span>Configure in Database Panel</span>
+              </div>
+              <p className="mt-1 text-[11px] text-muted-foreground leading-relaxed">
+                Connect your {provider === "supabase" ? "Supabase" : "Neon"} account and link a project in the Database panel on the right. Once connected, the agent will continue automatically.
+              </p>
+            </div>
+            <div className="flex items-center justify-between gap-2 pt-1">
+              <Button size="xs" variant="ghost" onClick={() => setInPanelMode(false)}>
+                ← Back to providers
+              </Button>
+              <div className="flex gap-2">
+                <Button size="xs" variant="ghost" onClick={dismiss}>
+                  Skip for now
+                </Button>
+                <Button size="xs" onClick={() => submit()}>
+                  Continue with {provider === "supabase" ? "Supabase" : "Neon"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
+            <p className="text-xs text-muted-foreground">
+              The agent needs a database provider for this application. Choose one to configure:
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <button
+                type="button"
+                onClick={() => setProvider("supabase")}
+                className={cn(
+                  "flex flex-col items-start gap-1.5 rounded-lg border-2 p-3 text-left transition-all",
+                  provider === "supabase"
+                    ? "border-primary bg-primary/5 shadow-xs"
+                    : "border-border hover:border-border/80 hover:bg-muted/40",
+                )}
+              >
+                <div className="flex items-center justify-between w-full">
+                  <span className="text-xs font-semibold text-foreground">Supabase</span>
+                  <Badge variant="outline" className="text-[10px] py-0">Recommended</Badge>
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-snug">
+                  Managed Postgres with built-in Auth, Storage, Edge Functions, and Row Level Security.
+                </p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setProvider("neon")}
+                className={cn(
+                  "flex flex-col items-start gap-1.5 rounded-lg border-2 p-3 text-left transition-all",
+                  provider === "neon"
+                    ? "border-primary bg-primary/5 shadow-xs"
+                    : "border-border hover:border-border/80 hover:bg-muted/40",
+                )}
+              >
+                <div className="flex items-center justify-between w-full">
+                  <span className="text-xs font-semibold text-foreground">Neon</span>
+                  <Badge variant="secondary" className="text-[10px] py-0 text-amber-600 dark:text-amber-400">Experimental</Badge>
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-snug">
+                  Serverless Postgres with instant database branching, autoscaling, and point-in-time recovery.
+                </p>
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between gap-2 pt-1">
+              <Button size="xs" variant="ghost" onClick={dismiss}>
+                Skip for now
+              </Button>
+              <Button size="xs" onClick={openDatabasePanel} className="gap-1.5">
+                Configure in Database Panel →
+              </Button>
+            </div>
+          </>
+        )}
       </div>
     </Shell>
   );

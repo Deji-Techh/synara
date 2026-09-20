@@ -9,6 +9,7 @@ import type { ThreadId } from "@caide/contracts";
 import { projectReadFileQueryOptions } from "~/lib/projectReactQuery";
 import { DockPaneHeader } from "./DockPaneHeader";
 import { PanelStateMessage } from "./PanelStateMessage";
+import { GithubConnectorCard } from "./GithubConnectorCard";
 
 interface PublishLinks {
   github?: { org?: string; repo: string; branch?: string };
@@ -70,7 +71,10 @@ export function PublishPanel(props: {
   return (
     <div className="flex h-full min-h-0 flex-col">
       <DockPaneHeader title="Publish" onClose={props.onClose} closeLabel="Close publish pane" />
-      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 py-2">
+      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-3 py-2">
+        <div className="rounded-lg border border-border/70 p-3 bg-muted/10">
+          <GithubConnectorCard />
+        </div>
         {!props.workspaceRoot ? (
           <PanelStateMessage>This chat has no project workspace.</PanelStateMessage>
         ) : query.isPending ? (

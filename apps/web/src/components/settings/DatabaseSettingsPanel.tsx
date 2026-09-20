@@ -9,9 +9,13 @@ import { Button } from "~/components/ui/button";
 import { DisclosureChevron } from "~/components/ui/DisclosureChevron";
 import { DisclosureRegion } from "~/components/ui/DisclosureRegion";
 import { Input } from "~/components/ui/input";
+import { Badge } from "~/components/ui/badge";
 import { Switch } from "~/components/ui/switch";
 import { toastManager } from "~/components/ui/toast";
 import { useDyadProviderSettings } from "~/hooks/useDyadProviderSettings";
+import { useDatabaseAuth } from "~/hooks/useDatabaseAuth";
+import { GithubConnectorCard } from "../chat/GithubConnectorCard";
+import { CheckCircle2Icon } from "~/lib/icons";
 import { cn } from "~/lib/utils";
 import { SettingsListRow, SettingsRow, SettingsSection } from "./SettingsPanelPrimitives";
 import {
@@ -37,6 +41,7 @@ type NetTest =
   | { state: "error"; detail: string };
 
 export function DatabaseSettingsPanel(props: { active: boolean }) {
+  const dbAuth = useDatabaseAuth();
   const [connections, setConnections] = useState<DbConnection[]>(() => loadConnections());
   const [networks, setNetworks] = useState<BlockchainNetwork[]>(() => loadNetworks());
   const [addingConn, setAddingConn] = useState(false);
@@ -217,7 +222,7 @@ export function DatabaseSettingsPanel(props: { active: boolean }) {
       </SettingsSection>
 
       <SettingsSection
-        title="Management tokens"
+        title="Database integrations"
         action={
           <Button
             size="xs"
@@ -225,20 +230,71 @@ export function DatabaseSettingsPanel(props: { active: boolean }) {
             onClick={() => setManagingTokens((v) => !v)}
             aria-expanded={managingTokens}
           >
-            Manage tokens
+            Manual keys
             <DisclosureChevron open={managingTokens} className="ml-1 size-3.5" />
           </Button>
         }
       >
+        <div className="space-y-3">
+          <SettingsRow
+            title="Supabase"
+            description={
+              dbAuth.supabaseConnected
+                ? "Connected via OAuth ✓ — full access to projects, auth, storage, and functions."
+                : "Connect your Supabase account with 1-click OAuth."
+            }
+            control={
+              dbAuth.supabaseConnected ? (
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="gap-1 text-xs">
+                    <CheckCircle2Icon className="size-3 text-emerald-500" /> Connected
+                  </Badge>
+                  <Button size="xs" variant="outline" onClick={dbAuth.disconnectSupabase}>
+                    Disconnect
+                  </Button>
+                </div>
+              ) : (
+                <Button size="sm" onClick={dbAuth.connectSupabase}>
+                  Connect Supabase (OAuth)
+                </Button>
+              )
+            }
+          />
+
+          <SettingsRow
+            title="Neon"
+            description={
+              dbAuth.neonConnected
+                ? "Connected via OAuth ✓ — full access to serverless Postgres and branching."
+                : "Connect your Neon account with 1-click OAuth."
+            }
+            control={
+              dbAuth.neonConnected ? (
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="gap-1 text-xs">
+                    <CheckCircle2Icon className="size-3 text-emerald-500" /> Connected
+                  </Badge>
+                  <Button size="xs" variant="outline" onClick={dbAuth.disconnectNeon}>
+                    Disconnect
+                  </Button>
+                </div>
+              ) : (
+                <Button size="sm" onClick={dbAuth.connectNeon}>
+                  Connect Neon (OAuth)
+                </Button>
+              )
+            }
+          />
+        </div>
+
         <DisclosureRegion
           open={managingTokens}
           contentClassName="mt-3 space-y-3 border-t border-border/70 pt-3"
         >
           <p className="text-[11px] text-muted-foreground">
-            Personal access tokens unlock one-click provisioning for the agent: Supabase project
+            Alternatively, personal access tokens unlock one-click provisioning for the agent: Supabase project
             creation, function deploys, and test users; Neon project and branch creation. Stored
-            encrypted server-side, never in the browser. Get them from the Supabase dashboard →
-            account tokens, and the Neon console → API keys.
+            encrypted server-side, never in the browser.
           </p>
           {(
             [
@@ -286,6 +342,10 @@ export function DatabaseSettingsPanel(props: { active: boolean }) {
             </p>
           ) : null}
         </DisclosureRegion>
+      </SettingsSection>
+
+      <SettingsSection title="GitHub connection">
+        <GithubConnectorCard />
       </SettingsSection>
 
       <SettingsSection title="Publish tokens">

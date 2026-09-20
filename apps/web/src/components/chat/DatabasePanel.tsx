@@ -32,6 +32,10 @@ import { ScrollArea } from "../ui/scroll-area";
 import { DockPaneHeader } from "./DockPaneHeader";
 import { PanelStateMessage } from "./PanelStateMessage";
 import { ensureNativeApi } from "~/nativeApi";
+import { useDatabaseAuth } from "~/hooks/useDatabaseAuth";
+import { harnessStore } from "~/harnessStore";
+import { getHarnessSession } from "~/harnessSessionRegistry";
+import { answerUiPrompt } from "~/harnessWs";
 import {
   connectionMatchesWorkspace,
   loadConnections,
@@ -113,6 +117,7 @@ export function DatabasePanel(props: {
   workspaceRoot?: string | null;
   onClose: () => void;
 }) {
+  const dbAuth = useDatabaseAuth();
   const [app, setApp] = useState<EngineApp | null>(null);
   const [resolveError, setResolveError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -129,13 +134,24 @@ export function DatabasePanel(props: {
   const [branches, setBranches] = useState<NeonBranch[] | null>(null);
   const [newProjectName, setNewProjectName] = useState("");
 
+  const resolvePendingIntegration = useCallback(
+    (provider: "neon" | "supabase", projectId?: string) => {
+      const session = getHarnessSession(props.threadId);
+      const prompt = harnessStore
+        .getState()
+        .sessions[props.threadId]?.prompts.find((p) => p.kind === "integration");
+      if (session && prompt) {
+        answerUiPrompt(session.send, prompt.requestId, {
+          provider,
+          ...(projectId ? { projectId } : {}),
+        });
+        harnessStore.resolvePrompt(props.threadId, prompt.requestId);
+      }
+    },
+    [props.threadId],
+  );
+
   const refreshApp = useCallback(async () => {
-    if (!props.workspaceRoot) {
-      setApp(null);
-      setResolveError("This chat has no project workspace.");
-      setLoading(false);
-      return;
-    }
     setLoading(true);
     setResolveError(null);
     try {
@@ -143,25 +159,67 @@ export function DatabasePanel(props: {
         props.threadId,
         "list-apps",
         undefined,
-        props.workspaceRoot,
+        props.workspaceRoot ?? undefined,
       );
       const apps = Array.isArray(response?.apps) ? response.apps : [];
       const root = props.workspaceRoot;
-      const match = apps.find(
-        (candidate) =>
-          (candidate.resolvedPath ?? candidate.path) === root ||
-          (candidate.resolvedPath ?? candidate.path).replace(/\\/g, "/") ===
-            root.replace(/\\/g, "/"),
-      );
+      const normalize = (p?: string | null) =>
+        p ? p.replace(/\\/g, "/").replace(/\/+$/, "") : "";
+      const normRoot = normalize(root);
+      const match =
+        (normRoot
+          ? apps.find(
+              (candidate) =>
+                normalize(candidate.resolvedPath ?? candidate.path) === normRoot,
+            )
+          : null) ?? (apps.length > 0 ? apps[0] : null);
+
       if (!match) {
-        setApp(null);
-        setResolveError("No engine app matches this workspace yet. Start a chat to provision it.");
+        if (!root) {
+          setApp(null);
+          setResolveError("This chat has no project workspace.");
+          return;
+        }
+        const appName =
+          normRoot.split("/").filter(Boolean).pop() || "Project";
+        setApp({
+          id: 1,
+          name: appName,
+          path: root,
+          resolvedPath: root,
+          supabaseProjectId: null,
+          neonProjectId: null,
+          neonActiveBranchId: null,
+          neonDevelopmentBranchId: null,
+          neonPreviewBranchId: null,
+          selectedDatabaseBranchType: null,
+          supabaseOrganizationSlug: null,
+        });
         return;
       }
       setApp(match);
     } catch (cause) {
-      setApp(null);
-      setResolveError(databaseErrorMessage(cause));
+      if (props.workspaceRoot) {
+        const root = props.workspaceRoot;
+        const normRoot = root.replace(/\\/g, "/").replace(/\/+$/, "");
+        const appName = normRoot.split("/").filter(Boolean).pop() || "Project";
+        setApp({
+          id: 1,
+          name: appName,
+          path: root,
+          resolvedPath: root,
+          supabaseProjectId: null,
+          neonProjectId: null,
+          neonActiveBranchId: null,
+          neonDevelopmentBranchId: null,
+          neonPreviewBranchId: null,
+          selectedDatabaseBranchType: null,
+          supabaseOrganizationSlug: null,
+        });
+      } else {
+        setApp(null);
+        setResolveError(databaseErrorMessage(cause));
+      }
     } finally {
       setLoading(false);
     }
@@ -195,6 +253,7 @@ export function DatabasePanel(props: {
       await refreshApp();
       setShowNeonPicker(false);
       setNeonProjects(null);
+      resolvePendingIntegration("neon", projectId);
     });
 
   const disconnectNeon = () =>
@@ -212,17 +271,23 @@ export function DatabasePanel(props: {
   const connectSupabase = (project: SupabaseProject) =>
     run(async () => {
       if (!app) return;
-      await invokeDatabase(props.threadId, "supabase:set-app-project", {
-        appId: app.id,
-        projectId: project.id,
-        parentProjectId: project.id,
-        organizationSlug: selectedOrgSlug,
-      });
+      await invokeDatabase(
+        props.threadId,
+        "supabase:set-app-project",
+        {
+          appId: app.id,
+          projectId: project.id,
+          parentProjectId: project.id,
+          organizationSlug: selectedOrgSlug,
+        },
+        props.workspaceRoot,
+      );
       await refreshApp();
       setShowSupabasePicker(false);
       setSupabaseOrgs(null);
       setSupabaseProjects(null);
       setSelectedOrgSlug(null);
+      resolvePendingIntegration("supabase", project.id);
     });
 
   const disconnectSupabase = () =>
@@ -314,7 +379,7 @@ export function DatabasePanel(props: {
   const createNeonProject = () =>
     run(async () => {
       if (!app || !newProjectName.trim()) return;
-      await invokeDatabase<{ project?: { id: string } }>(
+      const res = await invokeDatabase<{ project?: { id: string } }>(
         props.threadId,
         "neon:create-project",
         { appId: app.id, workspaceRoot: props.workspaceRoot, name: newProjectName.trim() },
@@ -324,12 +389,13 @@ export function DatabasePanel(props: {
       setShowNeonPicker(false);
       setNeonProjects(null);
       await refreshApp();
+      resolvePendingIntegration("neon", res?.project?.id);
     });
 
   const createSupabaseProject = () =>
     run(async () => {
       if (!app || !selectedOrgSlug || !newProjectName.trim()) return;
-      await invokeDatabase<{ project?: { id: string } }>(
+      const res = await invokeDatabase<{ project?: { id: string } }>(
         props.threadId,
         "supabase:create-project",
         {
@@ -344,6 +410,7 @@ export function DatabasePanel(props: {
       setShowSupabasePicker(false);
       setSupabaseProjects(null);
       await refreshApp();
+      resolvePendingIntegration("supabase", res?.project?.id);
     });
 
   const headerTitle = app ? `Database — ${app.name}` : "Database";
@@ -466,11 +533,30 @@ export function DatabasePanel(props: {
                       )}
                     </>
                   ) : (
-                    <>
+                    <div className="flex flex-col gap-2">
                       <p className="text-xs text-muted-foreground">
                         Link a Neon project to give the agent a managed Postgres database with
                         branching.
                       </p>
+                      {dbAuth.neonConnected ? (
+                        <div className="flex items-center justify-between rounded-md border border-border/60 bg-muted/20 px-2.5 py-1.5 text-xs">
+                          <div className="flex items-center gap-1.5">
+                            <CheckCircle2Icon className="size-3.5 text-emerald-500" />
+                            <span>Neon account linked</span>
+                          </div>
+                          <Button size="xs" variant="ghost" onClick={dbAuth.disconnectNeon}>
+                            Disconnect
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button
+                          size="sm"
+                          onClick={dbAuth.connectNeon}
+                          className="gap-1.5"
+                        >
+                          Connect Neon (1-Click OAuth)
+                        </Button>
+                      )}
                       <Button
                         size="sm"
                         variant="outline"
@@ -479,7 +565,7 @@ export function DatabasePanel(props: {
                       >
                         <PlusIcon className="size-3" /> Link Neon project
                       </Button>
-                    </>
+                    </div>
                   )}
 
                   {showNeonPicker && (
@@ -569,10 +655,29 @@ export function DatabasePanel(props: {
                       </div>
                     </>
                   ) : (
-                    <>
+                    <div className="flex flex-col gap-2">
                       <p className="text-xs text-muted-foreground">
                         Link a Supabase project for auth, storage, and edge functions.
                       </p>
+                      {dbAuth.supabaseConnected ? (
+                        <div className="flex items-center justify-between rounded-md border border-border/60 bg-muted/20 px-2.5 py-1.5 text-xs">
+                          <div className="flex items-center gap-1.5">
+                            <CheckCircle2Icon className="size-3.5 text-emerald-500" />
+                            <span>Supabase account linked</span>
+                          </div>
+                          <Button size="xs" variant="ghost" onClick={dbAuth.disconnectSupabase}>
+                            Disconnect
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button
+                          size="sm"
+                          onClick={dbAuth.connectSupabase}
+                          className="gap-1.5"
+                        >
+                          Connect Supabase (1-Click OAuth)
+                        </Button>
+                      )}
                       <Button
                         size="sm"
                         variant="outline"
@@ -581,7 +686,7 @@ export function DatabasePanel(props: {
                       >
                         <PlusIcon className="size-3" /> Link Supabase project
                       </Button>
-                    </>
+                    </div>
                   )}
 
                   {showSupabasePicker && (
