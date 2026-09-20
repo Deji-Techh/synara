@@ -80,7 +80,7 @@ export interface SandboxHostContext {
 }
 
 export async function executeSandboxScript(
-  input: z.infer<typeof executeSandboxScriptSchema>,
+  input: z.input<typeof executeSandboxScriptSchema>,
   appPath: string,
   signal?: AbortSignal,
   hostCtx?: SandboxHostContext,
@@ -94,6 +94,10 @@ export async function executeSandboxScript(
     list_files: baseHosts.list_files,
     grep: baseHosts.grep,
     write_file: async (path: string, content: string) => {
+      if (hostCtx?.sessionId) {
+        const { assertAppBlueprintApproved } = await import("../plan/blueprintStore.ts");
+        assertAppBlueprintApproved(hostCtx.sessionId, "write_file", true);
+      }
       const { safeJoinAppPath } = await import("../editing/safePath.ts");
       const full = safeJoinAppPath(appPath, path);
       const { promises: fs } = await import("node:fs");

@@ -215,4 +215,27 @@ describe("dyad sandbox transplant (m2b)", () => {
     expect(followupTaskTool.presentCall?.({ thread_id: idle.id })).toContain(idle.id);
     clearTaskRegistries();
   });
+
+  it("enforces blueprint approval on sandbox write_file host capability", async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "caide-sandbox-bp-"));
+    const { setBlueprintRequired, approveBlueprint, clearBlueprint } =
+      await import("../plan/blueprintStore.ts");
+    const sessionId = "session-bp-test";
+    setBlueprintRequired(sessionId, true);
+
+    const script = "await write_file('test.txt', 'hello'); result = 'ok';";
+    // Unapproved -> should reject
+    await expect(executeSandboxScript({ script }, dir, undefined, { sessionId })).rejects.toThrow(
+      /App blueprint not approved yet/,
+    );
+
+    // Approve blueprint -> should succeed
+    approveBlueprint(sessionId);
+    const out = await executeSandboxScript({ script }, dir, undefined, { sessionId });
+    expect(out).toContain("result: ok");
+    expect(fs.readFileSync(path.join(dir, "test.txt"), "utf8")).toBe("hello");
+
+    clearBlueprint(sessionId);
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
 });

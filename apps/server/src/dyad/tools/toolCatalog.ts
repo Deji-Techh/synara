@@ -1085,7 +1085,9 @@ export const BUILD_PROFILE_TOOLS: ReadonlySet<string> = new Set([
 ]);
 
 export function getToolMeta(name: string): ToolMeta | undefined {
-  return TOOL_CATALOG.find((t) => t.name === name);
+  return (
+    TOOL_CATALOG.find((t) => t.name === name) ?? TOOL_CATALOG.find((t) => t.caideTool === name)
+  );
 }
 
 /**

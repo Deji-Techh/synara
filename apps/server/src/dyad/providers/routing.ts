@@ -8,10 +8,13 @@
 // URLs, azure resource + test-URL handling, ollama/lmstudio defaults).
 
 import { endpointForModel } from "../../harness/provider/apiAdapter.ts";
-import { getDefaultModel, type ProviderKind } from "@caide/shared/model";
+import { getDefaultModel } from "@caide/shared/model";
+import type { ProviderKind } from "@caide/contracts";
 import { resolveApiKeyOrThrow } from "./apiKey.ts";
 import { readChatGPTSession } from "./chatgptAuth.ts";
 import { resolveProviderDef } from "./customProviders.ts";
+import { parseServiceAccountKey } from "./vertexAuth.ts";
+import { parseBedrockCredentials } from "./bedrockAuth.ts";
 
 export interface ProviderSettingsInput {
   apiKey?: { value?: string | null } | string | null;
@@ -141,6 +144,64 @@ export function resolveConnection(
     return { providerId, displayName, baseUrl, apiKey, endpoint: "chat/completions" };
   }
 
+  if (providerId === "vertex") {
+    const saKey =
+      input?.serviceAccountKey?.trim() ||
+      process.env.VERTEX_SERVICE_ACCOUNT_KEY?.trim() ||
+      process.env.GOOGLE_APPLICATION_CREDENTIALS?.trim() ||
+      settingsApiKey(input);
+    if (!saKey) {
+      throw new Error(
+        "Google Vertex AI service account key is required. Paste the JSON key in Settings or set VERTEX_SERVICE_ACCOUNT_KEY.",
+      );
+    }
+    const creds = parseServiceAccountKey(saKey);
+    const project =
+      input?.projectId?.trim() || creds.project_id || process.env.VERTEX_PROJECT_ID?.trim();
+    if (!project) {
+      throw new Error("Google Vertex AI project ID is required.");
+    }
+    const location =
+      input?.location?.trim() || process.env.VERTEX_LOCATION?.trim() || "us-central1";
+    const regionHost = `${location === "global" ? "" : `${location}-`}aiplatform.googleapis.com`;
+    const baseUrl =
+      settingsBaseUrl(input) ??
+      `https://${regionHost}/v1/projects/${project}/locations/${location}/publishers/google`;
+    return {
+      providerId,
+      displayName,
+      baseUrl,
+      apiKey: saKey,
+      endpoint: "gemini",
+    };
+  }
+
+  if (providerId === "bedrock") {
+    const rawKey = settingsApiKey(input);
+    const creds = parseBedrockCredentials(rawKey ?? undefined);
+    if (!creds.bearerToken && !creds.awsCredentials) {
+      throw new Error(
+        "AWS Bedrock credentials are required. Provide a bearer token in Settings or configure AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY.",
+      );
+    }
+    const region =
+      input?.location?.trim() ||
+      creds.awsCredentials?.region ||
+      process.env.AWS_REGION?.trim() ||
+      "us-east-1";
+    const baseUrl = settingsBaseUrl(input) ?? `https://bedrock-runtime.${region}.amazonaws.com`;
+    return {
+      providerId,
+      displayName,
+      baseUrl,
+      apiKey:
+        rawKey ||
+        creds.bearerToken ||
+        `${creds.awsCredentials?.accessKeyId}:${creds.awsCredentials?.secretAccessKey}`,
+      endpoint: "messages",
+    };
+  }
+
   if (providerId === "custom") {
     const baseUrl = settingsBaseUrl(input) ?? (def.baseUrl ? def.baseUrl : undefined);
     if (!baseUrl) {
@@ -220,6 +281,21 @@ export function hasProviderKey(providerId: string, settings: SettingsLike = {}):
   if (def.local === true) return true;
   // ChatGPT is session-authed (device flow), never key-authed.
   if (providerId === "chatgpt") return readChatGPTSession() !== undefined;
+  if (providerId === "vertex") {
+    const entry = settings.providerSettings?.["vertex"] as any;
+    if (entry?.serviceAccountKey?.trim() || entry?.apiKey?.trim()) return true;
+    return Boolean(
+      process.env.VERTEX_SERVICE_ACCOUNT_KEY || process.env.GOOGLE_APPLICATION_CREDENTIALS,
+    );
+  }
+  if (providerId === "bedrock") {
+    const entry = settings.providerSettings?.["bedrock"] as any;
+    if (entry?.apiKey?.trim()) return true;
+    return Boolean(
+      process.env.AWS_BEARER_TOKEN_BEDROCK ||
+      (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY),
+    );
+  }
   const fromSettings = (settingsApiKey(settings.providerSettings?.[providerId]) ?? "").trim();
   if (fromSettings) return true;
   return Boolean(def.envVarName && env(def.envVarName));

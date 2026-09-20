@@ -306,13 +306,86 @@ export async function testProviderConnection(input: {
         return { ok: false, message: "Custom provider is unreachable. Check the base URL." };
       }
     }
-    case "azure":
+    case "azure": {
+      if (!key) return { ok: false, message: "Azure OpenAI API key is required." };
+      const resource =
+        (input as any).resourceName?.trim() || process.env.AZURE_RESOURCE_NAME?.trim();
+      if (!resource && !base) {
+        return {
+          ok: false,
+          message:
+            "Azure OpenAI resource name is required. Provide it in Settings or set AZURE_RESOURCE_NAME.",
+        };
+      }
+      const testUrl = base
+        ? `${base}/models`
+        : `https://${resource}.openai.azure.com/openai/models?api-version=2024-02-01`;
+      try {
+        const { status } = await get(testUrl, { "api-key": key }, signal);
+        if (status === 200) return { ok: true, message: "Connected — Azure OpenAI answered." };
+        if (status === 401 || status === 403)
+          return { ok: false, message: "Azure OpenAI key rejected (401/403). Check the key." };
+        if (status === 404)
+          return {
+            ok: false,
+            message: "Azure OpenAI resource not found (404). Check the resource name.",
+          };
+        return { ok: false, message: `Azure answered HTTP ${status}. Check configuration.` };
+      } catch {
+        return {
+          ok: false,
+          message: "Azure OpenAI endpoint is unreachable. Check network or resource name.",
+        };
+      }
+    }
+    case "vertex": {
+      const saKey =
+        (input as any).serviceAccountKey?.trim() ||
+        key ||
+        process.env.VERTEX_SERVICE_ACCOUNT_KEY?.trim() ||
+        process.env.GOOGLE_APPLICATION_CREDENTIALS?.trim();
+      if (!saKey) {
+        return {
+          ok: false,
+          message:
+            "Vertex service account JSON key is required. Paste the JSON key in Settings or set VERTEX_SERVICE_ACCOUNT_KEY.",
+        };
+      }
+      try {
+        const { getVertexAccessToken } = await import("./vertexAuth.ts");
+        const token = await getVertexAccessToken(saKey, signal ? { signal } : {});
+        return {
+          ok: true,
+          message: `Connected — Vertex AI authenticated as ${token.clientEmail}${token.projectId ? ` (${token.projectId})` : ""}.`,
+        };
+      } catch (error) {
+        return {
+          ok: false,
+          message: `Vertex authentication failed: ${error instanceof Error ? error.message : String(error)}`,
+        };
+      }
+    }
+    case "bedrock": {
+      const { parseBedrockCredentials } = await import("./bedrockAuth.ts");
+      const creds = parseBedrockCredentials(key);
+      if (!creds.bearerToken && !creds.awsCredentials) {
+        return {
+          ok: false,
+          message:
+            "AWS Bedrock credentials required (Bearer token in API Key or AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY in env).",
+        };
+      }
+      return {
+        ok: true,
+        message: creds.bearerToken
+          ? "Connected — Bedrock bearer token provided."
+          : `Connected — Bedrock AWS credentials configured for ${creds.awsCredentials?.accessKeyId}.`,
+      };
+    }
     case "minimax":
-    case "vertex":
-    case "bedrock":
     case "auto":
     default:
-      if ((providerId === "azure" || providerId === "minimax") && !key) {
+      if (providerId === "minimax" && !key) {
         return { ok: false, message: "API key is required." };
       }
       // Stored `custom::*` providers probe their OpenAI-compatible

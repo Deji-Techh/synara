@@ -93,12 +93,50 @@ describe("dyad providers transplant (m1, free-entirely)", () => {
     );
   });
 
-  it("rejects pasted non-key text and missing azure/custom config", () => {
+  it("rejects pasted non-key text and missing azure/custom/bedrock/vertex config", () => {
     expect(() => resolveApiKeyOrThrow("sk-abc def", "OpenAI")).toThrow(/invalid character/);
     expect(() => resolveConnection("azure", "gpt-5", {})).toThrow(/resource name is required/);
     expect(() => resolveConnection("custom", "x", {})).toThrow(/API Base URL/);
-    expect(() => resolveConnection("bedrock", "x", {})).toThrow(/not on fetch streaming yet/);
+    expect(() => resolveConnection("bedrock", "x", {})).toThrow(
+      /AWS Bedrock credentials are required/,
+    );
+    expect(() => resolveConnection("vertex", "gemini-flash", {})).toThrow(
+      /Google Vertex AI service account key is required/,
+    );
     expect(() => resolveConnection("nope", "x", {})).toThrow(/Unsupported/);
+  });
+
+  it("resolves Vertex and Bedrock connections with valid configuration", () => {
+    const fakeSaKey = JSON.stringify({
+      client_email: "sa@my-project.iam.gserviceaccount.com",
+      private_key: "-----BEGIN PRIVATE KEY-----\nMIIE...\n-----END PRIVATE KEY-----\n",
+      project_id: "my-project",
+    });
+    const vertex = resolveConnection("vertex", "gemini-2.5-flash", {
+      providerSettings: {
+        vertex: {
+          serviceAccountKey: fakeSaKey,
+          location: "us-central1",
+        },
+      },
+    });
+    expect(vertex.providerId).toBe("vertex");
+    expect(vertex.endpoint).toBe("gemini");
+    expect(vertex.baseUrl).toContain("us-central1-aiplatform.googleapis.com");
+    expect(vertex.baseUrl).toContain("projects/my-project");
+
+    const bedrock = resolveConnection("bedrock", "anthropic.claude-3-haiku", {
+      providerSettings: {
+        bedrock: {
+          apiKey: "AB_bearer_token",
+          location: "us-west-2",
+        },
+      },
+    });
+    expect(bedrock.providerId).toBe("bedrock");
+    expect(bedrock.endpoint).toBe("messages");
+    expect(bedrock.baseUrl).toBe("https://bedrock-runtime.us-west-2.amazonaws.com");
+    expect(bedrock.apiKey).toBe("AB_bearer_token");
   });
 
   it("auto resolves first keyed provider, else keyless local runtimes", () => {

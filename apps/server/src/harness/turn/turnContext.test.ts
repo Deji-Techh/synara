@@ -127,6 +127,32 @@ describe("turn context wire (m3)", () => {
       } finally {
         plan.cleanup();
       }
+
+      const ask = createTurnContext({
+        sessionId: "s-ask",
+        appPath: "/tmp/caide-test-app",
+        settings: { providerSettings: { openai: { apiKey: "sk-test" } } },
+        options: { readOnly: true },
+        requestConsent: async () => "accept-once",
+      });
+      try {
+        const askNames = ask.tools.map((t) => t.name);
+        expect(askNames).toContain("read_file");
+        expect(askNames).toContain("list_dir");
+        expect(askNames).toContain("search_files");
+        expect(askNames).not.toContain("write_file");
+        expect(askNames).not.toContain("search_replace");
+        expect(askNames).not.toContain("delete_file");
+        expect(askNames).not.toContain("run_command");
+        expect(askNames).not.toContain("install_package");
+        expect(askNames).not.toContain("execute_sandbox_script");
+        // Ensure every single included tool in ask mode is read-only
+        for (const tool of ask.tools) {
+          expect(tool.readOnly).toBe(true);
+        }
+      } finally {
+        ask.cleanup();
+      }
     } finally {
       ctx.cleanup();
     }

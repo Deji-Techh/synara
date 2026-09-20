@@ -87,9 +87,19 @@ export function sanitizeGeminiTools(tools: unknown[]): unknown[] {
 export function buildProviderUrl(baseUrl: string, modelId: string): string {
   const cleanBase = baseUrl.replace(/\/+$/, "");
   const endpoint = endpointForModel(modelId, baseUrl);
-  if (endpoint === "gemini") return `${cleanBase}/models/${modelId}:streamGenerateContent?alt=sse`;
+  if (endpoint === "gemini") {
+    if (cleanBase.includes("aiplatform.googleapis.com")) {
+      const modelPath = modelId.includes("/") ? modelId : `publishers/google/models/${modelId}`;
+      return `${cleanBase}/${modelPath}:streamGenerateContent?alt=sse`;
+    }
+    return `${cleanBase}/models/${modelId}:streamGenerateContent?alt=sse`;
+  }
   if (endpoint === "responses") return `${cleanBase}/responses`;
   if (endpoint === "messages") return `${cleanBase}/messages`;
+  if (cleanBase.includes("openai.azure.com")) {
+    const hasQuery = cleanBase.includes("?");
+    return `${cleanBase}/chat/completions${hasQuery ? "&" : "?"}api-version=2024-02-01`;
+  }
   return `${cleanBase}/chat/completions`;
 }
 
@@ -245,15 +255,31 @@ export async function* streamProvider(
 
   timing.start();
 
+  const isVertex = baseUrl.includes("aiplatform.googleapis.com");
+  const isAzure = baseUrl.includes("openai.azure.com");
+  let effectiveApiKey = apiKey;
+  if (isVertex && apiKey.trim().startsWith("{")) {
+    const { getVertexAccessToken } = await import("../../dyad/providers/vertexAuth.ts");
+    const token = await getVertexAccessToken(
+      apiKey,
+      options.signal ? { signal: options.signal } : {},
+    );
+    effectiveApiKey = token.accessToken;
+  }
+
   const headers: Record<string, string> = {
-    Authorization: `Bearer ${apiKey}`,
+    Authorization: `Bearer ${effectiveApiKey}`,
     "Content-Type": "application/json",
     ...(isOpenCodeEndpoint(baseUrl) ? openCodeHeaders(options.sessionId) : {}),
   };
+  if (isAzure) {
+    headers["api-key"] = effectiveApiKey;
+    delete headers["Authorization"];
+  }
   let requestBody: any;
 
   if (endpoint === "messages") {
-    headers["x-api-key"] = apiKey;
+    headers["x-api-key"] = effectiveApiKey;
     headers["anthropic-version"] = "2023-06-01";
     requestBody = {
       model: modelId,
@@ -284,8 +310,12 @@ export async function* streamProvider(
       ...(tools && tools.length > 0 ? { tools } : {}),
     };
   } else if (endpoint === "gemini") {
-    headers["x-goog-api-key"] = apiKey;
-    delete headers["Authorization"];
+    if (isVertex) {
+      headers["Authorization"] = `Bearer ${effectiveApiKey}`;
+    } else {
+      headers["x-goog-api-key"] = effectiveApiKey;
+      delete headers["Authorization"];
+    }
     requestBody = {
       ...(system ? { system_instruction: { parts: [{ text: system }] } } : {}),
       contents: (messages as any[]).map((m: any) => ({
@@ -319,7 +349,7 @@ export async function* streamProvider(
         method: "POST",
         headers,
         body: JSON.stringify(requestBody),
-        signal,
+        ...(signal ? { signal } : {}),
       });
     } catch (err: any) {
       if (signal?.aborted) return;
@@ -415,7 +445,7 @@ export async function* streamProvider(
         break;
       }
 
-      let readResult: ReadableStreamReadResult<Uint8Array>;
+      let readResult: Awaited<ReturnType<typeof reader.read>>;
       try {
         readResult = await reader.read();
       } catch (err: any) {

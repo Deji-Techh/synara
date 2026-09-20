@@ -83,11 +83,10 @@ export const PROVIDERS: Record<string, ProviderDef> = {
   vertex: {
     id: "vertex",
     displayName: "Google Vertex AI",
+    baseUrl: "https://aiplatform.googleapis.com",
     websiteUrl: "https://console.cloud.google.com/vertex-ai",
     secondary: true,
-    transport: "needs-work",
-    transportNote:
-      "Service-account OAuth is not wired to fetch streaming yet — point a custom provider at a Vertex OpenAI-compatible gateway, or use google provider instead.",
+    transport: "streamable",
   },
   openrouter: {
     id: "openrouter",
@@ -126,11 +125,10 @@ export const PROVIDERS: Record<string, ProviderDef> = {
     id: "bedrock",
     displayName: "AWS Bedrock",
     envVarName: "AWS_BEARER_TOKEN_BEDROCK",
+    baseUrl: "https://bedrock-runtime.us-east-1.amazonaws.com",
     websiteUrl: "https://console.aws.amazon.com/bedrock/",
     secondary: true,
-    transport: "needs-work",
-    transportNote:
-      "SigV4 request signing is not wired to fetch streaming yet — point a custom provider at a Bedrock OpenAI-compatible proxy, or use anthropic provider directly.",
+    transport: "streamable",
   },
   minimax: {
     id: "minimax",
