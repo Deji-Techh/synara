@@ -101,8 +101,8 @@ export default function Home() {
                     src="/screenshots/caide-app-workspace.png"
                     alt="Caide Autonomous Studio: Real-time agent turn loop, prompt engineering, and live DeviceLab mobile preview"
                     className="w-full h-auto block object-cover rounded-2xl"
-                    width={3584}
-                    height={1956}
+                    width={3072}
+                    height={1728}
                   />
                 </div>
               </div>
