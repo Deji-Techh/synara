@@ -11,6 +11,7 @@ import {
   type ProviderModelDescriptor,
   type ProviderModelOptions,
   type ThreadId,
+  PROVIDER_KINDS,
 } from "@caide/contracts";
 import {
   getDefaultContextWindow,
@@ -173,31 +174,24 @@ function getProviderStateFromCapabilities(
   };
 }
 
-const composerProviderRegistry: Record<ProviderKind, ProviderRegistryEntry> = {
-  engine: {
+function createRegistryEntry(provider: ProviderKind): ProviderRegistryEntry {
+  return {
     getState: (input) => getProviderStateFromCapabilities(input),
-    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("engine", input),
-    renderTraitsPicker: (input) => renderTraitsPickerForProvider("engine", input),
-  },
-  groq: {
-    getState: (input) => getProviderStateFromCapabilities(input),
-    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("groq", input),
-    renderTraitsPicker: (input) => renderTraitsPickerForProvider("groq", input),
-  },
-  opencodeZen: {
-    getState: (input) => getProviderStateFromCapabilities(input),
-    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("opencodeZen", input),
-    renderTraitsPicker: (input) => renderTraitsPickerForProvider("opencodeZen", input),
-  },
-  opencodeGo: {
-    getState: (input) => getProviderStateFromCapabilities(input),
-    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider("opencodeGo", input),
-    renderTraitsPicker: (input) => renderTraitsPickerForProvider("opencodeGo", input),
-  },
-};
+    renderTraitsMenuContent: (input) => renderTraitsMenuContentForProvider(provider, input),
+    renderTraitsPicker: (input) => renderTraitsPickerForProvider(provider, input),
+  };
+}
+
+const composerProviderRegistry: Record<ProviderKind, ProviderRegistryEntry> = Object.fromEntries(
+  PROVIDER_KINDS.map((kind) => [kind, createRegistryEntry(kind)]),
+) as Record<ProviderKind, ProviderRegistryEntry>;
 
 export function getComposerProviderState(input: ComposerProviderStateInput): ComposerProviderState {
-  return composerProviderRegistry[input.provider].getState(input);
+  const entry = composerProviderRegistry[input.provider];
+  if (entry) {
+    return entry.getState(input);
+  }
+  return getProviderStateFromCapabilities(input);
 }
 
 export function renderProviderTraitsMenuContent(input: {
@@ -228,7 +222,11 @@ export function renderProviderTraitsMenuContent(input: {
   ) {
     return null;
   }
-  return composerProviderRegistry[input.provider].renderTraitsMenuContent(input);
+  const entry = composerProviderRegistry[input.provider];
+  if (entry) {
+    return entry.renderTraitsMenuContent(input);
+  }
+  return renderTraitsMenuContentForProvider(input.provider, input);
 }
 
 export function renderProviderTraitsPicker(input: {
@@ -262,5 +260,9 @@ export function renderProviderTraitsPicker(input: {
   ) {
     return null;
   }
-  return composerProviderRegistry[input.provider].renderTraitsPicker(input);
+  const entry = composerProviderRegistry[input.provider];
+  if (entry) {
+    return entry.renderTraitsPicker(input);
+  }
+  return renderTraitsPickerForProvider(input.provider, input);
 }

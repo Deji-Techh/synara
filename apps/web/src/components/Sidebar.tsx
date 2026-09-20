@@ -5953,7 +5953,7 @@ export default function Sidebar() {
                   to: "/settings",
                   search: (previous) => ({
                     ...previous,
-                    section: section === "general" ? undefined : section,
+                    section: section === "profile" ? undefined : section,
                     target: options?.target,
                   }),
                 });

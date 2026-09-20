@@ -5,7 +5,7 @@
 // properties of undefined (reading 'getState')") the moment its model was
 // selected — this guards opencodeGo (and the rest) against regressions.
 
-import { ThreadId } from "@caide/contracts";
+import { PROVIDER_KINDS, ThreadId } from "@caide/contracts";
 import { describe, expect, it, vi } from "vitest";
 
 import {
@@ -17,8 +17,8 @@ import {
 describe("surviving provider registry coverage", () => {
   const threadId = ThreadId.makeUnsafe("registry-coverage-thread");
 
-  it("resolves composer state for every surviving provider without throwing", () => {
-    for (const provider of ["engine", "groq", "opencodeZen", "opencodeGo"] as const) {
+  it("resolves composer state for every provider kind without throwing", () => {
+    for (const provider of PROVIDER_KINDS) {
       expect(() =>
         getComposerProviderState({
           provider,
@@ -29,6 +29,18 @@ describe("surviving provider registry coverage", () => {
         }),
       ).not.toThrow();
     }
+  });
+
+  it("safely falls back for unknown providers without throwing", () => {
+    expect(() =>
+      getComposerProviderState({
+        provider: "unknown-hypothetical-provider" as any,
+        model: "probe-model",
+        runtimeModel: undefined,
+        prompt: "",
+        modelOptions: undefined,
+      }),
+    ).not.toThrow();
   });
 
   it("renders traits surfaces for opencodeGo without throwing", () => {
