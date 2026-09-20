@@ -1355,8 +1355,8 @@ async function buildSystemPrompt(
     normalizedMode === "ask"
       ? `You are in ASK mode for ${framework} (${frameworkShort}). Answer for THIS framework only — if asked "what can you build?" list only ${framework} capabilities, not all frameworks. You have READ-ONLY tools available (read_file, list_dir, search_files, read_url, get_design_tokens, read_spec, get_preview_url, screenshot, lint_project, test_project, spawn_subagent) — use them only if needed to inspect files to answer. Do NOT write code or modify files unless the user explicitly asks.\n${slashHelp}\nTools:\n- ${CORE_TOOLS_TEXT}`
       : normalizedMode === "plan"
-        ? `You are in PLAN mode for ${framework} (${frameworkShort}). First discuss requirements and present a concrete architecture or questionnaire/blueprint with the user before writing application code. You have full planning tools — use write_spec, write_design_spec, write_motion_spec, checkpoint, log_decision, plus read tools to inspect workspace.\n${slashHelp}\nTools:\n- ${CORE_TOOLS_TEXT}`
-        : `You are in BUILD mode for ${framework} (${frameworkShort}). ${greetingRule} ${buildRule}\n${slashHelp}\nTools:\n- ${CORE_TOOLS_TEXT}\n\nTool rules: work efficiently; call write_file to produce code, run_command for installs/builds, get_preview_url to get preview URL, screenshot to verify.`;
+        ? `You are in PLAN mode for ${framework} (${frameworkShort}). First discuss requirements and present a concrete architecture or questionnaire/blueprint with the user before writing application code. You have full planning tools — use write_spec, write_design_spec, write_motion_spec, checkpoint, log_decision, plus read tools to inspect workspace. You CANNOT and MUST NOT create, edit, or write project source files in Plan mode. Once the user approves the plan, they will switch to Build mode to implement.\n${slashHelp}`
+        : `You are in BUILD mode for ${framework} (${frameworkShort}). ${greetingRule} ${buildRule}\n${slashHelp}\nTools:\n- ${CORE_TOOLS_TEXT}\n\nTool rules: work efficiently; call write_file to produce code, run_command for installs/builds, generate_image for custom graphics via Pollinations, get_preview_url to get preview URL, screenshot to verify.`;
   return applyDispatchSystemPromptOverride(
     `${rolePrompt}\n\n${toneAndEmojiRule}\n\n${modeDirective}`.trim(),
   );
@@ -2525,7 +2525,9 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               } catch {
                 // framework registry unavailable — build without skills
               }
-              const system = await buildSystemPrompt(command.mode, framework, skills);
+              const interactionMode =
+                command.interactionMode ?? command.mode ?? thread.interactionMode ?? "build";
+              const system = await buildSystemPrompt(interactionMode, framework, skills);
 
               // Register abort controller and active message for stop support
               turnAbortController = new AbortController();
@@ -2548,7 +2550,27 @@ export class OrchestrationEngineService extends ServiceMap.Service<
               const { createStreamProviderAdapter } =
                 await import("./harness/provider/streamProviderAdapter.ts");
               const { ALL_CORE_TOOLS } = await import("./harness/tools/coreTools.ts");
+              const { generateImageTool } = await import("./dyad/web/generateImage.ts");
               const { runLoop } = await import("./harness/loop/loop.ts");
+
+              const allCandidateTools = [...ALL_CORE_TOOLS, generateImageTool];
+              const activeTools =
+                interactionMode === "plan"
+                  ? allCandidateTools.filter(
+                      (t) =>
+                        t.readOnly ||
+                        t.name === "write_spec" ||
+                        t.name === "write_design_spec" ||
+                        t.name === "write_motion_spec" ||
+                        t.name === "checkpoint" ||
+                        t.name === "log_decision" ||
+                        t.name === "planning_questionnaire" ||
+                        t.name === "write_plan" ||
+                        t.name === "exit_plan",
+                    )
+                  : interactionMode === "ask"
+                    ? allCandidateTools.filter((t) => t.readOnly)
+                    : allCandidateTools;
 
               const adapter = createStreamProviderAdapter(
                 {
@@ -2560,10 +2582,10 @@ export class OrchestrationEngineService extends ServiceMap.Service<
                   providerId: provider,
                   sessionId: thread.id ?? command.threadId,
                 },
-                ALL_CORE_TOOLS,
+                activeTools,
               );
 
-              const loopToolDefinitions = ALL_CORE_TOOLS.map((t) => ({
+              const loopToolDefinitions = activeTools.map((t) => ({
                 name: t.name,
                 description: t.description,
                 readOnly: t.readOnly,
