@@ -13,8 +13,10 @@ export default mergeConfig(
       hookTimeout: 90_000,
       // Template sources copied verbatim for scaffolding carry their own
       // tests + node_modules expectations — never run them in our suite.
+      include: ["src/**/*.test.ts"],
       exclude: [
         ...(baseConfig.test?.exclude ?? []),
+        "**/node_modules/**",
         "src/dyad/scaffolds/web3-template/**",
         "src/dyad/scaffolds/api-template/**",
       ],

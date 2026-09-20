@@ -2,6 +2,7 @@
 // Purpose: GitHub Device Flow authentication state and actions.
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { ThreadId } from "@caide/contracts";
 import { ensureNativeApi } from "~/nativeApi";
 import { toastManager } from "~/components/ui/toast";
 
@@ -30,7 +31,7 @@ export function useGithubAuth() {
   const checkStatus = useCallback(async () => {
     try {
       const res = await ensureNativeApi().database.invoke({
-        threadId: "__global__",
+        threadId: "__global__" as ThreadId,
         channel: "github:auth-status",
       });
       const data = res.value as { connected: boolean; user: GithubUser | null };
@@ -63,7 +64,7 @@ export function useGithubAuth() {
     setError(null);
     try {
       const res = await ensureNativeApi().database.invoke({
-        threadId: "__global__",
+        threadId: "__global__" as ThreadId,
         channel: "github:device-code-request",
       });
       const data = res.value as {
@@ -85,7 +86,7 @@ export function useGithubAuth() {
       void (async () => {
         try {
           const pollRes = await ensureNativeApi().database.invoke({
-            threadId: "__global__",
+            threadId: "__global__" as ThreadId,
             channel: "github:device-code-poll",
             payload: {
               deviceCode: data.deviceCode,
@@ -125,7 +126,7 @@ export function useGithubAuth() {
   const disconnect = async () => {
     try {
       await ensureNativeApi().database.invoke({
-        threadId: "__global__",
+        threadId: "__global__" as ThreadId,
         channel: "github:disconnect",
       });
       setConnected(false);

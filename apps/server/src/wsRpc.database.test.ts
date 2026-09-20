@@ -23,7 +23,7 @@ const handlers = makeWsDatabaseHandlers({}, {}) as Record<
 
 async function invoke(threadId: string, channel: string, payload: unknown = {}) {
   const result = (await Effect.runPromise(
-    handlers["database.invoke"]({ threadId, channel, payload }) as Effect.Effect<{
+    handlers["database.invoke"]!({ threadId, channel, payload }) as Effect.Effect<{
       value: unknown;
     }>,
   )) as { value: unknown };
@@ -37,7 +37,7 @@ async function invokeError(
   payload: unknown = {},
 ): Promise<string> {
   const exit = await Effect.runPromiseExit(
-    handlers["database.invoke"]({ threadId, channel, payload }) as Effect.Effect<unknown>,
+    handlers["database.invoke"]!({ threadId, channel, payload }) as Effect.Effect<unknown>,
   );
   if (exit._tag === "Success") throw new Error(`expected failure, got success`);
   // Cause stringifies with the original error embedded.
@@ -75,9 +75,9 @@ describe("database.invoke bridge (pane backend)", () => {
       }>;
     };
     expect(out.apps).toHaveLength(1);
-    expect(out.apps[0].neonProjectId).toBe("p1");
-    expect(out.apps[0].neonActiveBranchId).toBe("b1");
-    expect(out.apps[0].name).toBe(path.basename(dir));
+    expect(out.apps[0]?.neonProjectId).toBe("p1");
+    expect(out.apps[0]?.neonActiveBranchId).toBe("b1");
+    expect(out.apps[0]?.name).toBe(path.basename(dir));
 
     const empty = (await invoke("s-2", "list-apps", {})) as { apps: unknown[] };
     expect(empty.apps).toEqual([]);
@@ -147,7 +147,7 @@ describe("database.invoke bridge (pane backend)", () => {
     const got = (await invoke("s-1", "neon:get-project", { projectId: "p1" })) as {
       branches: Array<{ id: string }>;
     };
-    expect(got.branches[0].id).toBe("b1");
+    expect(got.branches[0]?.id).toBe("b1");
     const created = (await invoke("s-1", "neon:create-project", {
       workspaceRoot: dir,
       name: "New",
@@ -185,7 +185,9 @@ describe("database.invoke bridge (pane backend)", () => {
     await invoke("s-1", "neon:disconnect");
     await invoke("s-1", "supabase:disconnect");
     expect(((await invoke("s-1", "neon:status")) as { connected: boolean }).connected).toBe(false);
-    expect(((await invoke("s-1", "supabase:status")) as { connected: boolean }).connected).toBe(false);
+    expect(((await invoke("s-1", "supabase:status")) as { connected: boolean }).connected).toBe(
+      false,
+    );
   });
 
   it("handles GitHub device flow and auth status", async () => {

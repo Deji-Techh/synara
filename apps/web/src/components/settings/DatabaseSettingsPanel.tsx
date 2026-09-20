@@ -292,9 +292,9 @@ export function DatabaseSettingsPanel(props: { active: boolean }) {
           contentClassName="mt-3 space-y-3 border-t border-border/70 pt-3"
         >
           <p className="text-[11px] text-muted-foreground">
-            Alternatively, personal access tokens unlock one-click provisioning for the agent: Supabase project
-            creation, function deploys, and test users; Neon project and branch creation. Stored
-            encrypted server-side, never in the browser.
+            Alternatively, personal access tokens unlock one-click provisioning for the agent:
+            Supabase project creation, function deploys, and test users; Neon project and branch
+            creation. Stored encrypted server-side, never in the browser.
           </p>
           {(
             [

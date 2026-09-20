@@ -163,14 +163,12 @@ export function DatabasePanel(props: {
       );
       const apps = Array.isArray(response?.apps) ? response.apps : [];
       const root = props.workspaceRoot;
-      const normalize = (p?: string | null) =>
-        p ? p.replace(/\\/g, "/").replace(/\/+$/, "") : "";
+      const normalize = (p?: string | null) => (p ? p.replace(/\\/g, "/").replace(/\/+$/, "") : "");
       const normRoot = normalize(root);
       const match =
         (normRoot
           ? apps.find(
-              (candidate) =>
-                normalize(candidate.resolvedPath ?? candidate.path) === normRoot,
+              (candidate) => normalize(candidate.resolvedPath ?? candidate.path) === normRoot,
             )
           : null) ?? (apps.length > 0 ? apps[0] : null);
 
@@ -180,8 +178,7 @@ export function DatabasePanel(props: {
           setResolveError("This chat has no project workspace.");
           return;
         }
-        const appName =
-          normRoot.split("/").filter(Boolean).pop() || "Project";
+        const appName = normRoot.split("/").filter(Boolean).pop() || "Project";
         setApp({
           id: 1,
           name: appName,
@@ -549,11 +546,7 @@ export function DatabasePanel(props: {
                           </Button>
                         </div>
                       ) : (
-                        <Button
-                          size="sm"
-                          onClick={dbAuth.connectNeon}
-                          className="gap-1.5"
-                        >
+                        <Button size="sm" onClick={dbAuth.connectNeon} className="gap-1.5">
                           Connect Neon (1-Click OAuth)
                         </Button>
                       )}
@@ -670,11 +663,7 @@ export function DatabasePanel(props: {
                           </Button>
                         </div>
                       ) : (
-                        <Button
-                          size="sm"
-                          onClick={dbAuth.connectSupabase}
-                          className="gap-1.5"
-                        >
+                        <Button size="sm" onClick={dbAuth.connectSupabase} className="gap-1.5">
                           Connect Supabase (1-Click OAuth)
                         </Button>
                       )}

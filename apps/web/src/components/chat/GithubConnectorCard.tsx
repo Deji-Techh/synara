@@ -5,7 +5,14 @@ import { useState } from "react";
 import { useGithubAuth } from "~/hooks/useGithubAuth";
 import { Button } from "~/components/ui/button";
 import { Badge } from "~/components/ui/badge";
-import { CheckCircle2Icon, ExternalLinkIcon, LoaderCircleIcon, CopyIcon, CheckIcon, XIcon } from "~/lib/icons";
+import {
+  CheckCircle2Icon,
+  ExternalLinkIcon,
+  LoaderCircleIcon,
+  CopyIcon,
+  CheckIcon,
+  XIcon,
+} from "~/lib/icons";
 import { toastManager } from "~/components/ui/toast";
 
 export function GithubConnectorCard(props: { compact?: boolean }) {
@@ -121,7 +128,11 @@ export function GithubConnectorCard(props: { compact?: boolean }) {
             onClick={() => copyCode(deviceFlow.userCode)}
             className="gap-1 shrink-0"
           >
-            {copied ? <CheckIcon className="size-3.5 text-emerald-500" /> : <CopyIcon className="size-3.5" />}
+            {copied ? (
+              <CheckIcon className="size-3.5 text-emerald-500" />
+            ) : (
+              <CopyIcon className="size-3.5" />
+            )}
             {copied ? "Copied" : "Copy"}
           </Button>
         </div>

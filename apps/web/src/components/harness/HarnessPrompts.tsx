@@ -317,7 +317,7 @@ function IntegrationCard(props: { sessionId: string; entry: UiPromptEntry; send:
   };
 
   return (
-    <Shell badge="Database" accent="info" title="Choose a database provider">
+    <Shell badge="Database" accent="info" title="Connect a database provider">
       <div className="flex flex-col gap-3">
         {inPanelMode ? (
           <div className="space-y-3">
@@ -327,7 +327,9 @@ function IntegrationCard(props: { sessionId: string; entry: UiPromptEntry; send:
                 <span>Configure in Database Panel</span>
               </div>
               <p className="mt-1 text-[11px] text-muted-foreground leading-relaxed">
-                Connect your {provider === "supabase" ? "Supabase" : "Neon"} account and link a project in the Database panel on the right. Once connected, the agent will continue automatically.
+                Connect your {provider === "supabase" ? "Supabase" : "Neon"} account and link a
+                project in the Database panel on the right. Once connected, the agent will continue
+                automatically.
               </p>
             </div>
             <div className="flex items-center justify-between gap-2 pt-1">
@@ -362,10 +364,13 @@ function IntegrationCard(props: { sessionId: string; entry: UiPromptEntry; send:
               >
                 <div className="flex items-center justify-between w-full">
                   <span className="text-xs font-semibold text-foreground">Supabase</span>
-                  <Badge variant="outline" className="text-[10px] py-0">Recommended</Badge>
+                  <Badge variant="outline" className="text-[10px] py-0">
+                    Recommended
+                  </Badge>
                 </div>
                 <p className="text-[11px] text-muted-foreground leading-snug">
-                  Managed Postgres with built-in Auth, Storage, Edge Functions, and Row Level Security.
+                  Managed Postgres with built-in Auth, Storage, Edge Functions, and Row Level
+                  Security.
                 </p>
               </button>
 
@@ -381,10 +386,16 @@ function IntegrationCard(props: { sessionId: string; entry: UiPromptEntry; send:
               >
                 <div className="flex items-center justify-between w-full">
                   <span className="text-xs font-semibold text-foreground">Neon</span>
-                  <Badge variant="secondary" className="text-[10px] py-0 text-amber-600 dark:text-amber-400">Experimental</Badge>
+                  <Badge
+                    variant="secondary"
+                    className="text-[10px] py-0 text-amber-600 dark:text-amber-400"
+                  >
+                    Experimental
+                  </Badge>
                 </div>
                 <p className="text-[11px] text-muted-foreground leading-snug">
-                  Serverless Postgres with instant database branching, autoscaling, and point-in-time recovery.
+                  Serverless Postgres with instant database branching, autoscaling, and
+                  point-in-time recovery.
                 </p>
               </button>
             </div>

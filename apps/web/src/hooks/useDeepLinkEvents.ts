@@ -3,6 +3,7 @@
 // and handle OAuth returns (Supabase, Neon).
 
 import { useEffect } from "react";
+import type { ThreadId } from "@caide/contracts";
 import { ensureNativeApi } from "~/nativeApi";
 import { toastManager } from "~/components/ui/toast";
 
@@ -34,7 +35,7 @@ export function useDeepLinkEvents(): void {
         }
         try {
           await ensureNativeApi().database.invoke({
-            threadId: "__global__",
+            threadId: "__global__" as ThreadId,
             channel: "supabase:oauth-return",
             payload: { token },
           });
@@ -65,7 +66,7 @@ export function useDeepLinkEvents(): void {
         }
         try {
           await ensureNativeApi().database.invoke({
-            threadId: "__global__",
+            threadId: "__global__" as ThreadId,
             channel: "neon:oauth-return",
             payload: { token },
           });

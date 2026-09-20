@@ -2,6 +2,7 @@
 // Purpose: Check status and provide 1-click connect/disconnect for Neon and Supabase OAuth.
 
 import { useCallback, useEffect, useState } from "react";
+import type { ThreadId } from "@caide/contracts";
 import { ensureNativeApi } from "~/nativeApi";
 import { toastManager } from "~/components/ui/toast";
 
@@ -13,8 +14,14 @@ export function useDatabaseAuth() {
   const checkStatus = useCallback(async () => {
     try {
       const [sb, ne] = await Promise.all([
-        ensureNativeApi().database.invoke({ threadId: "__global__", channel: "supabase:status" }),
-        ensureNativeApi().database.invoke({ threadId: "__global__", channel: "neon:status" }),
+        ensureNativeApi().database.invoke({
+          threadId: "__global__" as ThreadId,
+          channel: "supabase:status",
+        }),
+        ensureNativeApi().database.invoke({
+          threadId: "__global__" as ThreadId,
+          channel: "neon:status",
+        }),
       ]);
       setSupabaseConnected(Boolean((sb.value as { connected?: boolean })?.connected));
       setNeonConnected(Boolean((ne.value as { connected?: boolean })?.connected));
@@ -55,10 +62,15 @@ export function useDatabaseAuth() {
 
   const disconnectSupabase = async () => {
     try {
-      await ensureNativeApi().database.invoke({ threadId: "__global__", channel: "supabase:disconnect" });
+      await ensureNativeApi().database.invoke({
+        threadId: "__global__" as ThreadId,
+        channel: "supabase:disconnect",
+      });
       setSupabaseConnected(false);
       toastManager.add({ type: "success", title: "Disconnected from Supabase" });
-      window.dispatchEvent(new CustomEvent("caide:provider-auth-changed", { detail: { provider: "supabase" } }));
+      window.dispatchEvent(
+        new CustomEvent("caide:provider-auth-changed", { detail: { provider: "supabase" } }),
+      );
     } catch (err) {
       toastManager.add({
         type: "error",
@@ -84,10 +96,15 @@ export function useDatabaseAuth() {
 
   const disconnectNeon = async () => {
     try {
-      await ensureNativeApi().database.invoke({ threadId: "__global__", channel: "neon:disconnect" });
+      await ensureNativeApi().database.invoke({
+        threadId: "__global__" as ThreadId,
+        channel: "neon:disconnect",
+      });
       setNeonConnected(false);
       toastManager.add({ type: "success", title: "Disconnected from Neon" });
-      window.dispatchEvent(new CustomEvent("caide:provider-auth-changed", { detail: { provider: "neon" } }));
+      window.dispatchEvent(
+        new CustomEvent("caide:provider-auth-changed", { detail: { provider: "neon" } }),
+      );
     } catch (err) {
       toastManager.add({
         type: "error",

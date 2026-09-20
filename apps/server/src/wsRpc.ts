@@ -162,8 +162,8 @@ import {
   ProviderDiscoveryService,
   ProviderHealth,
   ProviderService,
-  redactSensitiveProcessArgs,
 } from "./harnessCompat";
+import { redactSensitiveProcessArgs } from "./processArgumentRedaction";
 import { ArtifactRegistry } from "./persistence/Services/ArtifactRegistry";
 import { ServerEnvironment } from "./environment/Services/ServerEnvironment";
 import { ToolchainDoctor } from "./toolchain/Services/ToolchainDoctor";
@@ -419,6 +419,8 @@ function parseCommitLogRows(stdout: string, maxRows: number): ProjectActivityIte
   return rows;
 }
 function makeWsArtifactsHandlers(artifactRegistry: any) {
+  const rpcEffect = <A, E, R>(effect: Effect.Effect<A, E, R>, fallbackMessage: string) =>
+    effect.pipe(Effect.mapError((cause) => toWsRpcError(cause, fallbackMessage)));
   return {
     "artifacts.list": (input: any) =>
       rpcEffect(artifactRegistry.list(input.projectId), "Failed to list artifacts"),
