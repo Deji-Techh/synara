@@ -26,9 +26,28 @@ export const GEMINI_3_1_PRO_PREVIEW = "gemini-3.1-pro-preview";
 export const NEMOTRON_3_SUPER_FREE = "nvidia/nemotron-3-super-120b-a12b:free";
 export const GPT_5_NANO = "gpt-5-nano";
 
-export const FREE_OPENROUTER_MODEL_NAMES = MODEL_OPTIONS.openrouter
-  .filter((model) => model.name.endsWith(":free") || model.name.endsWith("/free"))
-  .map((model) => model.name);
+function getFreeOpenRouterModelNames(): string[] {
+  return (MODEL_OPTIONS.openrouter ?? [])
+    .filter((model) => model.name.endsWith(":free") || model.name.endsWith("/free"))
+    .map((model) => model.name);
+}
+
+export const FREE_OPENROUTER_MODEL_NAMES: readonly string[] = new Proxy([] as string[], {
+  get(_target, prop, receiver) {
+    const list = getFreeOpenRouterModelNames();
+    const value = Reflect.get(list, prop, receiver);
+    return typeof value === "function" ? value.bind(list) : value;
+  },
+  has(_target, prop) {
+    return Reflect.has(getFreeOpenRouterModelNames(), prop);
+  },
+  ownKeys(_target) {
+    return Reflect.ownKeys(getFreeOpenRouterModelNames());
+  },
+  getOwnPropertyDescriptor(_target, prop) {
+    return Reflect.getOwnPropertyDescriptor(getFreeOpenRouterModelNames(), prop);
+  },
+});
 
 /** Find a model's catalog entry (limits, temperature) by provider + name. */
 export function findModelOption(providerId: string, modelName: string): ModelOption | undefined {

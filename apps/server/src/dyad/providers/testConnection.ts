@@ -21,14 +21,21 @@ const TIMEOUT_MS = 15_000;
 const VALIDATION_PROMPT = "What number is after four? Reply with only the number.";
 const VALIDATION_TIMEOUT_MS = 20_000;
 
-/** Per-provider probe model (cheap, stable ids — donor choices kept). */
-const INFERENCE_PROBE_MODELS: Record<string, { model: string; baseUrl: string }> = {
-  deepseek: { model: "deepseek-chat", baseUrl: "https://api.deepseek.com" },
-  opencodeZen: { model: OPENCODE_ZEN_FREE_MODEL_IDS[0], baseUrl: "https://opencode.ai/zen/v1" },
-  "opencode-zen": { model: OPENCODE_ZEN_FREE_MODEL_IDS[0], baseUrl: "https://opencode.ai/zen/v1" },
-  google: { model: "gemini-flash-latest", baseUrl: "https://generativelanguage.googleapis.com" },
-  openrouter: { model: "openrouter/free", baseUrl: "https://openrouter.ai/api/v1" },
-};
+function getInferenceProbeModel(
+  providerId: string,
+): { model: string; baseUrl: string } | undefined {
+  const opencodeZenModel =
+    (typeof OPENCODE_ZEN_FREE_MODEL_IDS !== "undefined" && OPENCODE_ZEN_FREE_MODEL_IDS[0]) ||
+    "deepseek-v4-flash-free";
+  const models: Record<string, { model: string; baseUrl: string }> = {
+    deepseek: { model: "deepseek-chat", baseUrl: "https://api.deepseek.com" },
+    opencodeZen: { model: opencodeZenModel, baseUrl: "https://opencode.ai/zen/v1" },
+    "opencode-zen": { model: opencodeZenModel, baseUrl: "https://opencode.ai/zen/v1" },
+    google: { model: "gemini-flash-latest", baseUrl: "https://generativelanguage.googleapis.com" },
+    openrouter: { model: "openrouter/free", baseUrl: "https://openrouter.ai/api/v1" },
+  };
+  return models[providerId] ?? models[providerId.replace(/-/g, "")];
+}
 
 function displayNameOf(providerId: string): string {
   return PROVIDERS[providerId]?.displayName ?? providerId;
@@ -224,8 +231,7 @@ export async function testProviderConnection(input: {
       // real completion catches keys that list models fine but fail
       // inference. Custom base URLs ride along when provided.
       if (!key) return { ok: false, message: "API key is required." };
-      const probe =
-        INFERENCE_PROBE_MODELS[providerId] ?? INFERENCE_PROBE_MODELS[providerId.replace(/-/g, "")];
+      const probe = getInferenceProbeModel(providerId);
       if (!probe) return { ok: false, message: "No validation probe for this provider." };
       return runInferenceProbe({
         providerId,
