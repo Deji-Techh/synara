@@ -293,7 +293,7 @@ export const SETTINGS_SEARCH_ENTRIES: readonly SettingsSearchEntry[] = [
   // ── Models ────────────────────────────────────────────────────────────────────
   {
     id: "models:git-writing-model",
-    section: "models",
+    section: "providers",
     title: "Git writing model",
     keywords: "Used for generated commit messages, PR titles, and branch names.",
   },
@@ -305,7 +305,7 @@ export const SETTINGS_SEARCH_ENTRIES: readonly SettingsSearchEntry[] = [
   },
   {
     id: "models:saved-model-slugs",
-    section: "models",
+    section: "providers",
     title: "Saved model slugs",
     keywords: "Add custom model slugs for supported providers. custom model",
   },

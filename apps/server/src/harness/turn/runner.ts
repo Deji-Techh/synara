@@ -475,6 +475,7 @@ export class CaideRunner {
       return extras;
     };
     this.status = "running";
+    let triggerCompaction: (() => Promise<void>) | null = null;
     // forward must never throw: a failing listener (dead socket, broken
     // subscriber) must fail only event delivery, never the turn — a throw
     // here pre-main-try would wedge the session flow and silence every
@@ -526,7 +527,7 @@ export class CaideRunner {
         }
       } else if (event.type === "stage")
         this.emit({ type: "stage", from: event.from, to: event.to });
-      else if (event.type === "compaction") void maybeCompactTurn().catch(() => {});
+      else if (event.type === "compaction") void triggerCompaction?.().catch(() => {});
       else if (event.type === "turn_end") {
         // Donor pending flag: a turn that ends over threshold without a
         // persisted summary arms next turn's pre-turn compaction. Reads only
@@ -779,6 +780,7 @@ export class CaideRunner {
           compactionRunning = false;
         }
       }
+      triggerCompaction = maybeCompactTurn;
       // chatMode is computed above (needed early for planModeOnly tool options).
       // Project AI rules: the scaffolded AI_RULES.md (or user edits)
       // seed every turn; missing file falls back to defaults inside.

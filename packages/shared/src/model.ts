@@ -333,8 +333,8 @@ function withProviderOptionCurrentValue(
   return { ...descriptor, currentValue };
 }
 
-function reasoningDescriptorId(_provider: ProviderKind): string {
-  return "reasoningEffort";
+function reasoningDescriptorId(provider: ProviderKind): string {
+  return provider === "engine" ? "thinkingLevel" : "reasoningEffort";
 }
 
 function legacyCapabilityDescriptors(

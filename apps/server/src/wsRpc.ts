@@ -63,6 +63,37 @@ import {
 } from "effect/unstable/rpc";
 
 import { authErrorResponse, makeEffectAuthRequest } from "./auth/effectHttp";
+
+interface EngineGoalsApi {
+  create: (input: any) => Effect.Effect<any, any>;
+  get: (input: any) => Effect.Effect<any, any>;
+  getActive: (input: any) => Effect.Effect<any, any>;
+  list: (input: any) => Effect.Effect<any, any>;
+  listActivity: (input: any) => Effect.Effect<any, any>;
+  listRuns: (input: any) => Effect.Effect<any, any>;
+  pause: (input: any) => Effect.Effect<any, any>;
+  resume: (input: any) => Effect.Effect<any, any>;
+  cancel: (input: any) => Effect.Effect<any, any>;
+  edit: (input: any) => Effect.Effect<any, any>;
+  steer: (input: any) => Effect.Effect<any, any>;
+  retry: (input: any) => Effect.Effect<any, any>;
+  verify: (input: any) => Effect.Effect<any, any>;
+}
+
+interface EngineSubagentsApi {
+  getActive: (input: any) => Effect.Effect<any, any>;
+  list: (input: any) => Effect.Effect<any, any>;
+  stop: (input: any) => Effect.Effect<any, any>;
+}
+
+interface EngineAdapterShape {
+  goals: EngineGoalsApi;
+  subagents: EngineSubagentsApi;
+  streamGoalDomainEvents: Stream.Stream<any, any>;
+  streamSubagentEvents: Stream.Stream<any, any>;
+  hasSession: (threadId: ThreadId) => Effect.Effect<boolean, any>;
+  startPreviewSession: (input: { threadId: ThreadId; cwd?: string }) => Effect.Effect<any, any>;
+}
 import {
   ServerAuth,
   type AuthError,
@@ -1293,141 +1324,74 @@ const makeWsRpcHandlersLayer = () =>
       // Engine goals bridge helpers: resolve the shared engine adapter and
       // wire its opaque goal outputs into the RPC contract types.
       const engineAdapterEffect = providerAdapterRegistry.getByProvider("engine").pipe(
-        Effect.map(
-          (adapter) => adapter as import("./provider/Services/EngineAdapter.ts").EngineAdapterShape,
-        ),
+        Effect.map((adapter) => adapter as EngineAdapterShape),
         Effect.mapError((cause) => new WsRpcError({ message: cause.message })),
       );
       const adapterHex = {
         goals: {
-          create: (
-            input: Parameters<
-              import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["create"]
-            >[0],
-            label: string,
-          ) =>
+          create: (input: Parameters<EngineGoalsApi["create"]>[0], label: string) =>
             rpcEffect(
               engineAdapterEffect.pipe(Effect.flatMap((adapter) => adapter.goals.create(input))),
               label,
             ),
-          get: (
-            input: Parameters<
-              import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["get"]
-            >[0],
-            label: string,
-          ) =>
+          get: (input: Parameters<EngineGoalsApi["get"]>[0], label: string) =>
             rpcEffect(
               engineAdapterEffect.pipe(Effect.flatMap((adapter) => adapter.goals.get(input))),
               label,
             ),
-          getActive: (
-            input: Parameters<
-              import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["getActive"]
-            >[0],
-            label: string,
-          ) =>
+          getActive: (input: Parameters<EngineGoalsApi["getActive"]>[0], label: string) =>
             rpcEffect(
               engineAdapterEffect.pipe(Effect.flatMap((adapter) => adapter.goals.getActive(input))),
               label,
             ),
-          list: (
-            input: Parameters<
-              import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["list"]
-            >[0],
-            label: string,
-          ) =>
+          list: (input: Parameters<EngineGoalsApi["list"]>[0], label: string) =>
             rpcEffect(
               engineAdapterEffect.pipe(Effect.flatMap((adapter) => adapter.goals.list(input))),
               label,
             ),
-          listActivity: (
-            input: Parameters<
-              import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["listActivity"]
-            >[0],
-            label: string,
-          ) =>
+          listActivity: (input: Parameters<EngineGoalsApi["listActivity"]>[0], label: string) =>
             rpcEffect(
               engineAdapterEffect.pipe(
                 Effect.flatMap((adapter) => adapter.goals.listActivity(input)),
               ),
               label,
             ),
-          listRuns: (
-            input: Parameters<
-              import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["listRuns"]
-            >[0],
-            label: string,
-          ) =>
+          listRuns: (input: Parameters<EngineGoalsApi["listRuns"]>[0], label: string) =>
             rpcEffect(
               engineAdapterEffect.pipe(Effect.flatMap((adapter) => adapter.goals.listRuns(input))),
               label,
             ),
-          pause: (
-            input: Parameters<
-              import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["pause"]
-            >[0],
-            label: string,
-          ) =>
+          pause: (input: Parameters<EngineGoalsApi["pause"]>[0], label: string) =>
             rpcEffect(
               engineAdapterEffect.pipe(Effect.flatMap((adapter) => adapter.goals.pause(input))),
               label,
             ),
-          resume: (
-            input: Parameters<
-              import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["resume"]
-            >[0],
-            label: string,
-          ) =>
+          resume: (input: Parameters<EngineGoalsApi["resume"]>[0], label: string) =>
             rpcEffect(
               engineAdapterEffect.pipe(Effect.flatMap((adapter) => adapter.goals.resume(input))),
               label,
             ),
-          cancel: (
-            input: Parameters<
-              import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["cancel"]
-            >[0],
-            label: string,
-          ) =>
+          cancel: (input: Parameters<EngineGoalsApi["cancel"]>[0], label: string) =>
             rpcEffect(
               engineAdapterEffect.pipe(Effect.flatMap((adapter) => adapter.goals.cancel(input))),
               label,
             ),
-          edit: (
-            input: Parameters<
-              import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["edit"]
-            >[0],
-            label: string,
-          ) =>
+          edit: (input: Parameters<EngineGoalsApi["edit"]>[0], label: string) =>
             rpcEffect(
               engineAdapterEffect.pipe(Effect.flatMap((adapter) => adapter.goals.edit(input))),
               label,
             ),
-          steer: (
-            input: Parameters<
-              import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["steer"]
-            >[0],
-            label: string,
-          ) =>
+          steer: (input: Parameters<EngineGoalsApi["steer"]>[0], label: string) =>
             rpcEffect(
               engineAdapterEffect.pipe(Effect.flatMap((adapter) => adapter.goals.steer(input))),
               label,
             ),
-          retry: (
-            input: Parameters<
-              import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["retry"]
-            >[0],
-            label: string,
-          ) =>
+          retry: (input: Parameters<EngineGoalsApi["retry"]>[0], label: string) =>
             rpcEffect(
               engineAdapterEffect.pipe(Effect.flatMap((adapter) => adapter.goals.retry(input))),
               label,
             ),
-          verify: (
-            input: Parameters<
-              import("./provider/Services/EngineAdapter.ts").EngineGoalsApi["verify"]
-            >[0],
-            label: string,
-          ) =>
+          verify: (input: Parameters<EngineGoalsApi["verify"]>[0], label: string) =>
             rpcEffect(
               engineAdapterEffect.pipe(Effect.flatMap((adapter) => adapter.goals.verify(input))),
               label,
@@ -1440,12 +1404,7 @@ const makeWsRpcHandlersLayer = () =>
             Stream.map((event) => event as never),
           ),
         subagents: {
-          getActive: (
-            input: Parameters<
-              import("./provider/Services/EngineAdapter.ts").EngineSubagentsApi["getActive"]
-            >[0],
-            label: string,
-          ) =>
+          getActive: (input: Parameters<EngineSubagentsApi["getActive"]>[0], label: string) =>
             rpcEffect(
               engineAdapterEffect.pipe(
                 Effect.flatMap((adapter) => adapter.subagents.getActive(input)),
@@ -2814,10 +2773,7 @@ const makeWsRpcHandlersLayer = () =>
               // replaced by the engine coming up. Existing engine sessions are
               // left untouched (no double spawn / no event replay).
               const hasSession = yield* providerAdapterRegistry.getByProvider("engine").pipe(
-                Effect.map(
-                  (adapter) =>
-                    adapter as import("./provider/Services/EngineAdapter.ts").EngineAdapterShape,
-                ),
+                Effect.map((adapter) => adapter as EngineAdapterShape),
                 Effect.flatMap((adapter) => adapter.hasSession(threadId)),
                 Effect.mapError((cause) => new WsRpcError({ message: cause.message })),
               );
@@ -2847,10 +2803,7 @@ const makeWsRpcHandlersLayer = () =>
                 projects: Option.isSome(projectShell) ? [projectShell.value] : [],
               });
               yield* providerAdapterRegistry.getByProvider("engine").pipe(
-                Effect.map(
-                  (adapter) =>
-                    adapter as import("./provider/Services/EngineAdapter.ts").EngineAdapterShape,
-                ),
+                Effect.map((adapter) => adapter as EngineAdapterShape),
                 Effect.flatMap((adapter) =>
                   adapter.startPreviewSession({
                     threadId,
@@ -2878,10 +2831,7 @@ const makeWsRpcHandlersLayer = () =>
               // Same lazy-session strategy as the preview pane: the Database
               // pane works for threads whose chat runs on any provider.
               const hasSession = yield* providerAdapterRegistry.getByProvider("engine").pipe(
-                Effect.map(
-                  (adapter) =>
-                    adapter as import("./provider/Services/EngineAdapter.ts").EngineAdapterShape,
-                ),
+                Effect.map((adapter) => adapter as EngineAdapterShape),
                 Effect.flatMap((adapter) => adapter.hasSession(threadId)),
                 Effect.mapError((cause) => new WsRpcError({ message: cause.message })),
               );
@@ -2911,10 +2861,7 @@ const makeWsRpcHandlersLayer = () =>
                 projects: Option.isSome(projectShell) ? [projectShell.value] : [],
               });
               yield* providerAdapterRegistry.getByProvider("engine").pipe(
-                Effect.map(
-                  (adapter) =>
-                    adapter as import("./provider/Services/EngineAdapter.ts").EngineAdapterShape,
-                ),
+                Effect.map((adapter) => adapter as EngineAdapterShape),
                 Effect.flatMap((adapter) =>
                   adapter.startPreviewSession({
                     threadId,

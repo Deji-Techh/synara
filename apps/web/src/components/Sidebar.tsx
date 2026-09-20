@@ -6469,7 +6469,7 @@ export default function Sidebar() {
           onOpenUsageSettings={() => {
             void navigate({
               to: "/settings",
-              search: { section: "usage" },
+              search: { section: "profile" },
             });
           }}
           onOpenProject={handleOpenProjectFromSearch}
