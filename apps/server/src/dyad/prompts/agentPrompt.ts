@@ -107,6 +107,7 @@ You have tools at your disposal to solve the coding task. Follow these rules reg
 const PRO_TOOL_CALLING_BEST_PRACTICES_BLOCK = `<tool_calling_best_practices>
 ${SUBAGENT_DELEGATION_GUIDANCE}
 - **Read before writing**: Use \`read_file\` and \`list_dir\` to understand the codebase before making changes
+- **Check design references**: Use \`check_references\` whenever building or styling UI components, implementing layouts, themes, colors, or typography, or when the user mentions uploaded mockups and references. If no references have been uploaded, proceed smoothly with your work using high-quality modern design — NEVER stop, pause, or wait for the user to provide references.
 - **Prefer \`search_replace\` for edits**: For small to medium edits on existing files, use \`search_replace\` rather than rewriting the whole file
 - **Be surgical**: Only change what's necessary to accomplish the task
 - **Handle errors gracefully**: If a tool fails, explain the issue and suggest alternatives

@@ -12,6 +12,7 @@ import { type ReactNode } from "react";
 import { cn } from "~/lib/utils";
 import { ComposerAutomationSetupBanner } from "./ComposerAutomationSetupBanner";
 import { ComposerPlanFollowUpBanner } from "./ComposerPlanFollowUpBanner";
+import { ComposerDesignReferenceBanner } from "./ComposerDesignReferenceBanner";
 import { COMPOSER_INPUT_SURFACE_BANNER_CLASS_NAME } from "./composerPickerStyles";
 
 interface ComposerInputBannersProps {
@@ -23,15 +24,30 @@ interface ComposerInputBannersProps {
   // Setup-mode control while gathering an automation's task/schedule (the exchange
   // itself renders as bubbles in the transcript).
   automationSetup: { onCancel: () => void } | null;
+  // Design reference notification banner when a new mockup or spec was uploaded
+  designReference?: {
+    reference: { name: string; description?: string };
+    onInform: () => void;
+    onDismiss: () => void;
+  } | null;
 }
 
 export function ComposerInputBanners({
   roundedTopReset,
   planFollowUp,
   automationSetup,
+  designReference,
 }: ComposerInputBannersProps) {
   let content: ReactNode = null;
-  if (planFollowUp) {
+  if (designReference) {
+    content = (
+      <ComposerDesignReferenceBanner
+        reference={designReference.reference}
+        onInform={designReference.onInform}
+        onDismiss={designReference.onDismiss}
+      />
+    );
+  } else if (planFollowUp) {
     content = <ComposerPlanFollowUpBanner key={planFollowUp.id} planTitle={planFollowUp.title} />;
   } else if (automationSetup) {
     content = <ComposerAutomationSetupBanner onCancel={automationSetup.onCancel} />;

@@ -10206,6 +10206,36 @@ export default function ChatView({
     ],
   );
 
+  const [newDesignRef, setNewDesignRef] = useState<{
+    name: string;
+    description?: string;
+  } | null>(null);
+
+  useEffect(() => {
+    const onRefAdded = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.reference && (!detail.threadId || detail.threadId === threadId)) {
+        setNewDesignRef({
+          name: detail.reference.name,
+          description: detail.reference.description,
+        });
+      }
+    };
+    window.addEventListener("caide:design-reference-added", onRefAdded);
+    return () => window.removeEventListener("caide:design-reference-added", onRefAdded);
+  }, [threadId]);
+
+  const handleInformAgentOfDesignRef = useCallback(() => {
+    if (!newDesignRef) return;
+    const ref = newDesignRef;
+    setNewDesignRef(null);
+    const msg = `I have added a new design reference: "${ref.name}"${ref.description ? ` (${ref.description})` : ""}. Please check it using the check_references tool and follow its design, color, and layout guidelines.`;
+    setComposerPromptValue(msg);
+    setTimeout(() => {
+      composerFormRef.current?.requestSubmit();
+    }, 60);
+  }, [newDesignRef, setComposerPromptValue]);
+
   const {
     handleForkTargetSelection,
     handleReviewTargetSelection,
@@ -11316,6 +11346,15 @@ export default function ChatView({
               >
                 <ComposerInputBanners
                   roundedTopReset={false}
+                  designReference={
+                    newDesignRef
+                      ? {
+                          reference: newDesignRef,
+                          onInform: handleInformAgentOfDesignRef,
+                          onDismiss: () => setNewDesignRef(null),
+                        }
+                      : null
+                  }
                   planFollowUp={
                     !activePendingApproval &&
                     pendingUserInputs.length === 0 &&

@@ -19,6 +19,51 @@ export interface ModelOption {
    * Mirrors the server catalog (item 29); drives picker badges.
    */
   taste?: number;
+  /**
+   * Supported input modalities (e.g. text, image, file, audio, video).
+   * When empty or omitted, defaults are inferred via isModelVisionCapable.
+   */
+  inputModalities?: InputModality[];
+}
+
+export type InputModality = "text" | "image" | "file" | "audio" | "video";
+
+export const MULTIMODAL_MODEL_PATTERNS: readonly RegExp[] = [
+  /gemini/i,
+  /gpt-4o/i,
+  /gpt-4\.5/i,
+  /gpt-5/i,
+  /claude-3/i,
+  /claude-4/i,
+  /vision/i,
+  /\bvl\b/i,
+  /flux/i,
+  /flash/i,
+  /sonnet/i,
+  /muse/i,
+  /pixtral/i,
+  /llava/i,
+  /omni/i,
+  /minicpm/i,
+  /qwen.*vl/i,
+  /internvl/i,
+  /molmo/i,
+];
+
+/**
+ * Determines whether a model supports image / visual inputs.
+ * Checks explicit modalities first, then checks known multimodal patterns.
+ */
+export function isModelVisionCapable(
+  slugOrName: string,
+  explicitModalities?: readonly string[],
+): boolean {
+  if (explicitModalities && explicitModalities.length > 0) {
+    return explicitModalities.includes("image") || explicitModalities.includes("file");
+  }
+  const normalized = slugOrName.trim().toLowerCase();
+  if (!normalized) return false;
+  return MULTIMODAL_MODEL_PATTERNS.some((pattern) => pattern.test(normalized));
 }
 
 /**
@@ -631,6 +676,7 @@ export const MODEL_OPTIONS: Record<string, ModelOption[]> = {
       dollarSigns: 0,
       tag: "Free",
       tagColor: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+      inputModalities: ["text", "image", "file", "video", "audio"],
     },
     {
       name: "muse-spark-1.3-contributor-free",
@@ -641,6 +687,7 @@ export const MODEL_OPTIONS: Record<string, ModelOption[]> = {
       dollarSigns: 0,
       tag: "Free",
       tagColor: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+      inputModalities: ["text", "image", "file", "video", "audio"],
     },
     {
       name: "nemotron-3.5-lightning-free",
@@ -939,6 +986,7 @@ export const MODEL_OPTIONS: Record<string, ModelOption[]> = {
       contextWindow: 128_000,
       maxOutputTokens: 32_000,
       dollarSigns: 1,
+      inputModalities: ["text", "image", "file", "video", "audio"],
     },
     {
       name: "muse-spark-1.2-contributor",
@@ -947,6 +995,7 @@ export const MODEL_OPTIONS: Record<string, ModelOption[]> = {
       contextWindow: 128_000,
       maxOutputTokens: 32_000,
       dollarSigns: 1,
+      inputModalities: ["text", "image", "file", "video", "audio"],
     },
     {
       name: "omen-alpha",

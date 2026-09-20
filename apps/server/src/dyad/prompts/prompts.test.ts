@@ -460,10 +460,10 @@ describe("dyad prompt transplant (m1)", () => {
     const base = { aiRules: undefined, enableTurboEditsV2: false } as const;
     const agent = constructSystemPrompt({ ...base, chatMode: "local-agent" });
     expect(agent).toContain("do NOT emit a status sentence per tool call");
-    expect(agent).toContain("capture_screenshot");
+    expect(agent).toContain("screenshot");
     const build = constructSystemPrompt({ ...base, chatMode: "build" });
     expect(build).toContain("do NOT emit a status sentence per file operation");
-    expect(build).toContain("capture_screenshot");
+    expect(build).toContain("screenshot");
   });
 
   it("plan mode points at the Appllama benchmark laws (P4)", () => {

@@ -739,6 +739,77 @@ export const spawnSubagentTool = defineTool({
     `Spawn ${args.persona ?? "generic"} sub-agent: ${String(args.task_name ?? args.task ?? "").slice(0, 80)}`,
 });
 
+// 21. check_references
+export const checkReferencesTool = defineTool({
+  name: "check_references",
+  description:
+    "Inspects design reference materials (UI mockups, screenshots, brand style guides, design tokens, and layout specs) uploaded by the user in the Design References panel. Call without arguments to list all available references, or with referenceId/name to inspect full details, descriptions, and file paths.",
+  schema: z.object({
+    referenceId: z
+      .string()
+      .optional()
+      .describe("Optional ID or name of the specific reference to inspect"),
+  }),
+  readOnly: true,
+  modifiesState: false,
+  execute: async ({ referenceId }, ctx) => {
+    const { listDesignReferences, getDesignReference } =
+      await import("../../dyad/design/references.ts");
+    if (referenceId?.trim()) {
+      const match = await getDesignReference(ctx.appPath, referenceId);
+      if (!match) {
+        const all = await listDesignReferences(ctx.appPath);
+        return {
+          found: false,
+          error: `No reference found matching '${referenceId}'.`,
+          availableReferences: all.map((r) => ({
+            id: r.id,
+            name: r.name,
+            type: r.type,
+            description: r.description,
+          })),
+        };
+      }
+      return {
+        found: true,
+        reference: {
+          id: match.id,
+          name: match.name,
+          type: match.type,
+          description: match.description || "No description provided",
+          filePath: match.filePath,
+          size: match.size,
+          addedAt: new Date(match.addedAt).toISOString(),
+          previewAvailable: Boolean(match.dataUrl || match.filePath),
+        },
+      };
+    }
+    const references = await listDesignReferences(ctx.appPath);
+    return {
+      count: references.length,
+      references: references.map((r) => ({
+        id: r.id,
+        name: r.name,
+        type: r.type,
+        description: r.description || "No description provided",
+        filePath: r.filePath,
+        size: r.size,
+        addedAt: new Date(r.addedAt).toISOString(),
+      })),
+      hint:
+        references.length === 0
+          ? "No design references uploaded for this project yet. Continue with your implementation using modern, high-quality design standards — do NOT stop, pause, or ask the user for references."
+          : "Use check_references with a referenceId to inspect a specific reference's full details.",
+    };
+  },
+  presentCall: (args) =>
+    args.referenceId ? `Check reference: ${args.referenceId}` : "Check design references",
+  presentResult: (res: any) =>
+    res.found
+      ? `Reference: ${res.reference?.name} (${res.reference?.type})`
+      : `Found ${res.count ?? 0} design references`,
+});
+
 export const ALL_CORE_TOOLS: ToolDef[] = [
   readFileTool,
   writeFileTool,
@@ -760,4 +831,5 @@ export const ALL_CORE_TOOLS: ToolDef[] = [
   checkpointTool,
   logDecisionTool,
   spawnSubagentTool,
+  checkReferencesTool,
 ];

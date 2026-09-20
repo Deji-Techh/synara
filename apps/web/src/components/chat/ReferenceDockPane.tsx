@@ -6,6 +6,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ThreadId } from "@caide/contracts";
+import { isModelVisionCapable } from "@caide/shared/languageModelCatalog";
 import { cn } from "~/lib/utils";
 import { DockPaneHeader } from "./DockPaneHeader";
 import { PanelStateMessage } from "./PanelStateMessage";
@@ -13,6 +14,8 @@ import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { ScrollArea } from "../ui/scroll-area";
 import { useStore } from "~/store";
+import { ensureNativeApi } from "~/nativeApi";
+import { toastManager } from "~/components/ui/toast";
 import {
   IconEye as Eye,
   IconFileText as FileText,
@@ -23,11 +26,13 @@ import {
   IconX as X,
 } from "@tabler/icons-react";
 
-interface ReferenceItem {
+export interface ReferenceItem {
   id: string;
   name: string;
+  description?: string;
   type: "image" | "document";
   dataUrl?: string | undefined;
+  filePath?: string | undefined;
   size?: number | undefined;
   addedAt: number;
 }
@@ -40,6 +45,7 @@ export function ReferenceDockPane(props: {
   const [items, setItems] = useState<ReferenceItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPreview, setSelectedPreview] = useState<ReferenceItem | null>(null);
+  const [previewDescription, setPreviewDescription] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Read current model to detect vision capability
@@ -48,13 +54,10 @@ export function ReferenceDockPane(props: {
     return shell?.modelSelection?.model ?? "default";
   });
 
-  // Vision detection: check if model is multimodal
-  const isVisionCapable =
-    /gemini|gpt-4o|claude-3|claude-3-5|vision|vl|flux/i.test(activeModelId) ||
-    activeModelId.includes("flash") ||
-    activeModelId.includes("sonnet");
+  // Vision detection: dynamically checks model modalities and multimodal patterns
+  const isVisionCapable = isModelVisionCapable(activeModelId);
 
-  // Load persisted references from localStorage for this thread/workspace
+  // Load persisted references from localStorage + backend RPC
   const storageKey = `caide_references_${props.workspaceRoot || props.threadId}`;
 
   useEffect(() => {
@@ -65,10 +68,29 @@ export function ReferenceDockPane(props: {
       }
     } catch {
       // ignore parse error
-    } finally {
-      setLoading(false);
     }
-  }, [storageKey]);
+
+    void (async () => {
+      try {
+        const res = await ensureNativeApi().database.invoke({
+          threadId: props.threadId,
+          channel: "reference:list",
+          payload: { workspaceRoot: props.workspaceRoot },
+        });
+        const data = res.value as { references?: ReferenceItem[] };
+        if (Array.isArray(data?.references) && data.references.length > 0) {
+          setItems(data.references);
+          try {
+            localStorage.setItem(storageKey, JSON.stringify(data.references));
+          } catch {}
+        }
+      } catch {
+        // local fallback
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [storageKey, props.threadId, props.workspaceRoot]);
 
   const persistItems = useCallback(
     (next: ReferenceItem[]) => {
@@ -90,16 +112,34 @@ export function ReferenceDockPane(props: {
       const isImage = file.type.startsWith("image/");
       const reader = new FileReader();
 
-      reader.onload = () => {
+      reader.onload = async () => {
         const newItem: ReferenceItem = {
           id: `ref_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
           name: file.name,
+          description: "",
           type: isImage ? "image" : "document",
           dataUrl: typeof reader.result === "string" ? reader.result : undefined,
           size: file.size,
           addedAt: Date.now(),
         };
-        persistItems([newItem, ...items]);
+        const next = [newItem, ...items];
+        persistItems(next);
+
+        // Sync with backend
+        try {
+          await ensureNativeApi().database.invoke({
+            threadId: props.threadId,
+            channel: "reference:save",
+            payload: { workspaceRoot: props.workspaceRoot, item: newItem },
+          });
+        } catch {}
+
+        // Notify app so composer can offer to inform the agent
+        window.dispatchEvent(
+          new CustomEvent("caide:design-reference-added", {
+            detail: { reference: newItem, threadId: props.threadId },
+          }),
+        );
       };
 
       if (isImage) {
@@ -114,11 +154,35 @@ export function ReferenceDockPane(props: {
     }
   };
 
-  const removeItem = (id: string, e: React.MouseEvent) => {
+  const removeItem = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     persistItems(items.filter((item) => item.id !== id));
     if (selectedPreview?.id === id) {
       setSelectedPreview(null);
+    }
+    try {
+      await ensureNativeApi().database.invoke({
+        threadId: props.threadId,
+        channel: "reference:delete",
+        payload: { workspaceRoot: props.workspaceRoot, id },
+      });
+    } catch {}
+  };
+
+  const updateDescription = async (id: string, description: string) => {
+    const updated = items.map((item) => (item.id === id ? { ...item, description } : item));
+    persistItems(updated);
+    const target = updated.find((i) => i.id === id);
+    if (target) {
+      setSelectedPreview(target);
+      try {
+        await ensureNativeApi().database.invoke({
+          threadId: props.threadId,
+          channel: "reference:save",
+          payload: { workspaceRoot: props.workspaceRoot, item: target },
+        });
+        toastManager.add({ type: "success", title: "Reference description saved" });
+      } catch {}
     }
   };
 
@@ -194,7 +258,10 @@ export function ReferenceDockPane(props: {
                 {items.map((item) => (
                   <div
                     key={item.id}
-                    onClick={() => setSelectedPreview(item)}
+                    onClick={() => {
+                      setSelectedPreview(item);
+                      setPreviewDescription(item.description || "");
+                    }}
                     className="group relative flex aspect-square cursor-pointer flex-col overflow-hidden rounded-xl border border-border bg-card shadow-xs transition-all hover:border-border/80 hover:shadow-md"
                   >
                     {item.type === "image" && item.dataUrl ? (
@@ -213,7 +280,7 @@ export function ReferenceDockPane(props: {
                     )}
 
                     {/* Gradient overlay on hover */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col justify-between p-2">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col justify-between p-2">
                       <div className="flex justify-end">
                         <button
                           type="button"
@@ -224,9 +291,14 @@ export function ReferenceDockPane(props: {
                           <Trash2 className="size-3" />
                         </button>
                       </div>
-                      <div className="flex items-center justify-between text-white text-[10px]">
-                        <span className="truncate max-w-[85px] font-medium">{item.name}</span>
-                        <Eye className="size-3 shrink-0 opacity-80" />
+                      <div className="flex flex-col text-white text-[10px] min-w-0">
+                        <div className="flex items-center justify-between">
+                          <span className="truncate max-w-[85px] font-medium">{item.name}</span>
+                          <Eye className="size-3 shrink-0 opacity-80" />
+                        </div>
+                        {item.description ? (
+                          <span className="truncate text-[9px] opacity-75">{item.description}</span>
+                        ) : null}
                       </div>
                     </div>
                   </div>
@@ -265,12 +337,12 @@ export function ReferenceDockPane(props: {
                 <X className="size-4" />
               </Button>
             </div>
-            <div className="flex items-center justify-center overflow-auto p-4 max-h-[70vh]">
+            <div className="flex items-center justify-center overflow-auto p-4 max-h-[60vh]">
               {selectedPreview.type === "image" && selectedPreview.dataUrl ? (
                 <img
                   src={selectedPreview.dataUrl}
                   alt={selectedPreview.name}
-                  className="max-h-[65vh] w-auto max-w-full rounded-lg object-contain"
+                  className="max-h-[55vh] w-auto max-w-full rounded-lg object-contain"
                 />
               ) : (
                 <div className="flex flex-col items-center gap-3 p-6 text-center">
@@ -280,6 +352,29 @@ export function ReferenceDockPane(props: {
                   </span>
                 </div>
               )}
+            </div>
+
+            {/* Description Editor */}
+            <div className="pt-3 border-t border-border flex flex-col gap-1.5">
+              <div className="flex items-center justify-between text-[11px] font-medium text-foreground/80">
+                <span>Description for the agent:</span>
+                <span className="text-[10px] text-muted-foreground">Read by check_references</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  placeholder="e.g. Login page hero mockup, brand color scheme, primary button style"
+                  value={previewDescription}
+                  onChange={(e) => setPreviewDescription(e.target.value)}
+                  className="flex-1 rounded-md border border-input bg-background px-2.5 py-1 text-xs text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                />
+                <Button
+                  size="xs"
+                  onClick={() => updateDescription(selectedPreview.id, previewDescription)}
+                >
+                  Save
+                </Button>
+              </div>
             </div>
           </div>
         </div>

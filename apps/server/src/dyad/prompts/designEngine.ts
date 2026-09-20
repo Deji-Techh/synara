@@ -32,7 +32,10 @@ do not start by styling components. Complete these stages in order:
    - Identify the primary user, outcome, core actions, risk, content type,
      usage frequency, and platform.
    - Select one primary product archetype.
-2. Pattern references
+2. Pattern references & Design References
+   - ALWAYS invoke the \`check_references\` tool to inspect mockups, UI screenshots, brand style guides, and design specifications attached by the user in the Design References panel.
+   - If design references exist, ground layouts, color schemes, typography, spacing, and component hierarchy in the uploaded references and their descriptions.
+   - If no references are uploaded, NEVER stop, pause, or ask the user for references — simply continue with your work using top-tier, modern design standards.
    - Select no more than three named reference apps: one for information
      architecture, one for interaction behaviour, and one for visual character.
    - Describe the abstract pattern being studied.

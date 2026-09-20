@@ -881,6 +881,62 @@ export function makeWsDatabaseHandlers(_providerAdapterRegistry: any, _options: 
                 disconnectGithubOAuth();
                 return { ok: true };
               }
+              case "model:check-vision": {
+                const modelId = str(payload.modelId);
+                const { isModelVisionCapableChecked } =
+                  await import("./dyad/providers/openrouterModalities.ts");
+                return isModelVisionCapableChecked(modelId);
+              }
+              case "model:refresh-modalities": {
+                const { refreshOpenRouterModalitiesCache } =
+                  await import("./dyad/providers/openrouterModalities.ts");
+                await refreshOpenRouterModalitiesCache(true);
+                return { ok: true };
+              }
+              case "reference:list": {
+                const ws =
+                  str(payload.workspaceRoot) ||
+                  (threadId ? await resolveApp(threadId, payload).catch(() => "") : "") ||
+                  process.cwd();
+                const { listDesignReferences } = await import("./dyad/design/references.ts");
+                const references = await listDesignReferences(ws);
+                return { references };
+              }
+              case "reference:save": {
+                const ws =
+                  str(payload.workspaceRoot) ||
+                  (threadId ? await resolveApp(threadId, payload).catch(() => "") : "") ||
+                  process.cwd();
+                const item = payload.item as any;
+                if (!item || !item.id || !item.name) {
+                  throw new Error("Invalid reference item");
+                }
+                const { saveDesignReference } = await import("./dyad/design/references.ts");
+                const saved = await saveDesignReference(ws, item);
+                return { ok: true, reference: saved };
+              }
+              case "reference:delete": {
+                const ws =
+                  str(payload.workspaceRoot) ||
+                  (threadId ? await resolveApp(threadId, payload).catch(() => "") : "") ||
+                  process.cwd();
+                const id = str(payload.id);
+                if (!id) throw new Error("Reference id is required");
+                const { deleteDesignReference } = await import("./dyad/design/references.ts");
+                const ok = await deleteDesignReference(ws, id);
+                return { ok };
+              }
+              case "reference:get": {
+                const ws =
+                  str(payload.workspaceRoot) ||
+                  (threadId ? await resolveApp(threadId, payload).catch(() => "") : "") ||
+                  process.cwd();
+                const idOrName = str(payload.idOrName);
+                if (!idOrName) throw new Error("Reference idOrName is required");
+                const { getDesignReference } = await import("./dyad/design/references.ts");
+                const ref = await getDesignReference(ws, idOrName);
+                return { reference: ref };
+              }
               default:
                 throw new Error(`Unknown database channel: ${channel || "(missing)"}`);
             }
