@@ -95,14 +95,14 @@ export default function Home() {
             {/* Hero Studio Preview: Autonomous Turn Loop & Live DeviceLab Preview */}
             <ScrollReveal delay={120}>
               <div className="relative mt-10 sm:mt-14" data-hero-preview>
-                <div className="relative isolate overflow-hidden rounded-2xl border border-white/20 bg-slate-950/80 shadow-[0_25px_80px_-15px_rgba(0,0,0,0.5)] ring-1 ring-white/10 backdrop-blur-xl">
+                <div className="relative isolate overflow-hidden rounded-2xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.2)]">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src="/screenshots/caide-app-workspace.png"
                     alt="Caide Autonomous Studio: Real-time agent turn loop, prompt engineering, and live DeviceLab mobile preview"
-                    className="w-full h-auto block object-cover rounded-2xl"
-                    width={3072}
-                    height={1728}
+                    className="w-full h-auto block rounded-2xl"
+                    width={3036}
+                    height={1692}
                   />
                 </div>
               </div>
